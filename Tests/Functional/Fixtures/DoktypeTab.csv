@@ -1,0 +1,7 @@
+"pages"
+,"uid","pid","title","doktype","deleted"
+,1,0,"Root",1,0
+,2,1,"Standard",1,0
+,3,1,"Folder",254,0
+,4,1,"Shortcut",4,0
+,5,1,"Deleted folder",254,1

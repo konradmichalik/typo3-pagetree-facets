@@ -1,0 +1,8 @@
+"pages"
+,"uid","pid","title","doktype","sys_language_uid","l10n_parent","deleted"
+,1,0,"Root",1,0,0,0
+,2,1,"Translated page",1,0,0,0
+,3,1,"Translation of 2 (DA)",1,1,2,0
+,4,1,"Partially translated",1,0,0,0
+,5,1,"Folder",254,0,0,0
+,6,1,"Translation of 4 (FR)",1,2,4,0

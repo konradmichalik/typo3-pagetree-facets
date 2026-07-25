@@ -1,0 +1,15 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  KonradMichalik\PagetreeLens\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Token/Token.php'
+      - '../Classes/Api/FilterContext.php'
+      - '../Classes/Event/*'
+
+  KonradMichalik\PagetreeLens\Controller\LensModalController:
+    public: true

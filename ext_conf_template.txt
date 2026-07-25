@@ -1,0 +1,5 @@
+# cat=basic; type=boolean; label=Restrict to admins: Only administrators can use the filter modal and tokens.
+adminOnly = 0
+
+# cat=basic; type=string; label=Disabled tabs: Comma-separated list of built-in tab identifiers to disable installation-wide (records, ce, activity, doktype, state, translations, seo).
+disabledTabs =

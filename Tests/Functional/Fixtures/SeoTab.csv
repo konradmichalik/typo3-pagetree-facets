@@ -1,0 +1,7 @@
+"pages"
+,"uid","pid","title","doktype","no_index","no_follow","description","deleted"
+,1,0,"Root",1,0,0,"Has a description",0
+,2,1,"NoIndex",1,1,0,"",0
+,3,1,"NoFollow",1,0,1,"Has a description",0
+,4,1,"Missing description",1,0,0,"",0
+,5,1,"Folder",254,0,0,"",0

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" datatype="plaintext" original="EXT:pagetree_lens/Resources/Private/Language/locallang.xlf" date="2026-07-16T12:00:00Z" product-name="pagetree_lens">
+		<body>
+			<trans-unit id="modal.title"><source>Filter page tree</source></trans-unit>
+			<trans-unit id="modal.apply"><source>Apply</source></trans-unit>
+			<trans-unit id="modal.reset"><source>Reset</source></trans-unit>
+			<trans-unit id="modal.allSites"><source>All sites</source></trans-unit>
+			<trans-unit id="modal.freetext"><source>Page title or UID</source></trans-unit>
+			<trans-unit id="tab.records"><source>Records</source></trans-unit>
+			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
+			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
+			<trans-unit id="tab.doktype"><source>Page type</source></trans-unit>
+			<trans-unit id="tab.state"><source>Page state</source></trans-unit>
+			<trans-unit id="tab.translations"><source>Translations</source></trans-unit>
+			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
+			<trans-unit id="records.table"><source>Pages containing records of table</source></trans-unit>
+			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>
+			<trans-unit id="activity.updated"><source>Last updated</source></trans-unit>
+			<trans-unit id="activity.created"><source>Created</source></trans-unit>
+			<trans-unit id="activity.by"><source>Edited by (backend user ID or "me")</source></trans-unit>
+			<trans-unit id="activity.preset.7d.&lt;"><source>Within the last 7 days</source></trans-unit>
+			<trans-unit id="activity.preset.30d.&lt;"><source>Within the last 30 days</source></trans-unit>
+			<trans-unit id="activity.preset.6m.&lt;"><source>Within the last 6 months</source></trans-unit>
+			<trans-unit id="activity.preset.1y.&lt;"><source>Within the last year</source></trans-unit>
+			<trans-unit id="activity.preset.6m.&gt;"><source>Untouched for more than 6 months</source></trans-unit>
+			<trans-unit id="activity.preset.1y.&gt;"><source>Untouched for more than a year</source></trans-unit>
+			<trans-unit id="state.empty"><source>Without content elements</source></trans-unit>
+			<trans-unit id="state.restricted"><source>Access restricted</source></trans-unit>
+			<trans-unit id="state.hidden"><source>Hidden</source></trans-unit>
+			<trans-unit id="state.timed"><source>Time-controlled (start/stop)</source></trans-unit>
+			<trans-unit id="state.editlocked"><source>Edit-locked</source></trans-unit>
+			<trans-unit id="seo.noindex"><source>Excluded from indexing (no_index)</source></trans-unit>
+			<trans-unit id="seo.nofollow"><source>Links not followed (no_follow)</source></trans-unit>
+			<trans-unit id="seo.missingDescription"><source>Missing meta description</source></trans-unit>
+		</body>
+	</file>
+</xliff>

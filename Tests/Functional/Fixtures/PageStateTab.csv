@@ -1,0 +1,21 @@
+"pages"
+,"uid","pid","title","doktype","hidden","fe_group","extendToSubpages","starttime","endtime","editlock","deleted"
+,1,0,"Root",1,0,"",0,0,0,0,0
+,2,1,"Empty",1,0,"",0,0,0,0,0
+,3,1,"Only hidden content",1,0,"",0,0,0,0,0
+,4,1,"Folder",254,0,"",0,0,0,0,0
+,5,1,"Deleted empty",1,0,"",0,0,0,0,1
+,6,1,"Restricted",1,0,"1",0,0,0,0,0
+,7,1,"Extends restriction",1,0,"",1,0,0,0,0
+,8,1,"Hidden",1,1,"",0,0,0,0,0
+,9,1,"Timed",1,0,"",0,1000,0,0,0
+,10,1,"Editlocked",1,0,"",0,0,0,1,0
+"tt_content"
+,"uid","pid","CType","header","hidden","deleted"
+,100,1,"text","On root",0,0
+,101,3,"text","Hidden element still counts",1,0
+,102,6,"text","Content",0,0
+,103,7,"text","Content",0,0
+,104,8,"text","Content",0,0
+,105,9,"text","Content",0,0
+,106,10,"text","Content",0,0

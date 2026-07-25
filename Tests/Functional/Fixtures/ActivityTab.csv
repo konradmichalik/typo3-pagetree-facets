@@ -1,0 +1,13 @@
+"pages"
+,"uid","pid","title","doktype","tstamp","crdate","deleted"
+,1,0,"Root stale",1,1000000000,1000000000,0
+,2,1,"Fresh page",1,9999999999,9999999999,0
+,3,1,"Stale page fresh content",1,1000000000,1000000000,0
+,4,1,"Stale page stale content",1,1000000000,1000000000,0
+"tt_content"
+,"uid","pid","CType","header","tstamp","deleted"
+,300,3,"text","Edited yesterday",9999999999,0
+,301,4,"text","Edited long ago",1000000000,0
+"sys_history"
+,"uid","tablename","recuid","userid"
+,1,"pages",4,1

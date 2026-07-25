@@ -1,0 +1,9 @@
+/.build/
+/composer.lock
+/public/
+/var/
+/vendor/
+/Tests/CGL/.build/
+/Tests/CGL/composer.lock
+/Tests/CGL/var/
+/Tests/CGL/vendor/

@@ -1,0 +1,12 @@
+"pages"
+,"uid","pid","title","doktype","deleted"
+,1,0,"Root",1,0
+,2,1,"With uploads",1,0
+,3,1,"With hidden uploads",1,0
+,4,1,"Only deleted uploads",1,0
+"tt_content"
+,"uid","pid","CType","header","hidden","deleted"
+,200,1,"text","Standard text",0,0
+,201,2,"uploads","Rabatt 100% sicher",0,0
+,202,3,"uploads","Jahresbericht 2025",1,0
+,203,4,"uploads","Gone",0,1
