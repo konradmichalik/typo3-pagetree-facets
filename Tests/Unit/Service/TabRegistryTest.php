@@ -15,8 +15,7 @@ namespace KonradMichalik\PagetreeLens\Tests\Unit\Service;
 
 use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
 use KonradMichalik\PagetreeLens\Service\TabRegistry;
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\CollectingEventDispatcher;
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\StubFilterTab;
+use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
 use KonradMichalik\PagetreeLens\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -108,7 +107,7 @@ final class TabRegistryTest extends TestCase
 
     /**
      * @param list<array{0: FilterTabInterface, 1: int}> $registrations
-     * @param array<string, string> $extensionConfiguration
+     * @param array<string, string>                      $extensionConfiguration
      */
     private function createRegistry(array $registrations, array $extensionConfiguration = []): TabRegistry
     {

@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeLens\Tab\ContentElementTab;
-use KonradMichalik\PagetreeLens\Tab\RecordsTab;
+use KonradMichalik\PagetreeLens\Tab\{ContentElementTab, RecordsTab};
 use PHPUnit\Framework\Attributes\Test;
 
 final class ContentElementTabTest extends AbstractTabTestCase
@@ -22,7 +21,7 @@ final class ContentElementTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/ContentElementTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/ContentElementTab.csv');
     }
 
     #[Test]

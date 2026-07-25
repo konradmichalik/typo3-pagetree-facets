@@ -26,7 +26,7 @@ final class SeoTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/SeoTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/SeoTab.csv');
     }
 
     #[Test]

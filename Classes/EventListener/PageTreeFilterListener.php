@@ -14,11 +14,8 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\EventListener;
 
 use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
-use KonradMichalik\PagetreeLens\Service\SiteScopeService;
-use KonradMichalik\PagetreeLens\Service\TabRegistry;
-use KonradMichalik\PagetreeLens\Token\Token;
-use KonradMichalik\PagetreeLens\Token\TokenParser;
+use KonradMichalik\PagetreeLens\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeLens\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -60,7 +57,7 @@ final class PageTreeFilterListener
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void
     {
         $backendUser = $this->getBackendUser();
-        if ($backendUser === null || $this->tabRegistry->isDisabledForUser($backendUser)) {
+        if (null === $backendUser || $this->tabRegistry->isDisabledForUser($backendUser)) {
             return;
         }
 
@@ -72,7 +69,7 @@ final class PageTreeFilterListener
 
         $context = new FilterContext(
             backendUser: $backendUser,
-            workspaceId: (int)$backendUser->workspace,
+            workspaceId: (int) $backendUser->workspace,
             siteIdentifier: $this->extractSiteScope($tokens),
         );
 
@@ -87,17 +84,17 @@ final class PageTreeFilterListener
                 $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
                 continue;
             }
-            if ($token->key === 'site') {
+            if ('site' === $token->key) {
                 continue; // scope, not a criterion - handled below
             }
             $tab = $this->tabRegistry->findTabForToken($token, $backendUser);
-            if ($tab === null) {
+            if (null === $tab) {
                 continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
             }
             $uidSets[] = $tab->resolvePageUids($token, $context);
         }
 
-        if ($uidSets === []) {
+        if ([] === $uidSets) {
             return; // only unknown/scope tokens -> behave like core
         }
 
@@ -108,11 +105,11 @@ final class PageTreeFilterListener
 
         // Site scope: post-filter the (small) result set instead of
         // materializing the site subtree upfront.
-        if ($context->siteIdentifier !== null && $uids !== []) {
+        if (null !== $context->siteIdentifier && [] !== $uids) {
             $uids = $this->siteScopeService->filterUidsBySite($uids, $context->siteIdentifier);
         }
 
-        $this->applyResult($event, $uids === [] ? [self::NO_MATCH_UID] : $uids);
+        $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
     }
 
     /**
@@ -121,7 +118,7 @@ final class PageTreeFilterListener
     private function extractSiteScope(array $tokens): ?string
     {
         foreach ($tokens as $token) {
-            if ($token->key === 'site') {
+            if ('site' === $token->key) {
                 return $token->firstValue();
             }
         }

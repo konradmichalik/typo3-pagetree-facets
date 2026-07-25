@@ -15,6 +15,8 @@ namespace KonradMichalik\PagetreeLens\Service;
 
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
+use function is_array;
+
 /**
  * Personal favorites: token strings persisted in the BE user uc. No schema,
  * no migration, robust against tab changes (unknown tokens are ignored on
@@ -38,7 +40,7 @@ final class FavoriteService
     {
         $favorites = $this->getFavorites($backendUser);
         $favorites[] = [
-            'label' => $label !== '' ? $label : $tokenString,
+            'label' => '' !== $label ? $label : $tokenString,
             'tokenString' => $tokenString,
             'createdAt' => time(),
         ];

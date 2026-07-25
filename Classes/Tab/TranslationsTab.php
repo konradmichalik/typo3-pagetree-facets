@@ -14,10 +14,10 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Tab;
 
 use KonradMichalik\PagetreeLens\Api\FilterContext;
+use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Site\SiteFinder;
-use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
 
 /**
  * Pages with no translation record for the given language (page level).
@@ -56,7 +56,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
     public function resolvePageUids(Token $token, FilterContext $context): array
     {
         $languageIds = array_values(array_filter(array_map(intval(...), $token->values), static fn (int $id): bool => $id > 0));
-        if ($languageIds === []) {
+        if ([] === $languageIds) {
             return [];
         }
 
@@ -77,6 +77,37 @@ final class TranslationsTab extends AbstractPagesQueryTab
         return array_values(array_unique(array_merge(...$sets)));
     }
 
+    public function getModalConfiguration(FilterContext $context): array
+    {
+        // Language options from the site languages - pairs naturally with the
+        // site: scope; without one, offer the union of all accessible sites.
+        $options = [];
+        $seen = [];
+        foreach ($this->siteFinder->getAllSites() as $site) {
+            if (null !== $context->siteIdentifier && $site->getIdentifier() !== $context->siteIdentifier) {
+                continue;
+            }
+            foreach ($site->getAllLanguages() as $language) {
+                $languageId = $language->getLanguageId();
+                if (0 === $languageId || isset($seen[$languageId])) {
+                    continue;
+                }
+                $seen[$languageId] = true;
+                $options[] = [
+                    'value' => (string) $languageId,
+                    'label' => $language->getTitle(),
+                    'icon' => $language->getFlagIdentifier(),
+                ];
+            }
+        }
+
+        return [
+            'fields' => [
+                ['type' => 'checkbox-group', 'name' => 'untranslated', 'label' => $this->getLabel(), 'options' => $options],
+            ],
+        ];
+    }
+
     /**
      * @return list<int>
      */
@@ -93,36 +124,5 @@ final class TranslationsTab extends AbstractPagesQueryTab
             );
 
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
-    }
-
-    public function getModalConfiguration(FilterContext $context): array
-    {
-        // Language options from the site languages - pairs naturally with the
-        // site: scope; without one, offer the union of all accessible sites.
-        $options = [];
-        $seen = [];
-        foreach ($this->siteFinder->getAllSites() as $site) {
-            if ($context->siteIdentifier !== null && $site->getIdentifier() !== $context->siteIdentifier) {
-                continue;
-            }
-            foreach ($site->getAllLanguages() as $language) {
-                $languageId = $language->getLanguageId();
-                if ($languageId === 0 || isset($seen[$languageId])) {
-                    continue;
-                }
-                $seen[$languageId] = true;
-                $options[] = [
-                    'value' => (string)$languageId,
-                    'label' => $language->getTitle(),
-                    'icon' => $language->getFlagIdentifier(),
-                ];
-            }
-        }
-
-        return [
-            'fields' => [
-                ['type' => 'checkbox-group', 'name' => 'untranslated', 'label' => $this->getLabel(), 'options' => $options],
-            ],
-        ];
     }
 }

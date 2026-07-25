@@ -17,8 +17,11 @@ use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
 use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
 use KonradMichalik\PagetreeLens\Token\Token;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Throwable;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+
+use function in_array;
 
 /**
  * Collects tabs via RegisterFilterTabsEvent and applies the two configuration
@@ -41,7 +44,7 @@ final class TabRegistry
      */
     public function getTabs(BackendUserAuthentication $backendUser): array
     {
-        if ($this->resolvedTabs === null) {
+        if (null === $this->resolvedTabs) {
             $event = new RegisterFilterTabsEvent();
             $this->eventDispatcher->dispatch($event);
             $this->resolvedTabs = $event->getTabs();
@@ -71,13 +74,13 @@ final class TabRegistry
 
     public function isDisabledForUser(BackendUserAuthentication $backendUser): bool
     {
-        if ((bool)($backendUser->getTSConfig()['tx_pagetreelens.']['disable'] ?? false)) {
+        if ((bool) ($backendUser->getTSConfig()['tx_pagetreelens.']['disable'] ?? false)) {
             return true;
         }
         $adminOnly = false;
         try {
-            $adminOnly = (bool)$this->extensionConfiguration->get('pagetree_lens', 'adminOnly');
-        } catch (\Throwable) {
+            $adminOnly = (bool) $this->extensionConfiguration->get('pagetree_lens', 'adminOnly');
+        } catch (Throwable) {
         }
 
         return $adminOnly && !$backendUser->isAdmin();
@@ -90,14 +93,14 @@ final class TabRegistry
     {
         $fromExtConf = '';
         try {
-            $fromExtConf = (string)$this->extensionConfiguration->get('pagetree_lens', 'disabledTabs');
-        } catch (\Throwable) {
+            $fromExtConf = (string) $this->extensionConfiguration->get('pagetree_lens', 'disabledTabs');
+        } catch (Throwable) {
         }
-        $fromTsConfig = (string)($backendUser->getTSConfig()['tx_pagetreelens.']['disableTabs'] ?? '');
+        $fromTsConfig = (string) ($backendUser->getTSConfig()['tx_pagetreelens.']['disableTabs'] ?? '');
 
         return array_values(array_filter(array_map(
             trim(...),
-            explode(',', $fromExtConf . ',' . $fromTsConfig),
-        ), static fn (string $v): bool => $v !== ''));
+            explode(',', $fromExtConf.','.$fromTsConfig),
+        ), static fn (string $v): bool => '' !== $v));
     }
 }

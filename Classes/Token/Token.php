@@ -34,7 +34,7 @@ final readonly class Token
 
     public function isFreetext(): bool
     {
-        return $this->key === self::FREETEXT;
+        return self::FREETEXT === $this->key;
     }
 
     public function firstValue(): string

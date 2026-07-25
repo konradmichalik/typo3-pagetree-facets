@@ -70,11 +70,30 @@ final class AbstractPagesQueryTabTest extends TestCase
         );
 
         return new class($queryHelper) extends AbstractPagesQueryTab {
-            public function getIdentifier(): string { return 'test'; }
-            public function getLabel(): string { return 'test'; }
-            public function getTokenKeys(): array { return ['is', 'other']; }
-            public function resolvePageUids(Token $token, FilterContext $context): array { return []; }
-            public function getModalConfiguration(FilterContext $context): array { return ['fields' => []]; }
+            public function getIdentifier(): string
+            {
+                return 'test';
+            }
+
+            public function getLabel(): string
+            {
+                return 'test';
+            }
+
+            public function getTokenKeys(): array
+            {
+                return ['is', 'other'];
+            }
+
+            public function resolvePageUids(Token $token, FilterContext $context): array
+            {
+                return [];
+            }
+
+            public function getModalConfiguration(FilterContext $context): array
+            {
+                return ['fields' => []];
+            }
         };
     }
 }

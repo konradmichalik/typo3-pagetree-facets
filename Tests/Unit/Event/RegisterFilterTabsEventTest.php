@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Unit\Event;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
+use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
 use KonradMichalik\PagetreeLens\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
@@ -46,14 +45,46 @@ final class RegisterFilterTabsEventTest extends TestCase
     {
         return new class($identifier) implements FilterTabInterface {
             public function __construct(private readonly string $identifier) {}
-            public function getIdentifier(): string { return $this->identifier; }
-            public function getLabel(): string { return $this->identifier; }
-            public function getGroup(): ?string { return null; }
-            public function getTokenKeys(): array { return []; }
-            public function resolvePageUids(Token $token, FilterContext $context): array { return []; }
-            public function getModalConfiguration(FilterContext $context): array { return ['fields' => []]; }
-            public function serialize(array $modalState): array { return []; }
-            public function hydrate(array $tokens): array { return []; }
+
+            public function getIdentifier(): string
+            {
+                return $this->identifier;
+            }
+
+            public function getLabel(): string
+            {
+                return $this->identifier;
+            }
+
+            public function getGroup(): ?string
+            {
+                return null;
+            }
+
+            public function getTokenKeys(): array
+            {
+                return [];
+            }
+
+            public function resolvePageUids(Token $token, FilterContext $context): array
+            {
+                return [];
+            }
+
+            public function getModalConfiguration(FilterContext $context): array
+            {
+                return ['fields' => []];
+            }
+
+            public function serialize(array $modalState): array
+            {
+                return [];
+            }
+
+            public function hydrate(array $tokens): array
+            {
+                return [];
+            }
         };
     }
 }

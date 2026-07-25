@@ -53,7 +53,7 @@ final class SiteScopeServiceTest extends TestCase
 
     /**
      * @param array<string, int> $identifierToRoot
-     * @param array<int, int> $pageToRoot
+     * @param array<int, int>    $pageToRoot
      */
     private function createSiteFinder(array $identifierToRoot, array $pageToRoot): SiteFinder
     {

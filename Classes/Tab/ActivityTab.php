@@ -58,13 +58,30 @@ final class ActivityTab extends AbstractPagesQueryTab
         };
     }
 
+    public function getModalConfiguration(FilterContext $context): array
+    {
+        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:activity.';
+        $presetOptions = array_map(
+            static fn (string $preset): array => ['value' => $preset, 'label' => $lll.'preset.'.ltrim($preset, '<>').'.'.$preset[0]],
+            self::PRESETS,
+        );
+
+        return [
+            'fields' => [
+                ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions],
+                ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll.'created', 'options' => $presetOptions],
+                ['type' => 'text', 'name' => 'by', 'label' => $lll.'by', 'options' => []],
+            ],
+        ];
+    }
+
     /**
      * @return list<int>
      */
     private function resolveUpdated(string $preset, FilterContext $context): array
     {
         [$operator, $threshold] = $this->parsePreset($preset);
-        if ($operator === null) {
+        if (null === $operator) {
             return [];
         }
 
@@ -85,7 +102,7 @@ final class ActivityTab extends AbstractPagesQueryTab
             );
         $pagesWithRecentContent = array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
 
-        if ($operator === '<') {
+        if ('<' === $operator) {
             return array_values(array_unique(array_merge($pagesByOwnStamp, $pagesWithRecentContent)));
         }
 
@@ -100,10 +117,10 @@ final class ActivityTab extends AbstractPagesQueryTab
     private function resolveTimestampField(string $field, string $preset, FilterContext $context): array
     {
         [$operator, $threshold] = $this->parsePreset($preset);
-        if ($operator === null) {
+        if (null === $operator) {
             return [];
         }
-        $comparison = $operator === '<' ? '>=' : '<';
+        $comparison = '<' === $operator ? '>=' : '<';
 
         return $this->fetchPageUids($context, static function ($queryBuilder) use ($field, $comparison, $threshold): void {
             $queryBuilder->andWhere(
@@ -122,7 +139,7 @@ final class ActivityTab extends AbstractPagesQueryTab
      */
     private function resolveBy(string $value, FilterContext $context): array
     {
-        $userId = $value === 'me' ? (int)($context->backendUser->user['uid'] ?? 0) : (int)$value;
+        $userId = 'me' === $value ? (int) ($context->backendUser->user['uid'] ?? 0) : (int) $value;
         if ($userId <= 0) {
             return [];
         }
@@ -148,32 +165,15 @@ final class ActivityTab extends AbstractPagesQueryTab
      */
     private function parsePreset(string $preset): array
     {
-        if (preg_match('/^(?<op>[<>])(?<num>\d+)(?<unit>[dmy])$/', $preset, $match) !== 1) {
+        if (1 !== preg_match('/^(?<op>[<>])(?<num>\d+)(?<unit>[dmy])$/', $preset, $match)) {
             return [null, 0];
         }
-        $seconds = (int)$match['num'] * match ($match['unit']) {
+        $seconds = (int) $match['num'] * match ($match['unit']) {
             'd' => 86400,
             'm' => 86400 * 30,
             'y' => 86400 * 365,
         };
 
         return [$match['op'], time() - $seconds];
-    }
-
-    public function getModalConfiguration(FilterContext $context): array
-    {
-        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:activity.';
-        $presetOptions = array_map(
-            static fn (string $preset): array => ['value' => $preset, 'label' => $lll . 'preset.' . ltrim($preset, '<>') . '.' . $preset[0]],
-            self::PRESETS,
-        );
-
-        return [
-            'fields' => [
-                ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll . 'updated', 'options' => $presetOptions],
-                ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll . 'created', 'options' => $presetOptions],
-                ['type' => 'text', 'name' => 'by', 'label' => $lll . 'by', 'options' => []],
-            ],
-        ];
     }
 }

@@ -16,18 +16,18 @@ use KonradMichalik\PagetreeLens\Controller\LensModalController;
 return [
     'pagetree_lens_configuration' => [
         'path' => '/pagetree-lens/configuration',
-        'target' => LensModalController::class . '::configuration',
+        'target' => LensModalController::class.'::configuration',
     ],
     'pagetree_lens_serialize' => [
         'path' => '/pagetree-lens/serialize',
-        'target' => LensModalController::class . '::serialize',
+        'target' => LensModalController::class.'::serialize',
     ],
     'pagetree_lens_favorite_add' => [
         'path' => '/pagetree-lens/favorite/add',
-        'target' => LensModalController::class . '::addFavorite',
+        'target' => LensModalController::class.'::addFavorite',
     ],
     'pagetree_lens_favorite_remove' => [
         'path' => '/pagetree-lens/favorite/remove',
-        'target' => LensModalController::class . '::removeFavorite',
+        'target' => LensModalController::class.'::removeFavorite',
     ],
 ];

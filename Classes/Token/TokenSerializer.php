@@ -38,8 +38,8 @@ final class TokenSerializer
         usort($keyed, static fn (Token $a, Token $b): int => [$a->key, $a->values] <=> [$b->key, $b->values]);
 
         $parts = array_map(self::serializeToken(...), $keyed);
-        if ($freetext !== '') {
-            $parts[] = str_contains($freetext, ' ') ? '"' . $freetext . '"' : $freetext;
+        if ('' !== $freetext) {
+            $parts[] = str_contains($freetext, ' ') ? '"'.$freetext.'"' : $freetext;
         }
 
         return implode(' ', $parts);
@@ -48,10 +48,10 @@ final class TokenSerializer
     private static function serializeToken(Token $token): string
     {
         $value = implode(',', $token->values);
-        if (preg_match('/[\s"]/', $value) === 1) {
-            $value = '"' . str_replace('"', '', $value) . '"';
+        if (1 === preg_match('/[\s"]/', $value)) {
+            $value = '"'.str_replace('"', '', $value).'"';
         }
 
-        return $token->key . ':' . $value;
+        return $token->key.':'.$value;
     }
 }

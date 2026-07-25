@@ -14,14 +14,10 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Service;
 
 use KonradMichalik\PagetreeLens\Api\FilterContext;
-use TYPO3\CMS\Core\Database\Connection;
-use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
-use TYPO3\CMS\Core\Schema\Field\DateTimeFieldType;
-use TYPO3\CMS\Core\Schema\Field\FieldTypeInterface;
-use TYPO3\CMS\Core\Schema\Field\NumberFieldType;
+use TYPO3\CMS\Core\Database\Query\Restriction\{DeletedRestriction, WorkspaceRestriction};
+use TYPO3\CMS\Core\Schema\Field\{DateTimeFieldType, FieldTypeInterface, NumberFieldType};
 use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
 
 /**
@@ -72,7 +68,7 @@ class ContentQueryHelper
             ->distinct()
             ->from($table)
             ->where($queryBuilder->expr()->gt('pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)));
-        if ($andWhere !== null) {
+        if (null !== $andWhere) {
             $queryBuilder->andWhere($andWhere);
         }
         foreach ($parameters as $name => $value) {
@@ -101,13 +97,13 @@ class ContentQueryHelper
     public function getPageUidsWithTextMatch(string $table, string $needle, FilterContext $context): array
     {
         $needle = trim($needle);
-        if ($needle === '') {
+        if ('' === $needle) {
             return [];
         }
 
         $queryBuilder = $this->createQueryBuilder($table, $context);
         $likes = $this->buildLikeConstraints($table, $needle, $queryBuilder);
-        if ($likes === []) {
+        if ([] === $likes) {
             return [];
         }
         $queryBuilder
@@ -133,16 +129,16 @@ class ContentQueryHelper
     public function getMatchingPageUids(string $needle, FilterContext $context): array
     {
         $needle = trim($needle);
-        if ($needle === '') {
+        if ('' === $needle) {
             return [];
         }
 
         $queryBuilder = $this->createQueryBuilder('pages', $context);
         $conditions = $this->buildLikeConstraints('pages', $needle, $queryBuilder);
         if (ctype_digit($needle)) {
-            $conditions[] = $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter((int)$needle, Connection::PARAM_INT));
+            $conditions[] = $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter((int) $needle, Connection::PARAM_INT));
         }
-        if ($conditions === []) {
+        if ([] === $conditions) {
             return [];
         }
         $queryBuilder
@@ -162,14 +158,14 @@ class ContentQueryHelper
      */
     private function buildLikeConstraints(string $table, string $needle, QueryBuilder $queryBuilder): array
     {
-        $wildcard = '%' . $queryBuilder->escapeLikeWildcards($needle) . '%';
+        $wildcard = '%'.$queryBuilder->escapeLikeWildcards($needle).'%';
         $constraints = [];
         /** @var FieldTypeInterface $field */
         foreach ($this->searchableFieldsCollector->getFields($table) as $field) {
             if ($field instanceof NumberFieldType || $field instanceof DateTimeFieldType) {
                 continue;
             }
-            $constraints[] = (string)$queryBuilder->expr()->like(
+            $constraints[] = (string) $queryBuilder->expr()->like(
                 $field->getName(),
                 $queryBuilder->createNamedParameter($wildcard),
             );

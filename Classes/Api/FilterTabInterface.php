@@ -78,6 +78,7 @@ interface FilterTabInterface
      * Modal state (field name => value(s)) to token(s).
      *
      * @param array<string, mixed> $modalState
+     *
      * @return list<Token>
      */
     public function serialize(array $modalState): array;
@@ -87,6 +88,7 @@ interface FilterTabInterface
      * all states serialize() can produce. Unknown values are dropped silently.
      *
      * @param list<Token> $tokens
+     *
      * @return array<string, mixed>
      */
     public function hydrate(array $tokens): array;

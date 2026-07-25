@@ -1,0 +1,18 @@
+name: pagetree-lens
+type: php
+docroot: .
+php_version: "8.3"
+webserver_type: apache-fpm
+router_http_port: "80"
+router_https_port: "443"
+xdebug_enabled: false
+additional_fqdns: []
+database:
+  type: mariadb
+  version: "10.6"
+webimage_extra_packages: [libxml2-utils, php8.3-pcov]
+use_dns_when_possible: true
+corepack_enable: false
+hooks:
+  post-start:
+    - exec: composer install --ignore-platform-reqs --no-scripts

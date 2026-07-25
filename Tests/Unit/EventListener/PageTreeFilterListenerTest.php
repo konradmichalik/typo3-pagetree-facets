@@ -14,11 +14,8 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeLens\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
-use KonradMichalik\PagetreeLens\Service\SiteScopeService;
-use KonradMichalik\PagetreeLens\Service\TabRegistry;
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\CollectingEventDispatcher;
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\StubFilterTab;
+use KonradMichalik\PagetreeLens\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
 use KonradMichalik\PagetreeLens\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -67,7 +64,7 @@ final class PageTreeFilterListenerTest extends TestCase
         self::assertSame([10, 20, 30, 40], $event->searchUids);
         // The core LIKE parts were built against the full token phrase and
         // must be neutralized once we applied our own result.
-        self::assertSame('1=0', (string)$event->searchParts);
+        self::assertSame('1=0', (string) $event->searchParts);
     }
 
     #[Test]

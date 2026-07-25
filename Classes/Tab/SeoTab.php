@@ -56,9 +56,29 @@ final class SeoTab extends AbstractPagesQueryTab
                 default => null,
             };
         }
-        $sets = array_values(array_filter($sets, static fn (?array $set): bool => $set !== null));
+        $sets = array_values(array_filter($sets, static fn (?array $set): bool => null !== $set));
 
-        return $sets === [] ? [] : array_values(array_unique(array_merge(...$sets)));
+        return [] === $sets ? [] : array_values(array_unique(array_merge(...$sets)));
+    }
+
+    public function getModalConfiguration(FilterContext $context): array
+    {
+        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:seo.';
+
+        return [
+            'fields' => [
+                [
+                    'type' => 'checkbox-group',
+                    'name' => 'seo',
+                    'label' => $this->getLabel(),
+                    'options' => [
+                        ['value' => 'noindex', 'label' => $lll.'noindex', 'icon' => 'actions-eye-slash'],
+                        ['value' => 'nofollow', 'label' => $lll.'nofollow', 'icon' => 'actions-link-slash'],
+                        ['value' => 'missing-description', 'label' => $lll.'missingDescription', 'icon' => 'actions-exclamation-triangle'],
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**
@@ -89,25 +109,5 @@ final class SeoTab extends AbstractPagesQueryTab
             );
             $this->excludeNonContentDoktypes($queryBuilder);
         });
-    }
-
-    public function getModalConfiguration(FilterContext $context): array
-    {
-        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:seo.';
-
-        return [
-            'fields' => [
-                [
-                    'type' => 'checkbox-group',
-                    'name' => 'seo',
-                    'label' => $this->getLabel(),
-                    'options' => [
-                        ['value' => 'noindex', 'label' => $lll . 'noindex', 'icon' => 'actions-eye-slash'],
-                        ['value' => 'nofollow', 'label' => $lll . 'nofollow', 'icon' => 'actions-link-slash'],
-                        ['value' => 'missing-description', 'label' => $lll . 'missingDescription', 'icon' => 'actions-exclamation-triangle'],
-                    ],
-                ],
-            ],
-        ];
     }
 }

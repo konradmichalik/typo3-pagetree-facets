@@ -1,0 +1,7 @@
+type: php
+docroot: .Build
+additional_hostnames:
+  - 14.pagetree-lens
+hooks:
+   post-start:
+    - exec: mkdir -p /var/www/html/.Build/ && cp -r /var/www/html/.ddev/.setup/templates/. /var/www/html/.Build/

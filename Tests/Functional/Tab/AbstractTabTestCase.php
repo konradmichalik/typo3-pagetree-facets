@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
+use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeLens\Token\TokenParser;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -36,7 +35,7 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/be_users.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/be_users.csv');
         $this->backendUser = $this->setUpBackendUser(1);
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($this->backendUser);
     }
@@ -59,7 +58,7 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
     protected function resolve(FilterTabInterface $tab, string $tokenString): array
     {
         $tokens = (new TokenParser())->parse($tokenString);
-        self::assertNotSame([], $tokens, 'Token string did not parse: ' . $tokenString);
+        self::assertNotSame([], $tokens, 'Token string did not parse: '.$tokenString);
         $uids = $tab->resolvePageUids($tokens[0], $this->createContext());
         sort($uids);
 

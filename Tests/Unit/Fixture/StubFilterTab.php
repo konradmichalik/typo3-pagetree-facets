@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Unit\Fixture;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
+use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeLens\Token\Token;
 
 /**
@@ -24,7 +23,7 @@ use KonradMichalik\PagetreeLens\Token\Token;
 final class StubFilterTab implements FilterTabInterface
 {
     /**
-     * @param list<string> $tokenKeys
+     * @param list<string>             $tokenKeys
      * @param array<string, list<int>> $uidMap
      */
     public function __construct(
@@ -55,7 +54,7 @@ final class StubFilterTab implements FilterTabInterface
 
     public function resolvePageUids(Token $token, FilterContext $context): array
     {
-        return $this->uidMap[$token->key . ':' . implode(',', $token->values)] ?? [];
+        return $this->uidMap[$token->key.':'.implode(',', $token->values)] ?? [];
     }
 
     public function getModalConfiguration(FilterContext $context): array

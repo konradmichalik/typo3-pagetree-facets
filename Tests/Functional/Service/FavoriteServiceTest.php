@@ -30,7 +30,7 @@ final class FavoriteServiceTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/be_users.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/be_users.csv');
         $this->backendUser = $this->setUpBackendUser(1);
         $this->subject = $this->get(FavoriteService::class);
     }

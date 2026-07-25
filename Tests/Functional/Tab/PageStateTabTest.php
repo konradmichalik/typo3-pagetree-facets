@@ -21,7 +21,7 @@ final class PageStateTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/PageStateTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/PageStateTab.csv');
     }
 
     #[Test]

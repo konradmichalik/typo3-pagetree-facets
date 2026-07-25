@@ -50,7 +50,7 @@ final class ContentElementTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             'tt_content',
             $context,
-            (string)$queryBuilder->expr()->in('CType', ':lensCtypes'),
+            (string) $queryBuilder->expr()->in('CType', ':lensCtypes'),
             ['lensCtypes' => $token->values],
             ['lensCtypes' => Connection::PARAM_STR_ARRAY],
         );
@@ -62,14 +62,14 @@ final class ContentElementTab extends AbstractPagesQueryTab
         // CType choices from TCA items incl. icons/labels (the "new content
         // element" wizard set) - custom CTypes appear automatically.
         foreach ($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] ?? [] as $item) {
-            $value = (string)($item['value'] ?? '');
-            if ($value === '' || str_starts_with($value, '--')) {
+            $value = (string) ($item['value'] ?? '');
+            if ('' === $value || str_starts_with($value, '--')) {
                 continue;
             }
             $options[] = [
                 'value' => $value,
-                'label' => (string)($item['label'] ?? $value),
-                'icon' => (string)($item['icon'] ?? ''),
+                'label' => (string) ($item['label'] ?? $value),
+                'icon' => (string) ($item['icon'] ?? ''),
             ];
         }
 

@@ -42,7 +42,7 @@ final class DoktypeTab extends AbstractPagesQueryTab
     public function resolvePageUids(Token $token, FilterContext $context): array
     {
         $doktypes = array_values(array_filter(array_map(intval(...), $token->values)));
-        if ($doktypes === []) {
+        if ([] === $doktypes) {
             return [];
         }
 
@@ -60,14 +60,14 @@ final class DoktypeTab extends AbstractPagesQueryTab
         // automatically with their own icons; never hardcode.
         $iconClasses = $GLOBALS['TCA']['pages']['ctrl']['typeicon_classes'] ?? [];
         foreach ($GLOBALS['TCA']['pages']['columns']['doktype']['config']['items'] ?? [] as $item) {
-            $value = (string)($item['value'] ?? '');
-            if ($value === '' || str_starts_with($value, '--')) {
+            $value = (string) ($item['value'] ?? '');
+            if ('' === $value || str_starts_with($value, '--')) {
                 continue;
             }
             $options[] = [
                 'value' => $value,
-                'label' => (string)($item['label'] ?? $value),
-                'icon' => (string)($item['icon'] ?? ($iconClasses[$value] ?? $iconClasses['default'] ?? '')),
+                'label' => (string) ($item['label'] ?? $value),
+                'icon' => (string) ($item['icon'] ?? ($iconClasses[$value] ?? $iconClasses['default'] ?? '')),
             ];
         }
 

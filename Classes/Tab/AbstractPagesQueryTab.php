@@ -13,12 +13,13 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tab;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
+use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+
+use function in_array;
 
 /**
  * Base for tabs whose criteria are conditions on the pages table itself.
@@ -32,6 +33,45 @@ abstract class AbstractPagesQueryTab implements FilterTabInterface
     public function getGroup(): ?string
     {
         return null;
+    }
+
+    /**
+     * Default: one field named after the tab, straightforward mapping.
+     * Tabs with richer UIs override serialize()/hydrate() themselves.
+     *
+     * @param array<string, mixed> $modalState
+     *
+     * @return list<Token>
+     */
+    public function serialize(array $modalState): array
+    {
+        $tokens = [];
+        foreach ($this->getTokenKeys() as $key) {
+            $values = (array) ($modalState[$key] ?? []);
+            $values = array_values(array_filter(array_map(strval(...), $values), static fn (string $v): bool => '' !== $v));
+            if ([] !== $values) {
+                $tokens[] = new Token($key, $values, $key.':'.implode(',', $values));
+            }
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     *
+     * @return array<string, mixed>
+     */
+    public function hydrate(array $tokens): array
+    {
+        $state = [];
+        foreach ($tokens as $token) {
+            if (in_array($token->key, $this->getTokenKeys(), true)) {
+                $state[$token->key] = $token->values;
+            }
+        }
+
+        return $state;
     }
 
     /**
@@ -54,42 +94,5 @@ abstract class AbstractPagesQueryTab implements FilterTabInterface
                 $queryBuilder->createNamedParameter(ContentQueryHelper::NON_CONTENT_DOKTYPES, Connection::PARAM_INT_ARRAY),
             ),
         );
-    }
-
-    /**
-     * Default: one field named after the tab, straightforward mapping.
-     * Tabs with richer UIs override serialize()/hydrate() themselves.
-     *
-     * @param array<string, mixed> $modalState
-     * @return list<Token>
-     */
-    public function serialize(array $modalState): array
-    {
-        $tokens = [];
-        foreach ($this->getTokenKeys() as $key) {
-            $values = (array)($modalState[$key] ?? []);
-            $values = array_values(array_filter(array_map(strval(...), $values), static fn (string $v): bool => $v !== ''));
-            if ($values !== []) {
-                $tokens[] = new Token($key, $values, $key . ':' . implode(',', $values));
-            }
-        }
-
-        return $tokens;
-    }
-
-    /**
-     * @param list<Token> $tokens
-     * @return array<string, mixed>
-     */
-    public function hydrate(array $tokens): array
-    {
-        $state = [];
-        foreach ($tokens as $token) {
-            if (in_array($token->key, $this->getTokenKeys(), true)) {
-                $state[$token->key] = $token->values;
-            }
-        }
-
-        return $state;
     }
 }

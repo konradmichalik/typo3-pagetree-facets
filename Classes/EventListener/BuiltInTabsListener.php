@@ -14,13 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\EventListener;
 
 use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
-use KonradMichalik\PagetreeLens\Tab\ActivityTab;
-use KonradMichalik\PagetreeLens\Tab\ContentElementTab;
-use KonradMichalik\PagetreeLens\Tab\DoktypeTab;
-use KonradMichalik\PagetreeLens\Tab\PageStateTab;
-use KonradMichalik\PagetreeLens\Tab\RecordsTab;
-use KonradMichalik\PagetreeLens\Tab\SeoTab;
-use KonradMichalik\PagetreeLens\Tab\TranslationsTab;
+use KonradMichalik\PagetreeLens\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RecordsTab, SeoTab, TranslationsTab};
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 

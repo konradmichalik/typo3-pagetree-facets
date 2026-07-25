@@ -31,7 +31,7 @@ final class LensModalControllerTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/be_users.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/be_users.csv');
         $backendUser = $this->setUpBackendUser(1);
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($backendUser);
         $this->subject = $this->get(LensModalController::class);
@@ -55,7 +55,7 @@ final class LensModalControllerTest extends FunctionalTestCase
         $payload = $this->decode($this->subject->configuration(new ServerRequest()));
 
         foreach ($payload['tabs'] as $tab) {
-            self::assertStringNotContainsString('LLL:', $tab['label'], 'Unresolved label in tab ' . $tab['identifier']);
+            self::assertStringNotContainsString('LLL:', $tab['label'], 'Unresolved label in tab '.$tab['identifier']);
         }
     }
 
@@ -110,6 +110,6 @@ final class LensModalControllerTest extends FunctionalTestCase
      */
     private function decode(ResponseInterface $response): array
     {
-        return json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), true, 512, \JSON_THROW_ON_ERROR);
     }
 }

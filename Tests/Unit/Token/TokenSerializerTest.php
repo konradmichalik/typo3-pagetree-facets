@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Unit\Token;
 
-use KonradMichalik\PagetreeLens\Token\TokenParser;
-use KonradMichalik\PagetreeLens\Token\TokenSerializer;
+use KonradMichalik\PagetreeLens\Token\{TokenParser, TokenSerializer};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

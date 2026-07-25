@@ -21,7 +21,7 @@ final class TranslationsTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/TranslationsTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/TranslationsTab.csv');
     }
 
     #[Test]

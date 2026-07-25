@@ -13,11 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeLens\Tab\ContentElementTab;
-use KonradMichalik\PagetreeLens\Tab\DoktypeTab;
-use KonradMichalik\PagetreeLens\Tab\PageStateTab;
-use KonradMichalik\PagetreeLens\Tab\RecordsTab;
-use KonradMichalik\PagetreeLens\Tab\TranslationsTab;
+use KonradMichalik\PagetreeLens\Tab\{ContentElementTab, DoktypeTab, PageStateTab, RecordsTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
 
@@ -33,7 +29,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/DoktypeTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/DoktypeTab.csv');
     }
 
     #[Test]
@@ -56,7 +52,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         self::assertArrayHasKey('textmedia', $options);
         self::assertNotSame('', $options['textmedia']['icon']);
         foreach (array_keys($options) as $value) {
-            self::assertStringStartsNotWith('--', (string)$value, 'Divider items must be filtered out');
+            self::assertStringStartsNotWith('--', (string) $value, 'Divider items must be filtered out');
         }
     }
 

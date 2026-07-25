@@ -38,21 +38,21 @@ final class TokenParser
         $tokens = [];
         $freetextParts = [];
 
-        if (preg_match_all(self::PATTERN, trim($phrase), $matches, PREG_SET_ORDER) === false) {
+        if (false === preg_match_all(self::PATTERN, trim($phrase), $matches, \PREG_SET_ORDER)) {
             return [];
         }
 
         foreach ($matches as $match) {
             $key = strtolower($match['key'] ?? '');
-            if ($key !== '') {
+            if ('' !== $key) {
                 $value = ($match['quoted'] ?? '') !== '' ? $match['quoted'] : ($match['bare'] ?? '');
-                $values = $key === 'text'
+                $values = 'text' === $key
                     ? [$value]
                     : array_values(array_filter(
                         array_map(trim(...), explode(',', $value)),
-                        static fn (string $v): bool => $v !== '',
+                        static fn (string $v): bool => '' !== $v,
                     ));
-                if ($values === []) {
+                if ([] === $values) {
                     continue;
                 }
                 $tokens[] = new Token($key, $values, $match[0]);
@@ -61,8 +61,8 @@ final class TokenParser
             $freetextParts[] = ($match['freequoted'] ?? '') !== '' ? $match['freequoted'] : ($match['word'] ?? '');
         }
 
-        $freetextParts = array_values(array_filter($freetextParts, static fn (string $v): bool => $v !== ''));
-        if ($freetextParts !== []) {
+        $freetextParts = array_values(array_filter($freetextParts, static fn (string $v): bool => '' !== $v));
+        if ([] !== $freetextParts) {
             $joined = implode(' ', $freetextParts);
             $tokens[] = new Token(Token::FREETEXT, [$joined], $joined);
         }

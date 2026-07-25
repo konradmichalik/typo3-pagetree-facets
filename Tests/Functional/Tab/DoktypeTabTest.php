@@ -21,7 +21,7 @@ final class DoktypeTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/DoktypeTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/DoktypeTab.csv');
     }
 
     #[Test]

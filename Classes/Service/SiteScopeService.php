@@ -29,6 +29,7 @@ final class SiteScopeService
 
     /**
      * @param list<int> $uids
+     *
      * @return list<int>
      */
     public function filterUidsBySite(array $uids, string $siteIdentifier): array

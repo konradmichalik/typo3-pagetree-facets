@@ -11,4 +11,4 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-defined('TYPO3') or die();
+defined('TYPO3') || exit;

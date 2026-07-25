@@ -57,8 +57,33 @@ final class RecordsTab extends AbstractPagesQueryTab
         };
     }
 
+    public function getModalConfiguration(FilterContext $context): array
+    {
+        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:records.';
+        $options = [];
+        foreach (array_keys($GLOBALS['TCA'] ?? []) as $table) {
+            if (!$this->isAllowedTable($table, $context) || ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
+                continue;
+            }
+            $options[] = [
+                'value' => $table,
+                'label' => (string) ($GLOBALS['TCA'][$table]['ctrl']['title'] ?? $table),
+                // Table icons from TCA ctrl typeicon_classes.
+                'icon' => (string) ($GLOBALS['TCA'][$table]['ctrl']['typeicon_classes']['default'] ?? ''),
+            ];
+        }
+
+        return [
+            'fields' => [
+                ['type' => 'select', 'name' => 'table', 'label' => $lll.'table', 'options' => $options],
+                ['type' => 'text', 'name' => 'text', 'label' => $lll.'text', 'options' => []],
+            ],
+        ];
+    }
+
     /**
      * @param list<string> $tables
+     *
      * @return list<int>
      */
     private function resolveTables(array $tables, FilterContext $context): array
@@ -71,7 +96,7 @@ final class RecordsTab extends AbstractPagesQueryTab
             $uids[] = $this->queryHelper->getPageUidsWithRecords($table, $context);
         }
 
-        return $uids === [] ? [] : array_values(array_unique(array_merge(...$uids)));
+        return [] === $uids ? [] : array_values(array_unique(array_merge(...$uids)));
     }
 
     /**
@@ -80,11 +105,11 @@ final class RecordsTab extends AbstractPagesQueryTab
     private function resolveRecord(string $value, FilterContext $context): array
     {
         $lastColon = strrpos($value, ':');
-        if ($lastColon === false) {
+        if (false === $lastColon) {
             return [];
         }
         $table = substr($value, 0, $lastColon);
-        $uid = (int)substr($value, $lastColon + 1);
+        $uid = (int) substr($value, $lastColon + 1);
         if ($uid <= 0 || !$this->isAllowedTable($table, $context)) {
             return [];
         }
@@ -94,7 +119,7 @@ final class RecordsTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             $table,
             $context,
-            (string)$queryBuilder->expr()->eq('uid', ':lensRecordUid'),
+            (string) $queryBuilder->expr()->eq('uid', ':lensRecordUid'),
             ['lensRecordUid' => $uid],
         );
     }
@@ -117,29 +142,5 @@ final class RecordsTab extends AbstractPagesQueryTab
     {
         return isset($GLOBALS['TCA'][$table])
             && $context->backendUser->check('tables_select', $table);
-    }
-
-    public function getModalConfiguration(FilterContext $context): array
-    {
-        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:records.';
-        $options = [];
-        foreach (array_keys($GLOBALS['TCA'] ?? []) as $table) {
-            if (!$this->isAllowedTable($table, $context) || ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
-                continue;
-            }
-            $options[] = [
-                'value' => $table,
-                'label' => (string)($GLOBALS['TCA'][$table]['ctrl']['title'] ?? $table),
-                // Table icons from TCA ctrl typeicon_classes.
-                'icon' => (string)($GLOBALS['TCA'][$table]['ctrl']['typeicon_classes']['default'] ?? ''),
-            ];
-        }
-
-        return [
-            'fields' => [
-                ['type' => 'select', 'name' => 'table', 'label' => $lll . 'table', 'options' => $options],
-                ['type' => 'text', 'name' => 'text', 'label' => $lll . 'text', 'options' => []],
-            ],
-        ];
     }
 }

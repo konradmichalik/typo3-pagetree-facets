@@ -25,7 +25,7 @@ final class ActivityTabTest extends AbstractTabTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importCSVDataSet(__DIR__ . '/../Fixtures/ActivityTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/ActivityTab.csv');
     }
 
     #[Test]

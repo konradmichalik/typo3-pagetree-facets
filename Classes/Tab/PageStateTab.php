@@ -52,13 +52,38 @@ final class PageStateTab extends AbstractPagesQueryTab
                 default => null, // unknown state value -> ignored
             };
         }
-        $sets = array_values(array_filter($sets, static fn (?array $set): bool => $set !== null));
-        if ($sets === []) {
+        $sets = array_values(array_filter($sets, static fn (?array $set): bool => null !== $set));
+        if ([] === $sets) {
             return [];
         }
 
         // Values within one token are OR-combined.
         return array_values(array_unique(array_merge(...$sets)));
+    }
+
+    public function getModalConfiguration(FilterContext $context): array
+    {
+        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:state.';
+
+        return [
+            'fields' => [
+                [
+                    'type' => 'checkbox-group',
+                    'name' => 'is',
+                    'label' => $this->getLabel(),
+                    // Page state has no TCA icon source - manually mapped core
+                    // icons. Activity presets deliberately get none (no natural
+                    // symbol; avoid decoration).
+                    'options' => [
+                        ['value' => 'empty', 'label' => $lll.'empty', 'icon' => 'actions-file'],
+                        ['value' => 'restricted', 'label' => $lll.'restricted', 'icon' => 'status-status-locked'],
+                        ['value' => 'hidden', 'label' => $lll.'hidden', 'icon' => 'actions-eye-slash'],
+                        ['value' => 'timed', 'label' => $lll.'timed', 'icon' => 'actions-clock'],
+                        ['value' => 'editlocked', 'label' => $lll.'editlocked', 'icon' => 'actions-lock'],
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**
@@ -126,30 +151,5 @@ final class PageStateTab extends AbstractPagesQueryTab
                 ),
             );
         });
-    }
-
-    public function getModalConfiguration(FilterContext $context): array
-    {
-        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:state.';
-
-        return [
-            'fields' => [
-                [
-                    'type' => 'checkbox-group',
-                    'name' => 'is',
-                    'label' => $this->getLabel(),
-                    // Page state has no TCA icon source - manually mapped core
-                    // icons. Activity presets deliberately get none (no natural
-                    // symbol; avoid decoration).
-                    'options' => [
-                        ['value' => 'empty', 'label' => $lll . 'empty', 'icon' => 'actions-file'],
-                        ['value' => 'restricted', 'label' => $lll . 'restricted', 'icon' => 'status-status-locked'],
-                        ['value' => 'hidden', 'label' => $lll . 'hidden', 'icon' => 'actions-eye-slash'],
-                        ['value' => 'timed', 'label' => $lll . 'timed', 'icon' => 'actions-clock'],
-                        ['value' => 'editlocked', 'label' => $lll . 'editlocked', 'icon' => 'actions-lock'],
-                    ],
-                ],
-            ],
-        ];
     }
 }
