@@ -20,12 +20,16 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 /**
+ * BackendAssetsListener.
+ *
  * Loads the toolbar module into the backend shell. Without this listener the
  * extension would install fine and do exactly nothing visible.
  *
  * Loaded once for the outer backend document (where the page tree lives);
  * skipped entirely for users with the feature disabled, so they pay zero
  * JS cost.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(identifier: 'pagetree-lens/backend-assets')]
 final class BackendAssetsListener
@@ -44,5 +48,9 @@ final class BackendAssetsListener
             return;
         }
         $this->pageRenderer->loadJavaScriptModule('@konradmichalik/pagetree-lens/lens-toolbar.js');
+        $this->pageRenderer->addCssFile('EXT:pagetree_lens/Resources/Public/Css/lens-modal.css');
+        // The modal chrome (title, buttons, placeholders) is rendered client
+        // side and reads its labels from TYPO3.lang - publish them inline.
+        $this->pageRenderer->addInlineLanguageLabelFile('EXT:pagetree_lens/Resources/Private/Language/locallang.xlf');
     }
 }
