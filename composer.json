@@ -1,7 +1,9 @@
 {
 	"name": "konradmichalik/typo3-pagetree-lens",
 	"description": "Pagetree Lens - Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.",
-	"license": ["GPL-2.0-or-later"],
+	"license": [
+		"GPL-2.0-or-later"
+	],
 	"type": "typo3-cms-extension",
 	"authors": [
 		{
@@ -43,7 +45,7 @@
 			"typo3/cms-composer-installers": true
 		},
 		"platform": {
-			"php": "8.3"
+			"php": "8.4.1"
 		},
 		"sort-packages": true
 	},
