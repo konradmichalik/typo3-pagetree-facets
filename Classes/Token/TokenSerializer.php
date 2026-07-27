@@ -14,8 +14,12 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Token;
 
 /**
+ * TokenSerializer.
+ *
  * Serializes tokens back into the canonical phrase. Ordering is stable
  * (alphabetical by key, freetext last) so favorites compare reliably.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class TokenSerializer
 {

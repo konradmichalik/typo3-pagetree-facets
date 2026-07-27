@@ -17,9 +17,13 @@ use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
+ * SiteScopeService.
+ *
  * "site:" is a scope, not a criterion: it produces no match set. Matched UIDs
  * are post-filtered by rootline against the site root page - cheap, because
  * result sets are small; never materialize the full site subtree.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class SiteScopeService
 {

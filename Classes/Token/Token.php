@@ -14,8 +14,12 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Token;
 
 /**
+ * Token.
+ *
  * A single parsed filter token. Comma-separated values within one token are
  * OR-combined ("doktype:1,4"), separate tokens are AND-combined.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final readonly class Token
 {

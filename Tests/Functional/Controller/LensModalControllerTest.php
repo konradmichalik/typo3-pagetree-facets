@@ -20,6 +20,13 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
+
+/**
+ * LensModalControllerTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class LensModalControllerTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [

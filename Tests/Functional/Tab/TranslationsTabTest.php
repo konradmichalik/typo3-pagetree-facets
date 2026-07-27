@@ -16,6 +16,13 @@ namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 use KonradMichalik\PagetreeLens\Tab\TranslationsTab;
 use PHPUnit\Framework\Attributes\Test;
 
+
+/**
+ * TranslationsTabTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class TranslationsTabTest extends AbstractTabTestCase
 {
     protected function setUp(): void

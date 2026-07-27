@@ -13,9 +13,16 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeLens\Tests\Unit\Token;
 
-use KonradMichalik\PagetreeLens\Token\{TokenParser};
+use KonradMichalik\PagetreeLens\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+
+/**
+ * TokenParserTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
 
 final class TokenParserTest extends TestCase
 {

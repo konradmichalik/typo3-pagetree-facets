@@ -24,10 +24,14 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use function in_array;
 
 /**
+ * TabRegistry.
+ *
  * Collects tabs via RegisterFilterTabsEvent and applies the two configuration
  * layers: ext conf (global) and User TSconfig (per group/user). A disabled
  * tab's tokens become unknown -> ignored, so config cannot be bypassed by
  * typing tokens manually.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class TabRegistry
 {

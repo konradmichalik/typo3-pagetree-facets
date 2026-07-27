@@ -18,7 +18,11 @@ use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
+ * CollectingEventDispatcher.
+ *
  * Dispatcher double: registers the given tabs on RegisterFilterTabsEvent.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class CollectingEventDispatcher implements EventDispatcherInterface
 {

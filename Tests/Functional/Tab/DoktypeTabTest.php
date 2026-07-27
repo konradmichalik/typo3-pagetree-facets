@@ -16,6 +16,13 @@ namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 use KonradMichalik\PagetreeLens\Tab\DoktypeTab;
 use PHPUnit\Framework\Attributes\Test;
 
+
+/**
+ * DoktypeTabTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class DoktypeTabTest extends AbstractTabTestCase
 {
     protected function setUp(): void

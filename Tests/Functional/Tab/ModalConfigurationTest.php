@@ -18,9 +18,13 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
 
 /**
+ * ModalConfigurationTest.
+ *
  * The declarative modal schemas against real TCA and real site
  * configuration - the promise "custom doktypes/CTypes appear automatically
  * with their icons" is only testable here, not in unit tests.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class ModalConfigurationTest extends AbstractTabTestCase
 {

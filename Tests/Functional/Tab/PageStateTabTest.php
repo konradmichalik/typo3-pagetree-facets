@@ -16,6 +16,13 @@ namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
 use KonradMichalik\PagetreeLens\Tab\PageStateTab;
 use PHPUnit\Framework\Attributes\Test;
 
+
+/**
+ * PageStateTabTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class PageStateTabTest extends AbstractTabTestCase
 {
     protected function setUp(): void

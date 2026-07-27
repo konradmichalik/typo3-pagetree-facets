@@ -22,7 +22,11 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use function in_array;
 
 /**
+ * AbstractPagesQueryTab.
+ *
  * Base for tabs whose criteria are conditions on the pages table itself.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 abstract class AbstractPagesQueryTab implements FilterTabInterface
 {

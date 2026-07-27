@@ -17,8 +17,12 @@ use KonradMichalik\PagetreeLens\Tab\ActivityTab;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
+ * ActivityTabTest.
+ *
  * Fixture timestamps: "fresh" rows use 9999999999 (far future, always inside
  * any <N window), "stale" rows use 1000000000 (2001, always outside).
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class ActivityTabTest extends AbstractTabTestCase
 {

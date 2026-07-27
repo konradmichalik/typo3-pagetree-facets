@@ -18,9 +18,13 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use function is_array;
 
 /**
+ * FavoriteService.
+ *
  * Personal favorites: token strings persisted in the BE user uc. No schema,
  * no migration, robust against tab changes (unknown tokens are ignored on
  * hydrate). Shared team presets (own table + be_groups) are a v2 item.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class FavoriteService
 {

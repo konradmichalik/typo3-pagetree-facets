@@ -20,9 +20,13 @@ use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
+ * AbstractTabTestCase.
+ *
  * Base for tab functional tests: real database, real TCA, real DI container.
  * Each concrete test imports its own fixture set - exact-set assertions stay
  * readable because fixtures contain only what the tab under test looks at.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 abstract class AbstractTabTestCase extends FunctionalTestCase
 {

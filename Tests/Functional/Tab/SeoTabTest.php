@@ -17,7 +17,11 @@ use KonradMichalik\PagetreeLens\Tab\SeoTab;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
+ * SeoTabTest.
+ *
  * Loads EXT:seo - the tab's fields (no_index, no_follow) only exist with it.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class SeoTabTest extends AbstractTabTestCase
 {

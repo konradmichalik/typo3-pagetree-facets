@@ -19,9 +19,13 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
+ * BuiltInTabsListener.
+ *
  * Dogfooding: every built-in tab registers through the same public event a
  * third party would use - no private shortcut. Priority ranges 100..40 are
  * reserved for built-ins; third-party tabs default to 0.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(identifier: 'pagetree-lens/built-in-tabs')]
 final class BuiltInTabsListener

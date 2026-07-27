@@ -16,10 +16,14 @@ namespace KonradMichalik\PagetreeLens\Api;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
 /**
+ * FilterContext.
+ *
  * Context passed to every tab when resolving page UIDs.
  *
  * Deliberately carries no hard "pages" assumption in its name or shape -
  * a possible future tree scope (see docs/ROADMAP.md) would extend this.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final readonly class FilterContext
 {
