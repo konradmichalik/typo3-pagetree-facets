@@ -17,12 +17,17 @@ use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
+ * TranslationsTab.
+ *
  * Pages with no translation record for the given language (page level).
  * Content-element-level gaps ("page translated but CEs missing", connected
  * vs. free mode) are a documented v2 item.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class TranslationsTab extends AbstractPagesQueryTab
 {
@@ -43,7 +48,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.translations';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'quality';
     }
@@ -64,7 +69,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
         foreach ($languageIds as $languageId) {
             $translatedParents = $this->fetchTranslatedParentUids($languageId, $context);
             $translated = array_flip($translatedParents);
-            $defaultLanguagePages = $this->fetchPageUids($context, function ($queryBuilder): void {
+            $defaultLanguagePages = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
                 );
@@ -77,6 +82,9 @@ final class TranslationsTab extends AbstractPagesQueryTab
         return array_values(array_unique(array_merge(...$sets)));
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         // Language options from the site languages - pairs naturally with the

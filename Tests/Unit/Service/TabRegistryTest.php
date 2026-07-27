@@ -23,6 +23,13 @@ use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
+
+/**
+ * TabRegistryTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class TabRegistryTest extends TestCase
 {
     #[Test]
@@ -111,7 +118,7 @@ final class TabRegistryTest extends TestCase
      */
     private function createRegistry(array $registrations, array $extensionConfiguration = []): TabRegistry
     {
-        $extensionConfigurationMock = $this->createStub(ExtensionConfiguration::class);
+        $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
         $extensionConfigurationMock
             ->method('get')
             ->willReturnCallback(
@@ -121,9 +128,12 @@ final class TabRegistryTest extends TestCase
         return new TabRegistry(new CollectingEventDispatcher($registrations), $extensionConfigurationMock);
     }
 
+    /**
+     * @param array<string, mixed> $tsConfig
+     */
     private function createBackendUser(array $tsConfig = [], bool $admin = true): BackendUserAuthentication&Stub
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('getTSConfig')->willReturn($tsConfig);
         $backendUser->method('isAdmin')->willReturn($admin);
 

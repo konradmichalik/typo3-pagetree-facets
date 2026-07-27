@@ -16,13 +16,18 @@ namespace KonradMichalik\PagetreeLens\Tab;
 use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
+ * ActivityTab.
+ *
  * Presets over the page's EFFECTIVE change date:
  * GREATEST(pages.tstamp, MAX(tt_content.tstamp)) - content changes count,
  * a page whose text was edited yesterday is "recently updated" even if the
  * page record itself was not touched. Deliberately NOT SYS_LASTCHANGED
  * (only written on FE rendering; unreliable for BE-only or migrated pages).
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class ActivityTab extends AbstractPagesQueryTab
 {
@@ -38,7 +43,7 @@ final class ActivityTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.activity';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'state';
     }
@@ -58,6 +63,9 @@ final class ActivityTab extends AbstractPagesQueryTab
         };
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:activity.';
@@ -122,7 +130,7 @@ final class ActivityTab extends AbstractPagesQueryTab
         }
         $comparison = '<' === $operator ? '>=' : '<';
 
-        return $this->fetchPageUids($context, static function ($queryBuilder) use ($field, $comparison, $threshold): void {
+        return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder) use ($field, $comparison, $threshold): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->comparison($field, $comparison, $queryBuilder->createNamedParameter($threshold, Connection::PARAM_INT)),
             );

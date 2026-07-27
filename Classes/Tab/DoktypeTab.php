@@ -16,6 +16,14 @@ namespace KonradMichalik\PagetreeLens\Tab;
 use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+
+
+/**
+ * DoktypeTab.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
 
 final class DoktypeTab extends AbstractPagesQueryTab
 {
@@ -29,7 +37,7 @@ final class DoktypeTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.doktype';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'content';
     }
@@ -41,18 +49,21 @@ final class DoktypeTab extends AbstractPagesQueryTab
 
     public function resolvePageUids(Token $token, FilterContext $context): array
     {
-        $doktypes = array_values(array_filter(array_map(intval(...), $token->values)));
+        $doktypes = array_values(array_filter(array_map(intval(...), $token->values), static fn (int $v): bool => 0 !== $v));
         if ([] === $doktypes) {
             return [];
         }
 
-        return $this->fetchPageUids($context, static function ($queryBuilder) use ($doktypes): void {
+        return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder) use ($doktypes): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('doktype', $queryBuilder->createNamedParameter($doktypes, Connection::PARAM_INT_ARRAY)),
             );
         });
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $options = [];

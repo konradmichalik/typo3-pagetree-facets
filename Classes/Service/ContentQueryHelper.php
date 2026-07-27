@@ -30,6 +30,13 @@ use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
  * Not final: the single service the engine unit tests need to replace with a
  * test double (mocking a QueryBuilder chain instead would test nothing).
  */
+
+/**
+ * ContentQueryHelper.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 class ContentQueryHelper
 {
     /**
@@ -57,6 +64,9 @@ class ContentQueryHelper
     /**
      * Page UIDs that have at least one record of the given table.
      * Hidden records count (a page with five disabled elements is not empty).
+     *
+     * @param array<string, mixed>                                                          $parameters
+     * @param array<string, \Doctrine\DBAL\ArrayParameterType|\Doctrine\DBAL\ParameterType> $parameterTypes
      *
      * @return list<int>
      */
@@ -165,7 +175,7 @@ class ContentQueryHelper
             if ($field instanceof NumberFieldType || $field instanceof DateTimeFieldType) {
                 continue;
             }
-            $constraints[] = (string) $queryBuilder->expr()->like(
+            $constraints[] = $queryBuilder->expr()->like(
                 $field->getName(),
                 $queryBuilder->createNamedParameter($wildcard),
             );

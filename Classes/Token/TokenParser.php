@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeLens\Token;
 
 /**
+ * TokenParser.
+ *
  * Parses a filter phrase into tokens.
  *
  * Grammar (v1):
@@ -25,6 +27,8 @@ namespace KonradMichalik\PagetreeLens\Token;
  * Unknown token keys are NOT an error at parse time - resolution decides.
  * Freetext (no "key:" prefix) is collected under Token::FREETEXT and passed
  * through to the core title/uid search untouched.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class TokenParser
 {
@@ -35,27 +39,18 @@ final class TokenParser
      */
     public function parse(string $phrase): array
     {
-        $tokens = [];
-        $freetextParts = [];
-
         if (false === preg_match_all(self::PATTERN, trim($phrase), $matches, \PREG_SET_ORDER)) {
             return [];
         }
 
+        $tokens = [];
+        $freetextParts = [];
         foreach ($matches as $match) {
-            $key = strtolower($match['key'] ?? '');
-            if ('' !== $key) {
-                $value = ($match['quoted'] ?? '') !== '' ? $match['quoted'] : ($match['bare'] ?? '');
-                $values = 'text' === $key
-                    ? [$value]
-                    : array_values(array_filter(
-                        array_map(trim(...), explode(',', $value)),
-                        static fn (string $v): bool => '' !== $v,
-                    ));
-                if ([] === $values) {
-                    continue;
+            if ('' !== ($match['key'] ?? '')) {
+                $token = $this->buildKeyedToken($match);
+                if (null !== $token) {
+                    $tokens[] = $token;
                 }
-                $tokens[] = new Token($key, $values, $match[0]);
                 continue;
             }
             $freetextParts[] = ($match['freequoted'] ?? '') !== '' ? $match['freequoted'] : ($match['word'] ?? '');
@@ -82,5 +77,27 @@ final class TokenParser
         }
 
         return false;
+    }
+
+    /**
+     * @param array<int|string, string> $match
+     */
+    private function buildKeyedToken(array $match): ?Token
+    {
+        $key = strtolower($match['key']);
+        if ('' === $key) {
+            return null;
+        }
+        $value = ($match['quoted'] ?? '') !== '' ? $match['quoted'] : ($match['bare'] ?? '');
+        // "text:" keeps its value verbatim (phrase search); every other key
+        // splits comma-separated values into OR-combined alternatives.
+        $values = 'text' === $key
+            ? [$value]
+            : array_values(array_filter(
+                array_map(trim(...), explode(',', $value)),
+                static fn (string $v): bool => '' !== $v,
+            ));
+
+        return [] === $values ? null : new Token($key, $values, $match[0]);
     }
 }

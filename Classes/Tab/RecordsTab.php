@@ -17,6 +17,8 @@ use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Token\Token;
 
 /**
+ * RecordsTab.
+ *
  * Pages containing records of a table (table:), one concrete record
  * (record:<table>:<uid>) or records matching a text (text:"...").
  *
@@ -24,6 +26,8 @@ use KonradMichalik\PagetreeLens\Token\Token;
  * without a table: token in the same filter it targets tt_content
  * ("which page contains word X in its content"). Deliberate limits:
  * LIKE only, searchFields only - no arbitrary field=value matching.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class RecordsTab extends AbstractPagesQueryTab
 {
@@ -37,7 +41,7 @@ final class RecordsTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.records';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'content';
     }
@@ -57,12 +61,16 @@ final class RecordsTab extends AbstractPagesQueryTab
         };
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:records.';
         $options = [];
-        foreach (array_keys($GLOBALS['TCA'] ?? []) as $table) {
-            if (!$this->isAllowedTable($table, $context) || ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
+        foreach (array_keys($GLOBALS['TCA'] ?? []) as $tableKey) {
+            $table = (string) $tableKey;
+            if (!$this->isAllowedTable($table, $context) || true === ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
                 continue;
             }
             $options[] = [
@@ -119,7 +127,7 @@ final class RecordsTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             $table,
             $context,
-            (string) $queryBuilder->expr()->eq('uid', ':lensRecordUid'),
+            $queryBuilder->expr()->eq('uid', ':lensRecordUid'),
             ['lensRecordUid' => $uid],
         );
     }

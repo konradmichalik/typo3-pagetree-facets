@@ -18,8 +18,12 @@ use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 
 /**
+ * ContentElementTab.
+ *
  * Pages containing content elements of a given CType. Plugins are regular
  * CTypes in v14, so a single token key suffices (no list_type legacy).
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class ContentElementTab extends AbstractPagesQueryTab
 {
@@ -33,7 +37,7 @@ final class ContentElementTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.ce';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'content';
     }
@@ -50,12 +54,15 @@ final class ContentElementTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             'tt_content',
             $context,
-            (string) $queryBuilder->expr()->in('CType', ':lensCtypes'),
+            $queryBuilder->expr()->in('CType', ':lensCtypes'),
             ['lensCtypes' => $token->values],
             ['lensCtypes' => Connection::PARAM_STR_ARRAY],
         );
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $options = [];

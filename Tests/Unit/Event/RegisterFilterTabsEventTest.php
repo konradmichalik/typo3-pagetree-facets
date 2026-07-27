@@ -19,6 +19,13 @@ use KonradMichalik\PagetreeLens\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+
+/**
+ * RegisterFilterTabsEventTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class RegisterFilterTabsEventTest extends TestCase
 {
     #[Test]
@@ -71,6 +78,9 @@ final class RegisterFilterTabsEventTest extends TestCase
                 return [];
             }
 
+            /**
+             * @return array{fields: list<array<string, mixed>>}
+             */
             public function getModalConfiguration(FilterContext $context): array
             {
                 return ['fields' => []];

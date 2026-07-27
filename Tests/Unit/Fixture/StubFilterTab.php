@@ -17,13 +17,17 @@ use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeLens\Token\Token;
 
 /**
+ * StubFilterTab.
+ *
  * Minimal tab double: resolves tokens via a static "key:value,value" => uids
  * map. Shared by registry and engine unit tests.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class StubFilterTab implements FilterTabInterface
 {
     /**
-     * @param list<string>             $tokenKeys
+     * @param list<non-empty-string>   $tokenKeys
      * @param array<string, list<int>> $uidMap
      */
     public function __construct(
@@ -57,6 +61,9 @@ final class StubFilterTab implements FilterTabInterface
         return $this->uidMap[$token->key.':'.implode(',', $token->values)] ?? [];
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         return ['fields' => []];

@@ -23,8 +23,12 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
 
 /**
+ * AbstractPagesQueryTabTest.
+ *
  * The default serialize()/hydrate() mapping every declarative tab inherits -
  * hydrate() must invert serialize() for all producible states.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class AbstractPagesQueryTabTest extends TestCase
 {
@@ -65,8 +69,8 @@ final class AbstractPagesQueryTabTest extends TestCase
     private function createTab(): AbstractPagesQueryTab
     {
         $queryHelper = new ContentQueryHelper(
-            $this->createStub(ConnectionPool::class),
-            $this->createStub(SearchableSchemaFieldsCollector::class),
+            self::createStub(ConnectionPool::class),
+            self::createStub(SearchableSchemaFieldsCollector::class),
         );
 
         return new class($queryHelper) extends AbstractPagesQueryTab {
@@ -90,6 +94,9 @@ final class AbstractPagesQueryTabTest extends TestCase
                 return [];
             }
 
+            /**
+             * @return array{fields: list<array<string, mixed>>}
+             */
             public function getModalConfiguration(FilterContext $context): array
             {
                 return ['fields' => []];

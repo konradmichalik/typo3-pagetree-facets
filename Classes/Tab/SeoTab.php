@@ -16,12 +16,17 @@ namespace KonradMichalik\PagetreeLens\Tab;
 use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
+ * SeoTab.
+ *
  * SEO checks on fields provided by EXT:seo. This tab is only registered when
  * EXT:seo is installed (see BuiltInTabsListener) - a built-in demonstration
  * of conditional registration through the public tab API. Restricted to
  * content-bearing doktypes so folders/shortcuts do not flood the results.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class SeoTab extends AbstractPagesQueryTab
 {
@@ -35,7 +40,7 @@ final class SeoTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.seo';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'quality';
     }
@@ -61,6 +66,9 @@ final class SeoTab extends AbstractPagesQueryTab
         return [] === $sets ? [] : array_values(array_unique(array_merge(...$sets)));
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:seo.';
@@ -86,7 +94,7 @@ final class SeoTab extends AbstractPagesQueryTab
      */
     private function resolveFlag(string $field, FilterContext $context): array
     {
-        return $this->fetchPageUids($context, function ($queryBuilder) use ($field): void {
+        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder) use ($field): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(1, Connection::PARAM_INT)),
             );
@@ -99,7 +107,7 @@ final class SeoTab extends AbstractPagesQueryTab
      */
     private function resolveMissingDescription(FilterContext $context): array
     {
-        return $this->fetchPageUids($context, function ($queryBuilder): void {
+        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->or(
                     $queryBuilder->expr()->isNull('description'),

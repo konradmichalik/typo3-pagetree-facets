@@ -22,6 +22,8 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 
 /**
+ * PageTreeFilterListener.
+ *
  * The filter engine: parses the tree search phrase, resolves each keyed token
  * through its owning tab, intersects the UID sets (AND semantics) and feeds
  * the result into the core event.
@@ -34,6 +36,8 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * We therefore run AFTER the core's own listeners (they mutate $searchParts
  * and $searchUids during the same dispatch), overwrite $searchUids with our
  * intersection result and neutralize the core LIKE parts in $searchParts.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(
     identifier: 'pagetree-lens/filter',
@@ -69,31 +73,11 @@ final class PageTreeFilterListener
 
         $context = new FilterContext(
             backendUser: $backendUser,
-            workspaceId: (int) $backendUser->workspace,
+            workspaceId: $backendUser->workspace,
             siteIdentifier: $this->extractSiteScope($tokens),
         );
 
-        $uidSets = [];
-        foreach ($tokens as $token) {
-            if ($token->isFreetext()) {
-                // Freetext combined with tokens is resolved by US (pages
-                // searchFields LIKE + numeric uid) and intersected like any
-                // other criterion - relying on the core's searchParts here
-                // would leave the combined semantics to an unverified
-                // OR/AND behavior of the event consumer.
-                $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
-                continue;
-            }
-            if ('site' === $token->key) {
-                continue; // scope, not a criterion - handled below
-            }
-            $tab = $this->tabRegistry->findTabForToken($token, $backendUser);
-            if (null === $tab) {
-                continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
-            }
-            $uidSets[] = $tab->resolvePageUids($token, $context);
-        }
-
+        $uidSets = $this->resolveUidSets($tokens, $context, $backendUser);
         if ([] === $uidSets) {
             return; // only unknown/scope tokens -> behave like core
         }
@@ -110,6 +94,37 @@ final class PageTreeFilterListener
         }
 
         $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
+    }
+
+    /**
+     * Resolve each keyed token to its page-UID set via the owning tab; freetext
+     * is resolved by us (pages searchFields LIKE + numeric uid) and intersected
+     * like any other criterion, rather than relying on the core's searchParts
+     * whose combined OR/AND semantics with our result would be unverified.
+     *
+     * @param list<Token> $tokens
+     *
+     * @return list<list<int>>
+     */
+    private function resolveUidSets(array $tokens, FilterContext $context, BackendUserAuthentication $backendUser): array
+    {
+        $uidSets = [];
+        foreach ($tokens as $token) {
+            if ($token->isFreetext()) {
+                $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
+                continue;
+            }
+            if ('site' === $token->key) {
+                continue; // scope, not a criterion - handled separately
+            }
+            $tab = $this->tabRegistry->findTabForToken($token, $backendUser);
+            if (null === $tab) {
+                continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
+            }
+            $uidSets[] = $tab->resolvePageUids($token, $context);
+        }
+
+        return $uidSets;
     }
 
     /**

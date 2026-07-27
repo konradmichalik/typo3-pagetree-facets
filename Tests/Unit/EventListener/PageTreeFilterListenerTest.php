@@ -30,8 +30,12 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
+ * PageTreeFilterListenerTest.
+ *
  * The engine contract: AND intersection, forced no-match, unknown-token
  * tolerance, site scoping and the configuration kill switches.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class PageTreeFilterListenerTest extends TestCase
 {
@@ -168,12 +172,17 @@ final class PageTreeFilterListenerTest extends TestCase
         self::assertSame([10, 20, 30, 40], $event->searchUids);
     }
 
+    /**
+     * @param array<string, list<int>> $siteMap
+     * @param array<string, string>    $extensionConfiguration
+     * @param array<string, list<int>> $freetextUids
+     */
     private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = []): PageTreeFilterListener
     {
         $doktypeTab = new StubFilterTab('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
         $stateTab = new StubFilterTab('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
 
-        $extensionConfigurationMock = $this->createStub(ExtensionConfiguration::class);
+        $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
         $extensionConfigurationMock->method('get')->willReturnCallback(
             static fn (string $extension, string $path = ''): string => $extensionConfiguration[$path] ?? '',
         );
@@ -182,7 +191,7 @@ final class PageTreeFilterListenerTest extends TestCase
             $extensionConfigurationMock,
         );
 
-        $queryHelper = $this->createStub(ContentQueryHelper::class);
+        $queryHelper = self::createStub(ContentQueryHelper::class);
         $queryHelper->method('getMatchingPageUids')->willReturnCallback(
             static fn (string $needle): array => $freetextUids[$needle] ?? [],
         );
@@ -210,7 +219,7 @@ final class PageTreeFilterListenerTest extends TestCase
             }
         }
 
-        $siteFinder = $this->createStub(SiteFinder::class);
+        $siteFinder = self::createStub(SiteFinder::class);
         $siteFinder->method('getSiteByIdentifier')->willReturnCallback(
             function (string $identifier) use ($identifierToRoot): Site {
                 if (!isset($identifierToRoot[$identifier])) {
@@ -235,15 +244,18 @@ final class PageTreeFilterListenerTest extends TestCase
 
     private function createSite(int $rootPageId): Site
     {
-        $site = $this->createStub(Site::class);
+        $site = self::createStub(Site::class);
         $site->method('getRootPageId')->willReturn($rootPageId);
 
         return $site;
     }
 
+    /**
+     * @param array<string, mixed> $tsConfig
+     */
     private function createBackendUser(array $tsConfig = []): BackendUserAuthentication&Stub
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('getTSConfig')->willReturn($tsConfig);
         $backendUser->method('isAdmin')->willReturn(true);
         $backendUser->workspace = 0;
@@ -262,7 +274,7 @@ final class PageTreeFilterListenerTest extends TestCase
             CompositeExpression::or(),
             [],
             $phrase,
-            $this->createStub(QueryBuilder::class),
+            self::createStub(QueryBuilder::class),
         );
     }
 }

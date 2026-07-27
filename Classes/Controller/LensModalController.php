@@ -15,17 +15,21 @@ namespace KonradMichalik\PagetreeLens\Controller;
 
 use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Service\{FavoriteService, TabRegistry};
-use KonradMichalik\PagetreeLens\Token\{TokenParser, TokenSerializer};
-use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
+use KonradMichalik\PagetreeLens\Token\{Token, TokenParser, TokenSerializer};
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
+ * LensModalController.
+ *
  * AjaxRoutes endpoints backing the modal: declarative tab configuration
  * (incl. hydrated state from the current token string), site scope options
  * and favorite CRUD.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class LensModalController
 {
@@ -37,69 +41,28 @@ final class LensModalController
         private readonly SiteFinder $siteFinder,
     ) {}
 
-    public function configuration(ServerRequestInterface $request): ResponseInterface
+    public function configuration(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->getBackendUser();
-        $phrase = (string) ($request->getQueryParams()['phrase'] ?? '');
-        $tokens = $this->tokenParser->parse($phrase);
+        $tokens = $this->tokenParser->parse((string) ($request->getQueryParams()['phrase'] ?? ''));
+        $siteIdentifier = $this->extractSiteScope($tokens);
 
-        $siteIdentifier = null;
-        $freetext = '';
-        foreach ($tokens as $token) {
-            if ('site' === $token->key) {
-                $siteIdentifier = $token->firstValue();
-            }
-            if ($token->isFreetext()) {
-                $freetext = $token->firstValue();
-            }
-        }
         $context = new FilterContext(
             backendUser: $backendUser,
-            workspaceId: (int) $backendUser->workspace,
+            workspaceId: $backendUser->workspace,
             siteIdentifier: $siteIdentifier,
         );
 
-        $languageService = $this->getLanguageService();
-        $tabs = [];
-        foreach ($this->tabRegistry->getTabs($backendUser) as $tab) {
-            $configuration = $tab->getModalConfiguration($context);
-            foreach ($configuration['fields'] ?? [] as $fieldIndex => $field) {
-                $configuration['fields'][$fieldIndex]['label'] = $this->translate($languageService, (string) ($field['label'] ?? ''));
-                foreach ($field['options'] ?? [] as $optionIndex => $option) {
-                    $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
-                        = $this->translate($languageService, (string) ($option['label'] ?? ''));
-                }
-            }
-            $tabs[] = [
-                'identifier' => $tab->getIdentifier(),
-                'label' => $this->translate($languageService, $tab->getLabel()),
-                'group' => $tab->getGroup(),
-                'configuration' => $configuration,
-                'state' => $tab->hydrate($tokens),
-            ];
-        }
-
-        // Site dropdown options, restricted to the user's mounts; the modal
-        // hides the dropdown when only one site is accessible.
-        $sites = [];
-        foreach ($this->siteFinder->getAllSites() as $site) {
-            $rootPageId = $site->getRootPageId();
-            if (!$backendUser->isAdmin() && !$backendUser->isInWebMount($rootPageId)) {
-                continue;
-            }
-            $sites[] = ['identifier' => $site->getIdentifier(), 'rootPageId' => $rootPageId];
-        }
-
         return new JsonResponse([
-            'tabs' => $tabs,
-            'sites' => $sites,
+            'tabs' => $this->buildTabs($context, $tokens),
+            'sites' => $this->buildSiteOptions($backendUser),
             'activeSite' => $siteIdentifier,
-            'freetext' => $freetext,
+            'freetext' => $this->extractFreetext($tokens),
             'favorites' => $this->favoriteService->getFavorites($backendUser),
         ]);
     }
 
-    public function serialize(ServerRequestInterface $request): ResponseInterface
+    public function serialize(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->getBackendUser();
         $body = (array) ($request->getParsedBody() ?? []);
@@ -115,11 +78,11 @@ final class LensModalController
             }
         }
         if ('' !== $siteIdentifier) {
-            $tokens[] = new \KonradMichalik\PagetreeLens\Token\Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
+            $tokens[] = new Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
         }
         if ('' !== $freetext) {
-            $tokens[] = new \KonradMichalik\PagetreeLens\Token\Token(
-                \KonradMichalik\PagetreeLens\Token\Token::FREETEXT,
+            $tokens[] = new Token(
+                Token::FREETEXT,
                 [$freetext],
                 $freetext,
             );
@@ -128,7 +91,7 @@ final class LensModalController
         return new JsonResponse(['phrase' => $this->tokenSerializer->serialize($tokens)]);
     }
 
-    public function addFavorite(ServerRequestInterface $request): ResponseInterface
+    public function addFavorite(ServerRequestInterface $request): JsonResponse
     {
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->addFavorite(
@@ -140,12 +103,101 @@ final class LensModalController
         return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
     }
 
-    public function removeFavorite(ServerRequestInterface $request): ResponseInterface
+    public function removeFavorite(ServerRequestInterface $request): JsonResponse
     {
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->removeFavorite($this->getBackendUser(), (int) ($body['index'] ?? -1));
 
         return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
+    }
+
+    /**
+     * @param list<Token> $tokens
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function buildTabs(FilterContext $context, array $tokens): array
+    {
+        $languageService = $this->getLanguageService();
+        $tabs = [];
+        foreach ($this->tabRegistry->getTabs($context->backendUser) as $tab) {
+            $tabs[] = [
+                'identifier' => $tab->getIdentifier(),
+                'label' => $this->translate($languageService, $tab->getLabel()),
+                'group' => $tab->getGroup(),
+                'configuration' => $this->translateConfiguration($tab->getModalConfiguration($context)),
+                'state' => $tab->hydrate($tokens),
+            ];
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * @param array{fields: list<array<string, mixed>>} $configuration
+     *
+     * @return array{fields: list<array<string, mixed>>}
+     */
+    private function translateConfiguration(array $configuration): array
+    {
+        $languageService = $this->getLanguageService();
+        foreach ($configuration['fields'] as $fieldIndex => $field) {
+            $configuration['fields'][$fieldIndex]['label'] = $this->translate($languageService, (string) ($field['label'] ?? ''));
+            foreach ($field['options'] ?? [] as $optionIndex => $option) {
+                $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
+                    = $this->translate($languageService, (string) ($option['label'] ?? ''));
+            }
+        }
+
+        return $configuration;
+    }
+
+    /**
+     * Site dropdown options, restricted to the user's mounts; the modal hides
+     * the dropdown when only one site is accessible.
+     *
+     * @return list<array{identifier: string, rootPageId: int}>
+     */
+    private function buildSiteOptions(BackendUserAuthentication $backendUser): array
+    {
+        $sites = [];
+        foreach ($this->siteFinder->getAllSites() as $site) {
+            $rootPageId = $site->getRootPageId();
+            if (!$backendUser->isAdmin() && null === $backendUser->isInWebMount($rootPageId)) {
+                continue;
+            }
+            $sites[] = ['identifier' => $site->getIdentifier(), 'rootPageId' => $rootPageId];
+        }
+
+        return $sites;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     */
+    private function extractSiteScope(array $tokens): ?string
+    {
+        foreach ($tokens as $token) {
+            if ('site' === $token->key) {
+                return $token->firstValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     */
+    private function extractFreetext(array $tokens): string
+    {
+        foreach ($tokens as $token) {
+            if ($token->isFreetext()) {
+                return $token->firstValue();
+            }
+        }
+
+        return '';
     }
 
     private function translate(LanguageService $languageService, string $label): string

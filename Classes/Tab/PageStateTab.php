@@ -16,6 +16,14 @@ namespace KonradMichalik\PagetreeLens\Tab;
 use KonradMichalik\PagetreeLens\Api\FilterContext;
 use KonradMichalik\PagetreeLens\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+
+
+/**
+ * PageStateTab.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
 
 final class PageStateTab extends AbstractPagesQueryTab
 {
@@ -29,7 +37,7 @@ final class PageStateTab extends AbstractPagesQueryTab
         return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.state';
     }
 
-    public function getGroup(): ?string
+    public function getGroup(): string
     {
         return 'state';
     }
@@ -61,6 +69,9 @@ final class PageStateTab extends AbstractPagesQueryTab
         return array_values(array_unique(array_merge(...$sets)));
     }
 
+    /**
+     * @return array{fields: list<array<string, mixed>>}
+     */
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:state.';
@@ -97,7 +108,7 @@ final class PageStateTab extends AbstractPagesQueryTab
     {
         $nonEmpty = array_flip($this->queryHelper->getPageUidsWithRecords('tt_content', $context));
 
-        $candidates = $this->fetchPageUids($context, function ($queryBuilder): void {
+        $candidates = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
             $this->excludeNonContentDoktypes($queryBuilder);
         });
 
@@ -112,7 +123,7 @@ final class PageStateTab extends AbstractPagesQueryTab
      */
     private function resolveRestricted(FilterContext $context): array
     {
-        return $this->fetchPageUids($context, static function ($queryBuilder): void {
+        return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->or(
                     $queryBuilder->expr()->and(
@@ -131,7 +142,7 @@ final class PageStateTab extends AbstractPagesQueryTab
      */
     private function resolveFlag(FilterContext $context, string $field): array
     {
-        return $this->fetchPageUids($context, static function ($queryBuilder) use ($field): void {
+        return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder) use ($field): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(1, Connection::PARAM_INT)),
             );
@@ -143,7 +154,7 @@ final class PageStateTab extends AbstractPagesQueryTab
      */
     private function resolveTimed(FilterContext $context): array
     {
-        return $this->fetchPageUids($context, static function ($queryBuilder): void {
+        return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->or(
                     $queryBuilder->expr()->gt('starttime', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),

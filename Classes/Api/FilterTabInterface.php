@@ -16,11 +16,15 @@ namespace KonradMichalik\PagetreeLens\Api;
 use KonradMichalik\PagetreeLens\Token\Token;
 
 /**
+ * FilterTabInterface.
+ *
  * A filter tab: owns one or more token keys, resolves them to page UID sets
  * (engine side) and describes its modal UI declaratively (UI side).
  *
  * Built-in tabs register through the same RegisterFilterTabsEvent as third
  * parties - there is no private shortcut.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 interface FilterTabInterface
 {
@@ -43,7 +47,7 @@ interface FilterTabInterface
     /**
      * Token keys this tab owns, e.g. ['doktype'] or ['table', 'record', 'text'].
      *
-     * @return list<string>
+     * @return list<non-empty-string>
      */
     public function getTokenKeys(): array;
 
@@ -71,6 +75,8 @@ interface FilterTabInterface
      *     ],
      *   ],
      * ]
+     *
+     * @return array{fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array;
 

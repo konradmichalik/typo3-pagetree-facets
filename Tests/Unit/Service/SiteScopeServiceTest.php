@@ -20,6 +20,13 @@ use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
+
+/**
+ * SiteScopeServiceTest.
+ *
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ */
+
 final class SiteScopeServiceTest extends TestCase
 {
     #[Test]
@@ -57,7 +64,7 @@ final class SiteScopeServiceTest extends TestCase
      */
     private function createSiteFinder(array $identifierToRoot, array $pageToRoot): SiteFinder
     {
-        $siteFinder = $this->createStub(SiteFinder::class);
+        $siteFinder = self::createStub(SiteFinder::class);
         $siteFinder->method('getSiteByIdentifier')->willReturnCallback(
             function (string $identifier) use ($identifierToRoot): Site {
                 if (!isset($identifierToRoot[$identifier])) {
@@ -82,7 +89,7 @@ final class SiteScopeServiceTest extends TestCase
 
     private function createSite(int $rootPageId): Site
     {
-        $site = $this->createStub(Site::class);
+        $site = self::createStub(Site::class);
         $site->method('getRootPageId')->willReturn($rootPageId);
 
         return $site;
