@@ -71,35 +71,51 @@ class LensModal {
     nav.className = 'col-3 pagetree-lens__nav';
     const list = document.createElement('ul');
     list.className = 'list-unstyled';
-    let currentGroup = null;
+
+    // Tabs arrive priority-ordered, so their groups interleave (content, state,
+    // content, ...). Bucket them by group first, keeping first-seen order, so
+    // each group heading is rendered exactly once.
+    const groups = new Map();
     for (const tab of this.#configuration.tabs) {
-      if (tab.group !== currentGroup) {
-        currentGroup = tab.group;
-        if (currentGroup !== null) {
-          const heading = document.createElement('li');
-          heading.className = 'pagetree-lens__nav-group text-muted small text-uppercase mt-2';
-          heading.textContent = currentGroup;
-          list.append(heading);
-        }
+      const key = tab.group ?? '';
+      if (!groups.has(key)) {
+        groups.set(key, []);
       }
-      const item = document.createElement('li');
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn btn-link pagetree-lens__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
-      button.dataset.tab = tab.identifier;
-      button.textContent = tab.label;
-      if (Object.keys(tab.state ?? {}).length) {
-        const dot = document.createElement('span');
-        dot.className = 'badge bg-primary ms-1';
-        dot.textContent = '\u25CF';
-        button.append(dot);
+      groups.get(key).push(tab);
+    }
+
+    for (const [group, tabs] of groups) {
+      if (group !== '') {
+        const heading = document.createElement('li');
+        heading.className = 'pagetree-lens__nav-group text-muted text-uppercase';
+        heading.textContent = group;
+        list.append(heading);
       }
-      button.addEventListener('click', () => this.#switchTab(tab.identifier));
-      item.append(button);
-      list.append(item);
+      for (const tab of tabs) {
+        list.append(this.#renderNavItem(tab));
+      }
     }
     nav.append(list);
     return nav;
+  }
+
+  #renderNavItem(tab) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'pagetree-lens__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
+    button.dataset.tab = tab.identifier;
+    button.textContent = tab.label;
+    if (Object.keys(tab.state ?? {}).length) {
+      const dot = document.createElement('span');
+      dot.className = 'pagetree-lens__nav-dot';
+      dot.textContent = '\u25CF';
+      dot.setAttribute('aria-hidden', 'true');
+      button.append(dot);
+    }
+    button.addEventListener('click', () => this.#switchTab(tab.identifier));
+    item.append(button);
+    return item;
   }
 
   #renderPanels() {
@@ -124,7 +140,9 @@ class LensModal {
     input.className = 'form-control';
     input.type = 'text';
     input.dataset.role = 'freetext';
-    input.placeholder = TYPO3.lang?.['pagetreeLens.modal.freetext'] ?? 'Page title or UID';
+    const freetextLabel = TYPO3.lang?.['pagetreeLens.modal.freetext'] ?? 'Page title or UID';
+    input.placeholder = freetextLabel;
+    input.setAttribute('aria-label', freetextLabel);
     input.value = this.#configuration.freetext ?? '';
     row.append(input);
     return row;
@@ -136,6 +154,7 @@ class LensModal {
     const select = document.createElement('select');
     select.className = 'form-select';
     select.dataset.role = 'site-scope';
+    select.setAttribute('aria-label', TYPO3.lang?.['pagetreeLens.modal.allSites'] ?? 'All sites');
     select.append(new Option(TYPO3.lang?.['pagetreeLens.modal.allSites'] ?? 'All sites', ''));
     for (const site of this.#configuration.sites) {
       const option = new Option(site.identifier, site.identifier, false, site.identifier === this.#configuration.activeSite);
