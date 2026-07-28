@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tests\Unit\Event;
+namespace KonradMichalik\PagetreeFacets\Tests\Unit\Event;
 
-use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
-use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

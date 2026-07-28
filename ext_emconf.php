@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -10,7 +10,7 @@
  */
 
 $EM_CONF[$_EXTKEY] = [
-    'title' => 'Pagetree Lens',
+    'title' => 'Pagetree Facets',
     'description' => 'Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.',
     'category' => 'be',
     'author' => 'Konrad Michalik',

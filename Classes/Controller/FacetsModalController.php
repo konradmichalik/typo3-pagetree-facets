@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Controller;
+namespace KonradMichalik\PagetreeFacets\Controller;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Service\{FavoriteService, TabRegistry};
-use KonradMichalik\PagetreeLens\Token\{Token, TokenParser, TokenSerializer};
+use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Service\{FavoriteService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
@@ -23,7 +23,7 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
- * LensModalController.
+ * FacetsModalController.
  *
  * AjaxRoutes endpoints backing the modal: declarative tab configuration
  * (incl. hydrated state from the current token string), site scope options
@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Site\SiteFinder;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class LensModalController
+final class FacetsModalController
 {
     public function __construct(
         private readonly TabRegistry $tabRegistry,

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,10 +11,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tab;
+namespace KonradMichalik\PagetreeFacets\Tab;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Token\Token;
 
 /**
  * RecordsTab.
@@ -38,7 +38,7 @@ final class RecordsTab extends AbstractPagesQueryTab
 
     public function getLabel(): string
     {
-        return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.records';
+        return 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:tab.records';
     }
 
     public function getGroup(): string
@@ -66,7 +66,7 @@ final class RecordsTab extends AbstractPagesQueryTab
      */
     public function getModalConfiguration(FilterContext $context): array
     {
-        $lll = 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:records.';
+        $lll = 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:records.';
         $options = [];
         foreach (array_keys($GLOBALS['TCA'] ?? []) as $tableKey) {
             $table = (string) $tableKey;
@@ -127,8 +127,8 @@ final class RecordsTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             $table,
             $context,
-            $queryBuilder->expr()->eq('uid', ':lensRecordUid'),
-            ['lensRecordUid' => $uid],
+            $queryBuilder->expr()->eq('uid', ':facetsRecordUid'),
+            ['facetsRecordUid' => $uid],
         );
     }
 

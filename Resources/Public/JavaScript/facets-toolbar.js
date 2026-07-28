@@ -1,10 +1,10 @@
 /**
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import Hotkeys from '@typo3/backend/hotkeys.js';
-import LensModal from '@konradmichalik/pagetree-lens/lens-modal.js';
+import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
 
 /**
  * Wires the modal to the page tree: toolbar button next to the existing
@@ -17,7 +17,7 @@ import LensModal from '@konradmichalik/pagetree-lens/lens-modal.js';
  * coupling in this extension (the core offers no toolbar extension point for
  * the tree as of v14). Kept minimal and isolated in #findFilterInput().
  */
-class LensToolbar {
+class FacetsToolbar {
   #treeSelector = 'typo3-backend-navigation-component-pagetree';
 
   constructor() {
@@ -54,12 +54,12 @@ class LensToolbar {
     if (!filterInput) {
       return null;
     }
-    if (filterInput.parentElement.querySelector('.pagetree-lens-toggle')) {
-      return filterInput.parentElement.querySelector('.pagetree-lens-toggle');
+    if (filterInput.parentElement.querySelector('.pagetree-facets-toggle')) {
+      return filterInput.parentElement.querySelector('.pagetree-facets-toggle');
     }
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn btn-sm btn-default pagetree-lens-toggle';
+    button.className = 'btn btn-sm btn-default pagetree-facets-toggle';
     button.title = 'Filter page tree (Ctrl/Cmd+Shift+F)';
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-filter');
@@ -79,7 +79,7 @@ class LensToolbar {
 
   #openModal() {
     const input = this.#findFilterInput();
-    LensModal.open(input?.value ?? '', (phrase) => {
+    FacetsModal.open(input?.value ?? '', (phrase) => {
       if (input) {
         input.value = phrase;
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -90,7 +90,7 @@ class LensToolbar {
 
   #updateBadge() {
     const input = this.#findFilterInput();
-    const button = document.querySelector('.pagetree-lens-toggle');
+    const button = document.querySelector('.pagetree-facets-toggle');
     if (!input || !button) {
       return;
     }
@@ -111,4 +111,4 @@ class LensToolbar {
   }
 }
 
-export default new LensToolbar();
+export default new FacetsToolbar();

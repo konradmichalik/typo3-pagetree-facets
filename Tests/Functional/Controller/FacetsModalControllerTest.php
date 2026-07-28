@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,9 +11,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tests\Functional\Controller;
+namespace KonradMichalik\PagetreeFacets\Tests\Functional\Controller;
 
-use KonradMichalik\PagetreeLens\Controller\LensModalController;
+use KonradMichalik\PagetreeFacets\Controller\FacetsModalController;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
@@ -22,18 +22,18 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 
 /**
- * LensModalControllerTest.
+ * FacetsModalControllerTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 
-final class LensModalControllerTest extends FunctionalTestCase
+final class FacetsModalControllerTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [
-        'konradmichalik/typo3-pagetree-lens',
+        'konradmichalik/typo3-pagetree-facets',
     ];
 
-    private LensModalController $subject;
+    private FacetsModalController $subject;
 
     protected function setUp(): void
     {
@@ -41,7 +41,7 @@ final class LensModalControllerTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__.'/../Fixtures/be_users.csv');
         $backendUser = $this->setUpBackendUser(1);
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($backendUser);
-        $this->subject = $this->get(LensModalController::class);
+        $this->subject = $this->get(FacetsModalController::class);
     }
 
     #[Test]

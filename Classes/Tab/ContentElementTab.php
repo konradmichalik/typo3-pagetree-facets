@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,10 +11,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tab;
+namespace KonradMichalik\PagetreeFacets\Tab;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 
 /**
@@ -34,7 +34,7 @@ final class ContentElementTab extends AbstractPagesQueryTab
 
     public function getLabel(): string
     {
-        return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.ce';
+        return 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:tab.ce';
     }
 
     public function getGroup(): string
@@ -54,9 +54,9 @@ final class ContentElementTab extends AbstractPagesQueryTab
         return $this->queryHelper->getPageUidsWithRecords(
             'tt_content',
             $context,
-            $queryBuilder->expr()->in('CType', ':lensCtypes'),
-            ['lensCtypes' => $token->values],
-            ['lensCtypes' => Connection::PARAM_STR_ARRAY],
+            $queryBuilder->expr()->in('CType', ':facetsCtypes'),
+            ['facetsCtypes' => $token->values],
+            ['facetsCtypes' => Connection::PARAM_STR_ARRAY],
         );
     }
 

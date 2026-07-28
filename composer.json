@@ -1,6 +1,6 @@
 {
-	"name": "konradmichalik/typo3-pagetree-lens",
-	"description": "Pagetree Lens - Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.",
+	"name": "konradmichalik/typo3-pagetree-facets",
+	"description": "Pagetree Facets - Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.",
 	"license": [
 		"GPL-2.0-or-later"
 	],
@@ -28,12 +28,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"KonradMichalik\\PagetreeLens\\": "Classes/"
+			"KonradMichalik\\PagetreeFacets\\": "Classes/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"KonradMichalik\\PagetreeLens\\Tests\\": "Tests/"
+			"KonradMichalik\\PagetreeFacets\\Tests\\": "Tests/"
 		}
 	},
 	"config": {
@@ -58,7 +58,7 @@
 				"providesPackages": {}
 			},
 			"cms-package-dir": "{$vendor-dir}/typo3/cms",
-			"extension-key": "pagetree_lens",
+			"extension-key": "pagetree_facets",
 			"version": "0.1.0",
 			"web-dir": "public"
 		}

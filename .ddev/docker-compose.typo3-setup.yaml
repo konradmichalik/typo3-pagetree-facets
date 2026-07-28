@@ -2,9 +2,9 @@
 services:
     web:
         environment:
-            - EXTENSION_KEY=pagetree_lens
-            - EXTENSION_NAME=pagetree-lens
-            - PACKAGE_NAME=konradmichalik/typo3-pagetree-lens
+            - EXTENSION_KEY=pagetree_facets
+            - EXTENSION_NAME=pagetree-facets
+            - PACKAGE_NAME=konradmichalik/typo3-pagetree-facets
             - TYPO3_VERSIONS=14
 
             - TYPO3_DB_DRIVER=mysqli
@@ -14,5 +14,5 @@ services:
             - TYPO3_SETUP_ADMIN_EMAIL=admin@example.com
             - TYPO3_SETUP_ADMIN_USERNAME=admin
             - TYPO3_SETUP_ADMIN_PASSWORD=Password1!
-            - TYPO3_PROJECT_NAME=EXT:pagetree-lens Dev Environment
+            - TYPO3_PROJECT_NAME=EXT:pagetree-facets Dev Environment
             - TYPO3_SERVER_TYPE=apache

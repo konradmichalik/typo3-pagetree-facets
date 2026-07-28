@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,9 +11,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\EventListener;
+namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeLens\Service\TabRegistry;
+use KonradMichalik\PagetreeFacets\Service\TabRegistry;
 use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Page\PageRenderer;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-#[AsEventListener(identifier: 'pagetree-lens/backend-assets')]
+#[AsEventListener(identifier: 'pagetree-facets/backend-assets')]
 final class BackendAssetsListener
 {
     public function __construct(
@@ -47,10 +47,10 @@ final class BackendAssetsListener
         ) {
             return;
         }
-        $this->pageRenderer->loadJavaScriptModule('@konradmichalik/pagetree-lens/lens-toolbar.js');
-        $this->pageRenderer->addCssFile('EXT:pagetree_lens/Resources/Public/Css/lens-modal.css');
+        $this->pageRenderer->loadJavaScriptModule('@konradmichalik/pagetree-facets/facets-toolbar.js');
+        $this->pageRenderer->addCssFile('EXT:pagetree_facets/Resources/Public/Css/facets-modal.css');
         // The modal chrome (title, buttons, placeholders) is rendered client
         // side and reads its labels from TYPO3.lang - publish them inline.
-        $this->pageRenderer->addInlineLanguageLabelFile('EXT:pagetree_lens/Resources/Private/Language/locallang.xlf');
+        $this->pageRenderer->addInlineLanguageLabelFile('EXT:pagetree_facets/Resources/Private/Language/locallang.xlf');
     }
 }

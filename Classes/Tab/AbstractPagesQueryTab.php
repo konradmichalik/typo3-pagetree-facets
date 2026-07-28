@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tab;
+namespace KonradMichalik\PagetreeFacets\Tab;
 
-use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
-use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
+use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 

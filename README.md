@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🔍 Pagetree Lens
+# 🔍 Pagetree Facets
 
 **Filterable page tree for TYPO3 v14 — with an extensible filter tab API.**
 
-`composer require konradmichalik/typo3-pagetree-lens`
+`composer require konradmichalik/typo3-pagetree-facets`
 
 </div>
 
@@ -45,7 +45,7 @@ Unknown tokens are ignored, never an error.
 
 `site:<identifier>` scopes any filter to one site. Favorites are stored per
 backend user. Configuration: extension settings (global) and User TSconfig
-`tx_pagetreelens.disableTabs` / `tx_pagetreelens.disable` (per user/group).
+`tx_pagetreefacets.disableTabs` / `tx_pagetreefacets.disable` (per user/group).
 
 ## Extending: register your own tab
 
@@ -53,7 +53,7 @@ Every built-in tab registers through the same public event — there is no
 private shortcut. Third parties do exactly the same:
 
 ```php
-use KonradMichalik\PagetreeLens\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 
 #[AsEventListener]
@@ -68,7 +68,7 @@ final class RegisterMyTab
 }
 ```
 
-Implement `KonradMichalik\PagetreeLens\Api\FilterTabInterface`: own one or
+Implement `KonradMichalik\PagetreeFacets\Api\FilterTabInterface`: own one or
 more token keys, resolve tokens to page UID lists, and describe the modal UI
 declaratively (`checkbox-group`, `select`, `radio-presets`, `text` — no
 JavaScript required).

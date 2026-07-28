@@ -1,5 +1,5 @@
 /**
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -15,7 +15,7 @@ import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
  * to 15+ tabs once third parties register theirs. Tabs with active criteria
  * show a badge dot in the nav; grouped tabs render under section headers.
  */
-class LensModal {
+class FacetsModal {
   #modal = null;
   #configuration = null;
   #activeTab = null;
@@ -23,7 +23,7 @@ class LensModal {
 
   async open(currentPhrase, onApply) {
     this.#onApply = onApply;
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_lens_configuration)
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
     this.#configuration = await response.resolve();
@@ -33,24 +33,24 @@ class LensModal {
     this.#activeTab = this.#configuration.tabs[0].identifier;
 
     this.#modal = Modal.advanced({
-      title: TYPO3.lang?.['pagetreeLens.modal.title'] ?? 'Filter page tree',
+      title: TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree',
       size: Modal.sizes.large,
       content: this.#render(),
       buttons: [
         {
-          text: TYPO3.lang?.['pagetreeLens.modal.reset'] ?? 'Reset',
+          text: TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset',
           btnClass: 'btn-default',
           trigger: () => { this.#apply(''); },
         },
         {
-          text: TYPO3.lang?.['pagetreeLens.modal.apply'] ?? 'Apply',
+          text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
           btnClass: 'btn-primary',
           trigger: () => { this.#serializeAndApply(); },
         },
       ],
     });
     this.#modal.addEventListener('typo3-modal-shown', () => {
-      this.#modal.querySelector('.pagetree-lens')?.addEventListener('keydown', (event) => {
+      this.#modal.querySelector('.pagetree-facets')?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
           event.preventDefault();
           this.#serializeAndApply();
@@ -61,14 +61,14 @@ class LensModal {
 
   #render() {
     const wrap = document.createElement('div');
-    wrap.className = 'pagetree-lens row';
+    wrap.className = 'pagetree-facets row';
     wrap.append(this.#renderNavigation(), this.#renderPanels(), this.#renderFooter());
     return wrap;
   }
 
   #renderNavigation() {
     const nav = document.createElement('div');
-    nav.className = 'col-3 pagetree-lens__nav';
+    nav.className = 'col-3 pagetree-facets__nav';
     const list = document.createElement('ul');
     list.className = 'list-unstyled';
 
@@ -87,7 +87,7 @@ class LensModal {
     for (const [group, tabs] of groups) {
       if (group !== '') {
         const heading = document.createElement('li');
-        heading.className = 'pagetree-lens__nav-group text-muted text-uppercase';
+        heading.className = 'pagetree-facets__nav-group text-muted text-uppercase';
         heading.textContent = group;
         list.append(heading);
       }
@@ -103,12 +103,12 @@ class LensModal {
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'pagetree-lens__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
+    button.className = 'pagetree-facets__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
     button.dataset.tab = tab.identifier;
     button.textContent = tab.label;
     if (Object.keys(tab.state ?? {}).length) {
       const dot = document.createElement('span');
-      dot.className = 'pagetree-lens__nav-dot';
+      dot.className = 'pagetree-facets__nav-dot';
       dot.textContent = '\u25CF';
       dot.setAttribute('aria-hidden', 'true');
       button.append(dot);
@@ -120,7 +120,7 @@ class LensModal {
 
   #renderPanels() {
     const panels = document.createElement('div');
-    panels.className = 'col-9 pagetree-lens__panels';
+    panels.className = 'col-9 pagetree-facets__panels';
     panels.append(this.#renderFreetext());
     if ((this.#configuration.sites ?? []).length > 1) {
       panels.append(this.#renderSiteScope());
@@ -135,12 +135,12 @@ class LensModal {
     // Freetext must survive the modal round trip - it is a first-class
     // criterion (intersected engine-side), not decoration.
     const row = document.createElement('div');
-    row.className = 'form-group pagetree-lens__freetext';
+    row.className = 'form-group pagetree-facets__freetext';
     const input = document.createElement('input');
     input.className = 'form-control';
     input.type = 'text';
     input.dataset.role = 'freetext';
-    const freetextLabel = TYPO3.lang?.['pagetreeLens.modal.freetext'] ?? 'Page title or UID';
+    const freetextLabel = TYPO3.lang?.['pagetreeFacets.modal.freetext'] ?? 'Page title or UID';
     input.placeholder = freetextLabel;
     input.setAttribute('aria-label', freetextLabel);
     input.value = this.#configuration.freetext ?? '';
@@ -150,12 +150,12 @@ class LensModal {
 
   #renderSiteScope() {
     const row = document.createElement('div');
-    row.className = 'form-group pagetree-lens__site';
+    row.className = 'form-group pagetree-facets__site';
     const select = document.createElement('select');
     select.className = 'form-select';
     select.dataset.role = 'site-scope';
-    select.setAttribute('aria-label', TYPO3.lang?.['pagetreeLens.modal.allSites'] ?? 'All sites');
-    select.append(new Option(TYPO3.lang?.['pagetreeLens.modal.allSites'] ?? 'All sites', ''));
+    select.setAttribute('aria-label', TYPO3.lang?.['pagetreeFacets.modal.allSites'] ?? 'All sites');
+    select.append(new Option(TYPO3.lang?.['pagetreeFacets.modal.allSites'] ?? 'All sites', ''));
     for (const site of this.#configuration.sites) {
       const option = new Option(site.identifier, site.identifier, false, site.identifier === this.#configuration.activeSite);
       select.append(option);
@@ -166,7 +166,7 @@ class LensModal {
 
   #renderPanel(tab) {
     const panel = document.createElement('div');
-    panel.className = 'pagetree-lens__panel';
+    panel.className = 'pagetree-facets__panel';
     panel.dataset.panel = tab.identifier;
     panel.hidden = tab.identifier !== this.#activeTab;
     for (const field of tab.configuration.fields ?? []) {
@@ -231,7 +231,7 @@ class LensModal {
 
   #renderFooter() {
     const footer = document.createElement('div');
-    footer.className = 'col-12 pagetree-lens__favorites mt-3';
+    footer.className = 'col-12 pagetree-facets__favorites mt-3';
     for (const [index, favorite] of (this.#configuration.favorites ?? []).entries()) {
       const chip = document.createElement('button');
       chip.type = 'button';
@@ -246,10 +246,10 @@ class LensModal {
 
   #switchTab(identifier) {
     this.#activeTab = identifier;
-    this.#modal.querySelectorAll('.pagetree-lens__nav-item').forEach((el) => {
+    this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
       el.classList.toggle('active', el.dataset.tab === identifier);
     });
-    this.#modal.querySelectorAll('.pagetree-lens__panel').forEach((el) => {
+    this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((el) => {
       el.hidden = el.dataset.panel !== identifier;
     });
   }
@@ -278,7 +278,7 @@ class LensModal {
     }
     const site = this.#modal.querySelector('[data-role="site-scope"]')?.value ?? '';
     const freetext = this.#modal.querySelector('[data-role="freetext"]')?.value ?? '';
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_lens_serialize)
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_serialize)
       .post({ states, site, freetext });
     const { phrase } = await response.resolve();
     this.#apply(phrase);
@@ -290,4 +290,4 @@ class LensModal {
   }
 }
 
-export default new LensModal();
+export default new FacetsModal();

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -14,6 +14,6 @@ declare(strict_types=1);
 return [
     'dependencies' => ['backend', 'core'],
     'imports' => [
-        '@konradmichalik/pagetree-lens/' => 'EXT:pagetree_lens/Resources/Public/JavaScript/',
+        '@konradmichalik/pagetree-facets/' => 'EXT:pagetree_facets/Resources/Public/JavaScript/',
     ],
 ];

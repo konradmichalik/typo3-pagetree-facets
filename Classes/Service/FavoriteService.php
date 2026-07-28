@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,7 +11,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Service;
+namespace KonradMichalik\PagetreeFacets\Service;
 
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
@@ -28,7 +28,7 @@ use function is_array;
  */
 final class FavoriteService
 {
-    private const string UC_KEY = 'pagetree_lens';
+    private const string UC_KEY = 'pagetree_facets';
 
     /**
      * @return list<array{label: string, tokenString: string, createdAt: int}>

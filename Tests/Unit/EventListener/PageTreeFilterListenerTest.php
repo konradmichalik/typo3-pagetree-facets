@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,12 +11,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tests\Unit\EventListener;
+namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
-use KonradMichalik\PagetreeLens\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeLens\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
-use KonradMichalik\PagetreeLens\Token\TokenParser;
+use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
+use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -156,7 +156,7 @@ final class PageTreeFilterListenerTest extends TestCase
     #[Test]
     public function userTsConfigDisableIsRespected(): void
     {
-        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_pagetreelens.' => ['disable' => '1']]);
+        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
         $event = $this->createEvent('doktype:1');
         $this->createListener()($event);
 

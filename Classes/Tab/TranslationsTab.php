@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tab;
+namespace KonradMichalik\PagetreeFacets\Tab;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Service\ContentQueryHelper;
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
+use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\SiteFinder;
@@ -45,7 +45,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
 
     public function getLabel(): string
     {
-        return 'LLL:EXT:pagetree_lens/Resources/Private/Language/locallang.xlf:tab.translations';
+        return 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:tab.translations';
     }
 
     public function getGroup(): string

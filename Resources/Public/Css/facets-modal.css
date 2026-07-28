@@ -1,5 +1,5 @@
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -8,7 +8,7 @@
  * automatically without hard-coded colours.
  */
 
-.pagetree-lens {
+.pagetree-facets {
     --pl-border: var(--bs-border-color, rgba(127, 127, 127, 0.25));
     --pl-muted: var(--bs-secondary-color, rgba(127, 127, 127, 0.9));
     --pl-accent: var(--bs-primary, #4c6aff);
@@ -20,17 +20,17 @@
 
 /* --- Navigation column ------------------------------------------------- */
 
-.pagetree-lens__nav {
+.pagetree-facets__nav {
     border-inline-end: 1px solid var(--pl-border);
     padding-inline-end: 0;
 }
 
-.pagetree-lens__nav ul {
+.pagetree-facets__nav ul {
     margin: 0;
     padding-inline-end: 0.75rem;
 }
 
-.pagetree-lens__nav-group {
+.pagetree-facets__nav-group {
     margin-top: 1.25rem;
     margin-bottom: 0.25rem;
     padding-inline: 0.75rem;
@@ -40,11 +40,11 @@
     color: var(--pl-muted);
 }
 
-.pagetree-lens__nav-group:first-child {
+.pagetree-facets__nav-group:first-child {
     margin-top: 0;
 }
 
-.pagetree-lens__nav-item {
+.pagetree-facets__nav-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -62,22 +62,22 @@
     transition: background-color 0.12s ease, color 0.12s ease;
 }
 
-.pagetree-lens__nav-item:hover {
+.pagetree-facets__nav-item:hover {
     background: var(--pl-hover);
 }
 
-.pagetree-lens__nav-item.active {
+.pagetree-facets__nav-item.active {
     background: var(--pl-active);
     color: var(--pl-accent);
     font-weight: 600;
 }
 
-.pagetree-lens__nav-item:focus-visible {
+.pagetree-facets__nav-item:focus-visible {
     outline: 2px solid var(--pl-accent);
     outline-offset: 1px;
 }
 
-.pagetree-lens__nav-dot {
+.pagetree-facets__nav-dot {
     flex: 0 0 auto;
     font-size: 0.5rem;
     line-height: 1;
@@ -86,31 +86,31 @@
 
 /* --- Panels ------------------------------------------------------------ */
 
-.pagetree-lens__panels {
+.pagetree-facets__panels {
     padding-inline-start: 1.5rem;
 }
 
-.pagetree-lens__freetext,
-.pagetree-lens__site {
+.pagetree-facets__freetext,
+.pagetree-facets__site {
     margin-bottom: 0.75rem;
 }
 
 /* Freetext + site scope form the modal header, separated from the tab body. */
-.pagetree-lens__panels > .pagetree-lens__site:last-of-type,
-.pagetree-lens__freetext + .pagetree-lens__panel,
-.pagetree-lens__site + .pagetree-lens__panel {
+.pagetree-facets__panels > .pagetree-facets__site:last-of-type,
+.pagetree-facets__freetext + .pagetree-facets__panel,
+.pagetree-facets__site + .pagetree-facets__panel {
     border-top: 1px solid var(--pl-border);
     padding-top: 1rem;
     margin-top: 0.25rem;
 }
 
-.pagetree-lens__panel fieldset {
+.pagetree-facets__panel fieldset {
     margin: 0;
     padding: 0;
     border: 0;
 }
 
-.pagetree-lens__panel legend {
+.pagetree-facets__panel legend {
     float: none;
     width: auto;
     margin-bottom: 0.75rem;
@@ -120,13 +120,13 @@
 }
 
 /* Multiple fieldsets within one tab (e.g. Activity: updated / created / by). */
-.pagetree-lens__panel fieldset + fieldset {
+.pagetree-facets__panel fieldset + fieldset {
     margin-top: 1.5rem;
 }
 
 /* Choice lists wrap into responsive columns instead of one long column
  * (the content-element list has 25+ entries). */
-.pagetree-lens__panel fieldset:has(.form-check) {
+.pagetree-facets__panel fieldset:has(.form-check) {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.15rem 1rem;
@@ -134,11 +134,11 @@
     overflow-y: auto;
 }
 
-.pagetree-lens__panel legend {
+.pagetree-facets__panel legend {
     grid-column: 1 / -1;
 }
 
-.pagetree-lens__panel .form-check {
+.pagetree-facets__panel .form-check {
     margin: 0;
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
@@ -146,17 +146,17 @@
     transition: background-color 0.12s ease;
 }
 
-.pagetree-lens__panel .form-check:hover {
+.pagetree-facets__panel .form-check:hover {
     background: var(--pl-hover);
 }
 
-.pagetree-lens__panel .form-check typo3-backend-icon {
+.pagetree-facets__panel .form-check typo3-backend-icon {
     flex: 0 0 auto;
 }
 
 /* --- Favorites footer -------------------------------------------------- */
 
-.pagetree-lens__favorites {
+.pagetree-facets__favorites {
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
@@ -164,6 +164,6 @@
     border-top: 1px solid var(--pl-border);
 }
 
-.pagetree-lens__favorites:empty {
+.pagetree-facets__favorites:empty {
     display: none;
 }

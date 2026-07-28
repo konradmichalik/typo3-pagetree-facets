@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\EventListener;
+namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeLens\Api\FilterContext;
-use KonradMichalik\PagetreeLens\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
-use KonradMichalik\PagetreeLens\Token\{Token, TokenParser};
+use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -40,7 +40,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(
-    identifier: 'pagetree-lens/filter',
+    identifier: 'pagetree-facets/filter',
     after: 'page-tree-wildcard-alias-filter',
 )]
 final class PageTreeFilterListener

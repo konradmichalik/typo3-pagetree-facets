@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,10 +11,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tests\Functional\Tab;
+namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeLens\Api\{FilterContext, FilterTabInterface};
-use KonradMichalik\PagetreeLens\Token\TokenParser;
+use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -31,7 +31,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 abstract class AbstractTabTestCase extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [
-        'konradmichalik/typo3-pagetree-lens',
+        'konradmichalik/typo3-pagetree-facets',
     ];
 
     protected BackendUserAuthentication $backendUser;

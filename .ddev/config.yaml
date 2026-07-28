@@ -1,4 +1,4 @@
-name: pagetree-lens
+name: pagetree-facets
 type: php
 docroot: .
 php_version: "8.4"

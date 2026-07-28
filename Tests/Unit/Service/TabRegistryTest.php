@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_lens" TYPO3 CMS extension.
+ * This file is part of the "pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,12 +11,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace KonradMichalik\PagetreeLens\Tests\Unit\Service;
+namespace KonradMichalik\PagetreeFacets\Tests\Unit\Service;
 
-use KonradMichalik\PagetreeLens\Api\FilterTabInterface;
-use KonradMichalik\PagetreeLens\Service\TabRegistry;
-use KonradMichalik\PagetreeLens\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
-use KonradMichalik\PagetreeLens\Token\Token;
+use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
+use KonradMichalik\PagetreeFacets\Service\TabRegistry;
+use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
+use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -65,7 +65,7 @@ final class TabRegistryTest extends TestCase
         $registry = $this->createRegistry(
             [[new StubFilterTab('doktype', ['doktype']), 70], [new StubFilterTab('state', ['is']), 60]],
         );
-        $backendUser = $this->createBackendUser(['tx_pagetreelens.' => ['disableTabs' => 'doktype']]);
+        $backendUser = $this->createBackendUser(['tx_pagetreefacets.' => ['disableTabs' => 'doktype']]);
 
         $tabs = $registry->getTabs($backendUser);
         self::assertCount(1, $tabs);
@@ -87,7 +87,7 @@ final class TabRegistryTest extends TestCase
     public function userTsConfigDisableSwitchesTheFeatureOff(): void
     {
         $registry = $this->createRegistry([[new StubFilterTab('doktype', ['doktype']), 70]]);
-        $backendUser = $this->createBackendUser(['tx_pagetreelens.' => ['disable' => '1']]);
+        $backendUser = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
 
         self::assertTrue($registry->isDisabledForUser($backendUser));
         self::assertSame([], $registry->getTabs($backendUser));

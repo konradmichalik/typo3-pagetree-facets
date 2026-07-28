@@ -10,8 +10,8 @@ Thank you for considering contributing to this project! Every contribution is we
 
 ```bash
 # Clone repository
-git clone https://github.com/konradmichalik/typo3-pagetree-lens.git
-cd typo3-pagetree-lens
+git clone https://github.com/konradmichalik/typo3-pagetree-facets.git
+cd typo3-pagetree-facets
 
 # Start the project with DDEV
 ddev start

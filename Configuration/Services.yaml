@@ -4,12 +4,12 @@ services:
     autoconfigure: true
     public: false
 
-  KonradMichalik\PagetreeLens\:
+  KonradMichalik\PagetreeFacets\:
     resource: '../Classes/*'
     exclude:
       - '../Classes/Token/Token.php'
       - '../Classes/Api/FilterContext.php'
       - '../Classes/Event/*'
 
-  KonradMichalik\PagetreeLens\Controller\LensModalController:
+  KonradMichalik\PagetreeFacets\Controller\FacetsModalController:
     public: true

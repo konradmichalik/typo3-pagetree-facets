@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
-	<file source-language="en" datatype="plaintext" original="EXT:pagetree_lens/Resources/Private/Language/locallang.xlf" date="2026-07-16T12:00:00Z" product-name="pagetree_lens">
+	<file source-language="en" datatype="plaintext" original="EXT:pagetree_facets/Resources/Private/Language/locallang.xlf" date="2026-07-16T12:00:00Z" product-name="pagetree_facets">
 		<body>
-			<trans-unit id="pagetreeLens.modal.title"><source>Filter page tree</source></trans-unit>
-			<trans-unit id="pagetreeLens.modal.apply"><source>Apply</source></trans-unit>
-			<trans-unit id="pagetreeLens.modal.reset"><source>Reset</source></trans-unit>
-			<trans-unit id="pagetreeLens.modal.allSites"><source>All sites</source></trans-unit>
-			<trans-unit id="pagetreeLens.modal.freetext"><source>Page title or UID</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.title"><source>Filter page tree</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
