@@ -202,7 +202,10 @@ final class FacetsModalController
 
     private function translate(LanguageService $languageService, string $label): string
     {
-        return str_starts_with($label, 'LLL:') ? ($languageService->sL($label) ?: $label) : $label;
+        // sL() resolves both the classic LLL: syntax and the v14 label-identifier
+        // shorthand (e.g. "core.db.pages:doktype.default" used by the doktype TCA
+        // items); it returns non-identifier strings unchanged, so no LLL: guard.
+        return '' === $label ? $label : ($languageService->sL($label) ?: $label);
     }
 
     private function getBackendUser(): BackendUserAuthentication
