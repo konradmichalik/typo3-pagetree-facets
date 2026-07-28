@@ -54,19 +54,26 @@ class FacetsToolbar {
     if (!filterInput) {
       return null;
     }
-    if (filterInput.parentElement.querySelector('.pagetree-facets-toggle')) {
-      return filterInput.parentElement.querySelector('.pagetree-facets-toggle');
+    // v14 tree toolbar markup: .tree-toolbar__menu > .tree-toolbar__search > input.
+    // Render the button *inside* the search box (host class) so CSS can float it
+    // over the input's trailing edge - it merges with the field and costs no
+    // extra toolbar width. Fall back to the input's parent if markup changes.
+    const searchBox = filterInput.closest('.tree-toolbar__search') ?? filterInput.parentElement;
+    const existing = searchBox.querySelector('.pagetree-facets-toggle');
+    if (existing) {
+      return existing;
     }
+    searchBox.classList.add('pagetree-facets-host');
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn btn-sm btn-default pagetree-facets-toggle';
+    button.className = 'btn btn-sm btn-borderless pagetree-facets-toggle';
     button.title = 'Filter page tree (Ctrl/Cmd+Shift+F)';
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-filter');
     icon.setAttribute('size', 'small');
     button.append(icon);
     button.addEventListener('click', () => this.#openModal());
-    filterInput.parentElement.append(button);
+    searchBox.append(button);
     filterInput.addEventListener('input', () => this.#updateBadge());
     this.#updateBadge();
     return button;
@@ -94,9 +101,8 @@ class FacetsToolbar {
     if (!input || !button) {
       return;
     }
-    const count = (input.value.match(/(^|\s)[a-z][a-z0-9_-]*:/gi) ?? []).length;
-    button.classList.toggle('btn-primary', count > 0);
-    button.classList.toggle('btn-default', count === 0);
+    const count = this.#countCriteria(input.value);
+    button.classList.toggle('is-active', count > 0);
     let badge = button.querySelector('.badge');
     if (count > 0) {
       if (!badge) {
@@ -108,6 +114,23 @@ class FacetsToolbar {
     } else {
       badge?.remove();
     }
+  }
+
+  // Count active filter *values*, not token keys: `table:a,b` is two criteria,
+  // so the badge matches what the modal shows. Quoted values (text:"a,b") count
+  // as one; the site scope is excluded (it mirrors the modal's chip count).
+  #countCriteria(phrase) {
+    const tokenPattern = /(^|\s)([a-z][a-z0-9_-]*):("[^"]*"|\S+)/gi;
+    let count = 0;
+    let match;
+    while ((match = tokenPattern.exec(phrase)) !== null) {
+      if (match[2].toLowerCase() === 'site') {
+        continue;
+      }
+      const raw = match[3];
+      count += raw.startsWith('"') ? 1 : raw.split(',').filter(Boolean).length;
+    }
+    return count;
   }
 }
 

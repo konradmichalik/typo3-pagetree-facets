@@ -20,6 +20,8 @@ class FacetsModal {
   #configuration = null;
   #activeTab = null;
   #onApply = null;
+  #chips = null;
+  #active = null;
 
   async open(currentPhrase, onApply) {
     this.#onApply = onApply;
@@ -38,9 +40,9 @@ class FacetsModal {
       content: this.#render(),
       buttons: [
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset',
+          text: TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close',
           btnClass: 'btn-default',
-          trigger: () => { this.#apply(''); },
+          trigger: () => { this.#modal?.hideModal(); },
         },
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
@@ -50,20 +52,73 @@ class FacetsModal {
       ],
     });
     this.#modal.addEventListener('typo3-modal-shown', () => {
-      this.#modal.querySelector('.pagetree-facets')?.addEventListener('keydown', (event) => {
+      const root = this.#modal.querySelector('.pagetree-facets');
+      root?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
           event.preventDefault();
           this.#serializeAndApply();
         }
       });
+      // Populate the active-filter chips from the hydrated state once the modal
+      // is in the DOM (the chip list is derived from the live form controls).
+      this.#refreshActiveIndicators();
     });
   }
 
   #render() {
     const wrap = document.createElement('div');
-    wrap.className = 'pagetree-facets row';
-    wrap.append(this.#renderNavigation(), this.#renderPanels(), this.#renderFooter());
+    wrap.className = 'pagetree-facets';
+    wrap.append(this.#renderHeader(), this.#renderBody(), this.#renderFooter());
     return wrap;
+  }
+
+  // The continuous top region: freetext search, optional site scope and the
+  // removable chips that mirror the currently active tab criteria.
+  #renderHeader() {
+    const header = document.createElement('div');
+    header.className = 'pagetree-facets__header';
+
+    const search = document.createElement('div');
+    search.className = 'pagetree-facets__search';
+    search.append(this.#renderFreetext());
+    if ((this.#configuration.sites ?? []).length > 1) {
+      search.append(this.#renderSiteScope());
+    }
+    header.append(search);
+
+    // Active-filter row: the removable chips plus a one-click reset that clears
+    // every criterion. Hidden entirely while nothing is active.
+    this.#active = document.createElement('div');
+    this.#active.className = 'pagetree-facets__active';
+    this.#active.hidden = true;
+
+    this.#chips = document.createElement('div');
+    this.#chips.className = 'pagetree-facets__chips';
+    this.#active.append(this.#chips);
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'pagetree-facets__reset btn btn-sm btn-link';
+    reset.textContent = TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset';
+    reset.addEventListener('click', () => this.#resetAll());
+    this.#active.append(reset);
+
+    header.append(this.#active);
+    return header;
+  }
+
+  #renderBody() {
+    const body = document.createElement('div');
+    body.className = 'pagetree-facets__body row';
+    body.append(this.#renderNavigation(), this.#renderPanels());
+    // Keep chips and per-tab counts in sync with the live controls.
+    body.addEventListener('change', () => this.#refreshActiveIndicators());
+    body.addEventListener('input', (event) => {
+      if (event.target.matches('input[type="text"]')) {
+        this.#refreshActiveIndicators();
+      }
+    });
+    return body;
   }
 
   #renderNavigation() {
@@ -105,14 +160,11 @@ class FacetsModal {
     button.type = 'button';
     button.className = 'pagetree-facets__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
     button.dataset.tab = tab.identifier;
-    button.textContent = tab.label;
-    if (Object.keys(tab.state ?? {}).length) {
-      const dot = document.createElement('span');
-      dot.className = 'pagetree-facets__nav-dot';
-      dot.textContent = '\u25CF';
-      dot.setAttribute('aria-hidden', 'true');
-      button.append(dot);
-    }
+    // Label text kept in its own node so the active-criteria dot can be toggled
+    // live (see #setNavDot) without clobbering the label.
+    const text = document.createElement('span');
+    text.textContent = tab.label;
+    button.append(text);
     button.addEventListener('click', () => this.#switchTab(tab.identifier));
     item.append(button);
     return item;
@@ -121,10 +173,6 @@ class FacetsModal {
   #renderPanels() {
     const panels = document.createElement('div');
     panels.className = 'col-9 pagetree-facets__panels';
-    panels.append(this.#renderFreetext());
-    if ((this.#configuration.sites ?? []).length > 1) {
-      panels.append(this.#renderSiteScope());
-    }
     for (const tab of this.#configuration.tabs) {
       panels.append(this.#renderPanel(tab));
     }
@@ -179,7 +227,7 @@ class FacetsModal {
     const group = document.createElement('fieldset');
     group.className = 'form-group';
     const legend = document.createElement('legend');
-    legend.className = 'form-label h6';
+    legend.className = 'form-label';
     legend.textContent = field.label;
     group.append(legend);
     const state = tab.state?.[field.name];
@@ -231,7 +279,7 @@ class FacetsModal {
 
   #renderFooter() {
     const footer = document.createElement('div');
-    footer.className = 'col-12 pagetree-facets__favorites mt-3';
+    footer.className = 'pagetree-facets__favorites';
     for (const [index, favorite] of (this.#configuration.favorites ?? []).entries()) {
       const chip = document.createElement('button');
       chip.type = 'button';
@@ -252,6 +300,112 @@ class FacetsModal {
     this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((el) => {
       el.hidden = el.dataset.panel !== identifier;
     });
+  }
+
+  // Rebuild the active-filter chips and nav dots from the current control state.
+  // Called on open and after every change so the header always mirrors reality.
+  #refreshActiveIndicators() {
+    if (!this.#chips) {
+      return;
+    }
+    const criteria = this.#collectActiveCriteria();
+    this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
+    this.#active.hidden = criteria.length === 0;
+
+    const counts = new Map();
+    for (const criterion of criteria) {
+      counts.set(criterion.tab, (counts.get(criterion.tab) ?? 0) + 1);
+    }
+    this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
+      this.#setNavCount(item, counts.get(item.dataset.tab) ?? 0);
+    });
+  }
+
+  // Clear every criterion in place (all tab controls plus freetext and site)
+  // and refresh the header. Stays in the modal - Apply still has to confirm.
+  #resetAll() {
+    this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach((input) => {
+      if (input.tagName === 'SELECT') {
+        Array.from(input.options).forEach((option) => { option.selected = false; });
+      } else if (input.type === 'checkbox' || input.type === 'radio') {
+        input.checked = false;
+      } else {
+        input.value = '';
+      }
+    });
+    const freetext = this.#modal.querySelector('[data-role="freetext"]');
+    if (freetext) {
+      freetext.value = '';
+    }
+    const site = this.#modal.querySelector('[data-role="site-scope"]');
+    if (site) {
+      site.value = '';
+    }
+    this.#refreshActiveIndicators();
+  }
+
+  #setNavCount(item, count) {
+    let badge = item.querySelector('.pagetree-facets__nav-count');
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'pagetree-facets__nav-count';
+        item.append(badge);
+      }
+      badge.textContent = String(count);
+    } else {
+      badge?.remove();
+    }
+  }
+
+  // One entry per selected value across all tabs. Each carries a human label and
+  // a `remove` closure bound to the concrete control, so deselecting a chip just
+  // unsets that control and lets the change listener refresh everything.
+  #collectActiveCriteria() {
+    const criteria = [];
+    for (const tab of this.#configuration.tabs) {
+      for (const field of tab.configuration.fields ?? []) {
+        const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
+        for (const input of inputs) {
+          if (input.tagName === 'SELECT') {
+            for (const option of input.selectedOptions) {
+              criteria.push(this.#criterion(tab, option.textContent.trim() || option.value, () => { option.selected = false; }));
+            }
+          } else if (input.type === 'checkbox' || input.type === 'radio') {
+            if (input.checked) {
+              const label = input.closest('label')?.textContent.trim() || input.value;
+              criteria.push(this.#criterion(tab, label, () => { input.checked = false; }));
+            }
+          } else if (input.value.trim() !== '') {
+            criteria.push(this.#criterion(tab, input.value.trim(), () => { input.value = ''; }));
+          }
+        }
+      }
+    }
+    return criteria;
+  }
+
+  #criterion(tab, valueLabel, remove) {
+    return { tab: tab.identifier, label: `${tab.label}: ${valueLabel}`, remove };
+  }
+
+  #renderChip(criterion) {
+    const chip = document.createElement('span');
+    chip.className = 'pagetree-facets__chip';
+    const text = document.createElement('span');
+    text.className = 'pagetree-facets__chip-label';
+    text.textContent = criterion.label;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'pagetree-facets__chip-remove';
+    remove.setAttribute('aria-label', `${criterion.label} – ${TYPO3.lang?.['pagetreeFacets.modal.removeFilter'] ?? 'remove filter'}`);
+    remove.textContent = '×';
+    remove.addEventListener('click', () => {
+      criterion.remove();
+      this.#refreshActiveIndicators();
+    });
+    chip.append(text, remove);
+    return chip;
   }
 
   async #serializeAndApply() {

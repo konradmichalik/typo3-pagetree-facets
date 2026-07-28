@@ -5,8 +5,10 @@
 			<trans-unit id="pagetreeFacets.modal.title"><source>Filter page tree</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>

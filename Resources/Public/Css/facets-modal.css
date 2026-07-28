@@ -8,21 +8,143 @@
  * automatically without hard-coded colours.
  */
 
+/* Self-contained, theme-aware palette. We do NOT derive colours from the
+ * backend --bs-* variables here: inside the modal they do not reliably carry
+ * the active dark-scheme values, which made headings render black and chips
+ * too dark. Light values are the default; the dark override follows TYPO3's
+ * [data-color-scheme="dark"] signal, which the backend sets to the effective
+ * theme (it resolves the OS preference into that attribute in auto mode). We
+ * deliberately avoid @media (prefers-color-scheme): it would disagree with a
+ * backend manually pinned to light on a dark OS. */
 .pagetree-facets {
-    --pl-border: var(--bs-border-color, rgba(127, 127, 127, 0.25));
-    --pl-muted: var(--bs-secondary-color, rgba(127, 127, 127, 0.9));
-    --pl-accent: var(--bs-primary, #4c6aff);
-    --pl-hover: color-mix(in srgb, currentColor 8%, transparent);
-    --pl-active: color-mix(in srgb, var(--pl-accent) 16%, transparent);
+    --pl-text: #1e1e1e;
+    --pl-muted: #737373;
+    --pl-border: rgba(0, 0, 0, 0.08);
+    --pl-accent: #3085d6;
+    --pl-hover: rgba(0, 0, 0, 0.05);
+    --pl-active: rgba(48, 133, 214, 0.12);
 
-    min-height: 460px;
+    /* Fill the modal body and cap to the viewport so the body scrolls
+     * internally instead of the content being clipped by the modal. */
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+    max-height: min(72vh, 720px);
 }
 
-/* --- Navigation column ------------------------------------------------- */
+[data-color-scheme="dark"] .pagetree-facets {
+    --pl-text: #e0e0e0;
+    --pl-muted: #9b9b9b;
+    --pl-border: rgba(255, 255, 255, 0.10);
+    --pl-hover: rgba(255, 255, 255, 0.07);
+    --pl-active: rgba(48, 133, 214, 0.30);
+}
+
+/* --- Header region (search + active-filter chips) ---------------------- */
+
+.pagetree-facets__header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--pl-border);
+}
+
+.pagetree-facets__search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagetree-facets__freetext {
+    flex: 1 1 auto;
+    margin: 0;
+}
+
+.pagetree-facets__site {
+    flex: 0 0 auto;
+    min-width: 12rem;
+    margin: 0;
+}
+
+.pagetree-facets__active {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.pagetree-facets__active[hidden] {
+    display: none;
+}
+
+.pagetree-facets__chips {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.pagetree-facets__reset {
+    flex: 0 0 auto;
+    padding-inline: 0;
+    white-space: nowrap;
+}
+
+.pagetree-facets__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-inline: 0.6rem 0.2rem;
+    padding-block: 0.15rem;
+    border-radius: 999px;
+    /* Accent tint carries the "filter" identity; the label uses the themed text
+     * colour so it stays legible in both light and dark (accent-on-accent-tint
+     * drops below WCAG contrast in dark mode). */
+    background: var(--pl-active);
+    color: var(--pl-text);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.pagetree-facets__chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.pagetree-facets__chip-remove:hover {
+    background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.pagetree-facets__chip-remove:focus-visible {
+    outline: 2px solid var(--pl-accent);
+    outline-offset: 1px;
+}
+
+/* --- Body: navigation + panels ----------------------------------------- */
+
+.pagetree-facets__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
 
 .pagetree-facets__nav {
     border-inline-end: 1px solid var(--pl-border);
     padding-inline-end: 0;
+    overflow-y: auto;
 }
 
 .pagetree-facets__nav ul {
@@ -69,7 +191,7 @@
 .pagetree-facets__nav-item.active {
     background: var(--pl-active);
     color: var(--pl-accent);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .pagetree-facets__nav-item:focus-visible {
@@ -77,31 +199,25 @@
     outline-offset: 1px;
 }
 
-.pagetree-facets__nav-dot {
+/* Active-criteria count per tab (kept subtle: a small pill, not a loud badge). */
+.pagetree-facets__nav-count {
     flex: 0 0 auto;
-    font-size: 0.5rem;
-    line-height: 1;
-    color: var(--pl-accent);
+    min-width: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pl-accent) 24%, transparent);
+    color: var(--pl-text);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
 }
 
 /* --- Panels ------------------------------------------------------------ */
 
 .pagetree-facets__panels {
     padding-inline-start: 1.5rem;
-}
-
-.pagetree-facets__freetext,
-.pagetree-facets__site {
-    margin-bottom: 0.75rem;
-}
-
-/* Freetext + site scope form the modal header, separated from the tab body. */
-.pagetree-facets__panels > .pagetree-facets__site:last-of-type,
-.pagetree-facets__freetext + .pagetree-facets__panel,
-.pagetree-facets__site + .pagetree-facets__panel {
-    border-top: 1px solid var(--pl-border);
-    padding-top: 1rem;
-    margin-top: 0.25rem;
+    overflow-y: auto;
 }
 
 .pagetree-facets__panel fieldset {
@@ -110,13 +226,15 @@
     border: 0;
 }
 
+/* Field headings kept lightweight - present but not shouting. */
 .pagetree-facets__panel legend {
     float: none;
     width: auto;
     margin-bottom: 0.75rem;
     padding: 0;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--pl-muted);
 }
 
 /* Multiple fieldsets within one tab (e.g. Activity: updated / created / by). */
@@ -125,13 +243,12 @@
 }
 
 /* Choice lists wrap into responsive columns instead of one long column
- * (the content-element list has 25+ entries). */
+ * (the content-element list has 25+ entries). The whole panels column
+ * scrolls, so the list itself is not separately capped. */
 .pagetree-facets__panel fieldset:has(.form-check) {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.15rem 1rem;
-    max-height: 420px;
-    overflow-y: auto;
 }
 
 .pagetree-facets__panel legend {
@@ -157,13 +274,64 @@
 /* --- Favorites footer -------------------------------------------------- */
 
 .pagetree-facets__favorites {
+    flex: 0 0 auto;
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
+    margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--pl-border);
 }
 
 .pagetree-facets__favorites:empty {
     display: none;
+}
+
+/* --- Page-tree toolbar button (merged into the search field) -----------
+ * Floats over the trailing edge of the tree filter input so it reads as part
+ * of the field and adds no width to the toolbar. Lives outside .pagetree-facets
+ * (the modal scope), so it uses the backend --bs-* vars with safe fallbacks. */
+
+.tree-toolbar__search.pagetree-facets-host {
+    position: relative;
+}
+
+.tree-toolbar__search.pagetree-facets-host .search-input {
+    padding-inline-end: 2.5rem;
+}
+
+.pagetree-facets-toggle {
+    position: absolute;
+    inset-inline-end: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.3rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--bs-secondary-color, #8a8a8a);
+    line-height: 1;
+}
+
+.pagetree-facets-toggle:hover,
+.pagetree-facets-toggle:focus-visible {
+    background: transparent;
+    color: var(--bs-primary, #3085d6);
+}
+
+.pagetree-facets-toggle.is-active {
+    color: var(--bs-primary, #3085d6);
+}
+
+.pagetree-facets-toggle .badge {
+    min-width: 1.05rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: var(--bs-primary, #3085d6);
+    color: #fff;
+    font-size: 0.625rem;
+    line-height: 1.4;
 }
