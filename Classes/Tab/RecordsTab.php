@@ -83,7 +83,7 @@ final class RecordsTab extends AbstractPagesQueryTab
 
         return [
             'fields' => [
-                ['type' => 'select', 'name' => 'table', 'label' => $lll.'table', 'options' => $options],
+                ['type' => 'checkbox-group', 'name' => 'table', 'label' => $lll.'table', 'options' => $options],
                 ['type' => 'text', 'name' => 'text', 'label' => $lll.'text', 'options' => []],
             ],
         ];
