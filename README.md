@@ -39,8 +39,10 @@ Whitespace = AND, comma = OR within one criterion (`doktype:1,4`). Freetext
 | Translations | `untranslated:` |
 | SEO | `seo:` (requires EXT:seo) |
 
-`site:<identifier>` scopes to one site. Tabs can be disabled globally (extension
-settings) or per user/group (`tx_pagetreefacets.disableTabs` / `.disable`).
+`site:<identifier>` scopes to one site, `under:<uid>` scopes to one page and its
+subpages (the modal offers this as "Search from current page down" whenever a
+page is open). Tabs can be disabled globally (extension settings) or per
+user/group (`tx_pagetreefacets.disableTabs` / `.disable`).
 
 ## 🔌 Extending
 
@@ -50,8 +52,8 @@ token keys, resolves them to page UIDs, and describes its modal UI declaratively
 
 ## 🚦 Status
 
-Beta. 39 unit + 37 functional tests green (`composer test:unit` /
-`composer test:functional`, sqlite by default). Pending: DDEV smoke test, CI, TER release.
+Beta. 39 unit + 45 functional tests green (`composer test:unit` /
+`composer test:functional`, sqlite by default), manually smoke-tested in DDEV. Pending: CI, TER release.
 
 ## 📄 License
 
