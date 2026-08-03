@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
 use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
@@ -200,6 +200,7 @@ final class PageTreeFilterListenerTest extends TestCase
             new TokenParser(),
             $registry,
             new SiteScopeService($this->createSiteFinder($siteMap)),
+            new PageSubtreeScopeService(),
             $queryHelper,
         );
     }

@@ -62,6 +62,9 @@ final class FacetsModalController
             'tabs' => $this->buildTabs($context, $tokens),
             'sites' => $this->buildSiteOptions($backendUser),
             'activeSite' => $siteIdentifier,
+            // "under:<uid>" scope, set from the modal's "current page and its
+            // subpages" toggle - null when no such scope is active.
+            'pageScope' => $this->extractPageScope($tokens),
             'freetext' => $this->extractFreetext($tokens),
             'favorites' => $this->favoriteService->getFavorites($backendUser),
         ]);
@@ -73,6 +76,7 @@ final class FacetsModalController
         $body = (array) ($request->getParsedBody() ?? []);
         $states = (array) ($body['states'] ?? []);
         $siteIdentifier = (string) ($body['site'] ?? '');
+        $pageScope = (int) ($body['pageScope'] ?? 0);
         $freetext = trim((string) ($body['freetext'] ?? ''));
 
         $tokens = [];
@@ -84,6 +88,9 @@ final class FacetsModalController
         }
         if ('' !== $siteIdentifier) {
             $tokens[] = new Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
+        }
+        if ($pageScope > 0) {
+            $tokens[] = new Token('under', [(string) $pageScope], 'under:'.$pageScope);
         }
         if ('' !== $freetext) {
             $tokens[] = new Token(
@@ -230,6 +237,22 @@ final class FacetsModalController
         foreach ($tokens as $token) {
             if ('site' === $token->key) {
                 return $token->firstValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     */
+    private function extractPageScope(array $tokens): ?int
+    {
+        foreach ($tokens as $token) {
+            if ('under' === $token->key) {
+                $uid = (int) $token->firstValue();
+
+                return $uid > 0 ? $uid : null;
             }
         }
 

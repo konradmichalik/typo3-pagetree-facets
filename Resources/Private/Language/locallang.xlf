@@ -11,6 +11,8 @@
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pageScope"><source>Search from current page down</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pageScope.description"><source>Only includes the page you currently have open and its subpages.</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
