@@ -7,6 +7,8 @@
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
@@ -20,7 +22,7 @@
 			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>
 			<trans-unit id="activity.updated"><source>Last updated</source></trans-unit>
 			<trans-unit id="activity.created"><source>Created</source></trans-unit>
-			<trans-unit id="activity.by"><source>Edited by (backend user ID or "me")</source></trans-unit>
+			<trans-unit id="activity.by"><source>Edited by</source></trans-unit>
 			<trans-unit id="activity.preset.7d.&lt;"><source>Within the last 7 days</source></trans-unit>
 			<trans-unit id="activity.preset.30d.&lt;"><source>Within the last 30 days</source></trans-unit>
 			<trans-unit id="activity.preset.6m.&lt;"><source>Within the last 6 months</source></trans-unit>

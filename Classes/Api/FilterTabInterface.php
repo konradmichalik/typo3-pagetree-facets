@@ -66,12 +66,17 @@ interface FilterTabInterface
      * [
      *   'fields' => [
      *     [
-     *       'type' => 'checkbox-group'|'select'|'radio-presets'|'record-search'|'text',
+     *       'type' => 'checkbox-group'|'select'|'radio-presets'|'record-search'|'text'|'user-picker',
      *       'name' => string,                    // maps into serialize()/hydrate() state
      *       'label' => string,
      *       'options' => [                       // for choice types
-     *         ['value' => string, 'label' => string, 'icon' => ?string], // icon = IconRegistry identifier,
-     *       ],                                   //   rendered via <typo3-backend-icon>
+     *         ['value' => string, 'label' => string, 'icon' => ?string, 'description' => ?string],
+     *       ],                                   //   icon = IconRegistry identifier, rendered via
+     *                                             //   <typo3-backend-icon>; description = optional
+     *                                             //   help text (tooltip + screen-reader description)
+     *                                             //   for when the label alone isn't enough
+     *       'currentUser' => ['uid' => int, 'username' => string], // user-picker only: pins
+     *                                             //   "Me" as a suggestion without a search round trip
      *     ],
      *   ],
      * ]

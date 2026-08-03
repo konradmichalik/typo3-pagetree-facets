@@ -30,4 +30,8 @@ return [
         'path' => '/pagetree-facets/favorite/remove',
         'target' => FacetsModalController::class.'::removeFavorite',
     ],
+    'pagetree_facets_users' => [
+        'path' => '/pagetree-facets/users',
+        'target' => FacetsModalController::class.'::users',
+    ],
 ];

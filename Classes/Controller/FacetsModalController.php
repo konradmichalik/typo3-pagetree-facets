@@ -18,9 +18,13 @@ use KonradMichalik\PagetreeFacets\Service\{FavoriteService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
+
+use function sprintf;
 
 /**
  * FacetsModalController.
@@ -39,6 +43,7 @@ final class FacetsModalController
         private readonly TokenSerializer $tokenSerializer,
         private readonly FavoriteService $favoriteService,
         private readonly SiteFinder $siteFinder,
+        private readonly ConnectionPool $connectionPool,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
@@ -109,6 +114,47 @@ final class FacetsModalController
         $this->favoriteService->removeFavorite($this->getBackendUser(), (int) ($body['index'] ?? -1));
 
         return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
+    }
+
+    /**
+     * Backs the Activity tab's "Edited by" typeahead: either an exact uid
+     * lookup (re-resolving a hydrated filter to a display label) or a LIKE
+     * search across username/realName. Never both in the same request - uid
+     * takes precedence so a stale query string cannot widen an exact lookup.
+     */
+    public function users(ServerRequestInterface $request): JsonResponse
+    {
+        $queryParams = $request->getQueryParams();
+        $uid = (int) ($queryParams['uid'] ?? 0);
+        $search = trim((string) ($queryParams['q'] ?? ''));
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
+        $queryBuilder
+            ->select('uid', 'username', 'realName')
+            ->from('be_users')
+            ->orderBy('username')
+            ->setMaxResults(20);
+
+        if ($uid > 0) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)));
+        } elseif ('' !== $search) {
+            $wildcard = '%'.$queryBuilder->escapeLikeWildcards($search).'%';
+            $queryBuilder->andWhere($queryBuilder->expr()->or(
+                $queryBuilder->expr()->like('username', $queryBuilder->createNamedParameter($wildcard)),
+                $queryBuilder->expr()->like('realName', $queryBuilder->createNamedParameter($wildcard)),
+            ));
+        } else {
+            return new JsonResponse(['users' => []]);
+        }
+
+        return new JsonResponse(['users' => array_map(
+            static fn (array $row): array => [
+                'uid' => (int) $row['uid'],
+                'label' => '' !== $row['realName'] ? sprintf('%s (%s)', $row['realName'], $row['username']) : $row['username'],
+            ],
+            $queryBuilder->executeQuery()->fetchAllAssociative(),
+        )]);
     }
 
     /**

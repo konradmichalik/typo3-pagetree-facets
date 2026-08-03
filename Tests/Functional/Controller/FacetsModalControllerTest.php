@@ -95,6 +95,41 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function usersSearchesByUsernameAndRealName(): void
+    {
+        $request = (new ServerRequest())->withQueryParams(['q' => 'jane']);
+        $payload = $this->decode($this->subject->users($request));
+
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+    }
+
+    #[Test]
+    public function usersExcludesDeletedUsers(): void
+    {
+        $request = (new ServerRequest())->withQueryParams(['q' => 'gone']);
+        $payload = $this->decode($this->subject->users($request));
+
+        self::assertSame([], $payload['users']);
+    }
+
+    #[Test]
+    public function usersResolvesAnExactUidLookupIgnoringAnyQuery(): void
+    {
+        $request = (new ServerRequest())->withQueryParams(['uid' => '2', 'q' => 'this is ignored']);
+        $payload = $this->decode($this->subject->users($request));
+
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+    }
+
+    #[Test]
+    public function usersReturnsNothingWithoutAQueryOrUid(): void
+    {
+        $payload = $this->decode($this->subject->users(new ServerRequest()));
+
+        self::assertSame([], $payload['users']);
+    }
+
+    #[Test]
     public function favoriteEndpointsRoundTrip(): void
     {
         $addRequest = (new ServerRequest())->withParsedBody([
