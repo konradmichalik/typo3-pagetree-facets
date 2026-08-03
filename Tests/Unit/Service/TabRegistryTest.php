@@ -23,13 +23,11 @@ use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
-
 /**
  * TabRegistryTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class TabRegistryTest extends TestCase
 {
     #[Test]

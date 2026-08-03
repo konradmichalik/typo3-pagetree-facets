@@ -18,13 +18,11 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
-
 /**
  * DoktypeTab.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class DoktypeTab extends AbstractPagesQueryTab
 {
     public function getIdentifier(): string

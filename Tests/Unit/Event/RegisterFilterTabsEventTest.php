@@ -19,13 +19,11 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-
 /**
  * RegisterFilterTabsEventTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class RegisterFilterTabsEventTest extends TestCase
 {
     #[Test]

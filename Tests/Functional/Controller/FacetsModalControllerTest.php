@@ -20,13 +20,11 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-
 /**
  * FacetsModalControllerTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class FacetsModalControllerTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [

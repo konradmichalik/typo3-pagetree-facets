@@ -18,13 +18,11 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-
 /**
  * FavoriteServiceTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class FavoriteServiceTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [

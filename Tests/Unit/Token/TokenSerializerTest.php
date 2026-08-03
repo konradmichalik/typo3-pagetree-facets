@@ -17,13 +17,11 @@ use KonradMichalik\PagetreeFacets\Token\{TokenParser, TokenSerializer};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-
 /**
  * TokenSerializerTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class TokenSerializerTest extends TestCase
 {
     #[Test]
