@@ -80,8 +80,8 @@ final class SeoTab extends AbstractPagesQueryTab
                     'name' => 'seo',
                     'label' => $this->getLabel(),
                     'options' => [
-                        ['value' => 'noindex', 'label' => $lll.'noindex', 'icon' => 'actions-eye-slash'],
-                        ['value' => 'nofollow', 'label' => $lll.'nofollow', 'icon' => 'actions-link-slash'],
+                        ['value' => 'noindex', 'label' => $lll.'noindex', 'icon' => 'overlay-hidden'],
+                        ['value' => 'nofollow', 'label' => $lll.'nofollow', 'icon' => 'actions-unlink'],
                         ['value' => 'missing-description', 'label' => $lll.'missingDescription', 'icon' => 'actions-exclamation-triangle'],
                     ],
                 ],

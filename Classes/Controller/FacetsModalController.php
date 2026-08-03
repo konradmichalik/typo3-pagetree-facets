@@ -146,6 +146,10 @@ final class FacetsModalController
             foreach ($field['options'] ?? [] as $optionIndex => $option) {
                 $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
                     = $this->translate($languageService, (string) ($option['label'] ?? ''));
+                if ('' !== (string) ($option['description'] ?? '')) {
+                    $configuration['fields'][$fieldIndex]['options'][$optionIndex]['description']
+                        = $this->translate($languageService, (string) $option['description']);
+                }
             }
         }
 
