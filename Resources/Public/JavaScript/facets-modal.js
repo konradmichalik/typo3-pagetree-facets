@@ -4,6 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import Modal from '@typo3/backend/modal.js';
+import Notification from '@typo3/backend/notification.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 
 /**
@@ -22,9 +23,15 @@ class FacetsModal {
   #onApply = null;
   #chips = null;
   #active = null;
+  #resultsPanel = null;
+  #root = null;
+  #nextHelpId = 0;
+  #nextListId = 0;
+  #currentPageId = null;
 
-  async open(currentPhrase, onApply) {
+  async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
+    this.#currentPageId = currentPageId;
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
@@ -32,7 +39,7 @@ class FacetsModal {
     if (!this.#configuration.tabs.length) {
       return;
     }
-    this.#activeTab = this.#configuration.tabs[0].identifier;
+    this.#activeTab = (this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
 
     this.#modal = Modal.advanced({
       title: TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree',
@@ -69,6 +76,12 @@ class FacetsModal {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
     wrap.append(this.#renderHeader(), this.#renderBody(), this.#renderFooter());
+    // Kept for reparenting the user-picker dropdown out of the scrolling panel
+    // (see #showUserResults). Modal.advanced() renders `content` into its own
+    // Lit-managed custom element - appending directly to that element is
+    // invisible (nodes it did not create are outside its render tree), but
+    // this wrapper is plain DOM we fully own, so appending here is safe.
+    this.#root = wrap;
     return wrap;
   }
 
@@ -86,8 +99,16 @@ class FacetsModal {
     }
     header.append(search);
 
-    // Active-filter row: the removable chips plus a one-click reset that clears
-    // every criterion. Hidden entirely while nothing is active.
+    // No page open (e.g. a module without a page context) -> nothing to
+    // scope to, so the control would be permanently unusable; skip it
+    // entirely rather than show a checkbox that can never be checked.
+    if (this.#currentPageId) {
+      header.append(this.#renderPageScope());
+    }
+
+    // Active-filter row: the removable chips plus a one-click reset and a
+    // "copy link" action. Hidden entirely while nothing is active - sharing
+    // or resetting an empty filter is meaningless.
     this.#active = document.createElement('div');
     this.#active.className = 'pagetree-facets__active';
     this.#active.hidden = true;
@@ -96,10 +117,23 @@ class FacetsModal {
     this.#chips.className = 'pagetree-facets__chips';
     this.#active.append(this.#chips);
 
+    const copyLink = document.createElement('button');
+    copyLink.type = 'button';
+    copyLink.className = 'pagetree-facets__copy-link btn btn-sm btn-link d-inline-flex align-items-center gap-1';
+    const copyLinkIcon = document.createElement('typo3-backend-icon');
+    copyLinkIcon.setAttribute('identifier', 'actions-clipboard');
+    copyLinkIcon.setAttribute('size', 'small');
+    copyLink.append(copyLinkIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
+    copyLink.addEventListener('click', () => this.#copyLink());
+    this.#active.append(copyLink);
+
     const reset = document.createElement('button');
     reset.type = 'button';
-    reset.className = 'pagetree-facets__reset btn btn-sm btn-link';
-    reset.textContent = TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset';
+    reset.className = 'pagetree-facets__reset btn btn-sm btn-link d-inline-flex align-items-center gap-1';
+    const resetIcon = document.createElement('typo3-backend-icon');
+    resetIcon.setAttribute('identifier', 'actions-refresh');
+    resetIcon.setAttribute('size', 'small');
+    reset.append(resetIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
     reset.addEventListener('click', () => this.#resetAll());
     this.#active.append(reset);
 
@@ -124,6 +158,7 @@ class FacetsModal {
   #renderNavigation() {
     const nav = document.createElement('div');
     nav.className = 'col-3 pagetree-facets__nav';
+    nav.append(this.#renderFilterSearch());
     const list = document.createElement('ul');
     list.className = 'list-unstyled';
 
@@ -155,19 +190,41 @@ class FacetsModal {
   }
 
   #renderNavItem(tab) {
+    const empty = this.#isTabEmpty(tab);
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'pagetree-facets__nav-item' + (tab.identifier === this.#activeTab ? ' active' : '');
+    button.className = 'pagetree-facets__nav-item'
+      + (tab.identifier === this.#activeTab ? ' active' : '')
+      + (empty ? ' is-empty' : '');
     button.dataset.tab = tab.identifier;
+    button.disabled = empty;
+    if (empty) {
+      button.title = TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available';
+    }
     // Label text kept in its own node so the active-criteria dot can be toggled
     // live (see #setNavDot) without clobbering the label.
     const text = document.createElement('span');
     text.textContent = tab.label;
     button.append(text);
-    button.addEventListener('click', () => this.#switchTab(tab.identifier));
+    if (!empty) {
+      button.addEventListener('click', () => this.#switchTab(tab.identifier));
+    }
     item.append(button);
     return item;
+  }
+
+  // A tab is "empty" when every field is a choice type (checkbox-group / select
+  // / radio-presets) with zero options - e.g. Translations on a single-language
+  // site. Freeform fields (text, user-picker) are always usable regardless of
+  // options, so their presence means the tab is never considered empty.
+  #isTabEmpty(tab) {
+    const fields = tab.configuration.fields ?? [];
+    if (!fields.length) {
+      return true;
+    }
+    const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
+    return fields.every((field) => choiceTypes.includes(field.type) && (field.options ?? []).length === 0);
   }
 
   #renderPanels() {
@@ -176,7 +233,147 @@ class FacetsModal {
     for (const tab of this.#configuration.tabs) {
       panels.append(this.#renderPanel(tab));
     }
+    this.#resultsPanel = document.createElement('div');
+    this.#resultsPanel.className = 'pagetree-facets__search-results';
+    this.#resultsPanel.hidden = true;
+    panels.append(this.#resultsPanel);
     return panels;
+  }
+
+  // Cross-tab search: matches field/option labels already present in the
+  // hydrated configuration (client-side only). While it has text, it replaces
+  // the tab panels with a flat, clickable results list; clearing it restores
+  // the previously active tab.
+  #renderFilterSearch() {
+    const wrap = document.createElement('div');
+    wrap.className = 'pagetree-facets__filter-search';
+    const input = document.createElement('input');
+    input.className = 'form-control form-control-sm';
+    input.type = 'search';
+    input.dataset.role = 'filter-search';
+    const label = TYPO3.lang?.['pagetreeFacets.modal.search'] ?? 'Search filters';
+    input.placeholder = label;
+    input.setAttribute('aria-label', label);
+    input.addEventListener('input', () => this.#applyFilterSearch(input.value));
+    wrap.append(input);
+    return wrap;
+  }
+
+  #applyFilterSearch(query) {
+    const trimmed = query.trim().toLowerCase();
+    if ('' === trimmed) {
+      this.#resultsPanel.hidden = true;
+      this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== this.#activeTab;
+      });
+      this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
+        item.classList.toggle('active', item.dataset.tab === this.#activeTab);
+      });
+      return;
+    }
+    this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => { panel.hidden = true; });
+    this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => item.classList.remove('active'));
+    this.#renderSearchResults(this.#findFilterMatches(trimmed));
+    this.#resultsPanel.hidden = false;
+  }
+
+  // @return {tab, field, option}[] - text-type/user-picker fields have no
+  // enumerable options and are deliberately excluded from matching.
+  #findFilterMatches(query) {
+    const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
+    const matches = [];
+    for (const tab of this.#configuration.tabs) {
+      for (const field of tab.configuration.fields ?? []) {
+        if (!choiceTypes.includes(field.type)) {
+          continue;
+        }
+        for (const option of field.options ?? []) {
+          if (option.label.toLowerCase().includes(query)) {
+            matches.push({ tab, field, option });
+          }
+        }
+      }
+    }
+    return matches;
+  }
+
+  #renderSearchResults(matches) {
+    this.#resultsPanel.replaceChildren();
+    if (!matches.length) {
+      const empty = document.createElement('p');
+      empty.className = 'pagetree-facets__search-empty text-muted';
+      empty.textContent = TYPO3.lang?.['pagetreeFacets.modal.noSearchResults'] ?? 'No matching filters';
+      this.#resultsPanel.append(empty);
+      return;
+    }
+    const list = document.createElement('ul');
+    list.className = 'pagetree-facets__search-list list-unstyled';
+    for (const match of matches) {
+      list.append(this.#renderSearchResultItem(match));
+    }
+    this.#resultsPanel.append(list);
+  }
+
+  // Mirrors the SAME control the matching tab panel already rendered (panels
+  // stay in the DOM, merely hidden) as a real checkbox/radio - not a plain
+  // button - so a result reads exactly like its field's own list. Toggling
+  // the proxy writes through to the real control and dispatches its change
+  // event, so chips/nav counts refresh without any extra wiring.
+  #renderSearchResultItem({ tab, field, option }) {
+    const isRadio = 'radio-presets' === field.type;
+    const realInput = this.#modal.querySelector(
+      `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
+    );
+    const item = document.createElement('li');
+    const label = document.createElement('label');
+    label.className = 'pagetree-facets__search-result form-check d-flex align-items-center gap-2'
+      + (isRadio ? '' : ' form-switch');
+
+    const proxy = document.createElement('input');
+    proxy.className = 'form-check-input';
+    proxy.type = isRadio ? 'radio' : 'checkbox';
+    if (isRadio) {
+      // A synthetic, list-scoped group name - native mutual exclusion between
+      // matches for the same field, without colliding with the real field's
+      // bracketed name (which the generic collectors key off of).
+      proxy.name = `search-radio-${tab.identifier}-${field.name}`;
+    } else {
+      proxy.setAttribute('role', 'switch');
+    }
+    proxy.checked = Boolean(realInput?.checked);
+    proxy.disabled = !realInput;
+    proxy.addEventListener('change', () => {
+      if (!realInput) {
+        return;
+      }
+      realInput.checked = proxy.checked;
+      realInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    label.append(proxy);
+
+    if (option.icon) {
+      const icon = document.createElement('typo3-backend-icon');
+      icon.setAttribute('identifier', option.icon);
+      icon.setAttribute('size', 'small');
+      label.append(icon);
+    }
+    const text = document.createElement('span');
+    text.className = 'pagetree-facets__search-result-label';
+    text.textContent = option.label;
+    label.append(text);
+
+    const tabBadge = document.createElement('span');
+    tabBadge.className = 'pagetree-facets__search-result-tab';
+    tabBadge.textContent = tab.label;
+    label.append(tabBadge);
+
+    if (option.description) {
+      label.title = option.description;
+      label.append(this.#renderOptionHelp(proxy, option.description));
+    }
+
+    item.append(label);
+    return item;
   }
 
   #renderFreetext() {
@@ -212,6 +409,33 @@ class FacetsModal {
     return row;
   }
 
+  // "under:<uid>" scope - a quick toggle, not a picker: there is only ever
+  // one meaningful value ("the page I have open right now"), unlike the site
+  // dropdown's several named options. Re-checking it always captures
+  // #currentPageId fresh at Apply time (see #computePhrase) rather than
+  // preserving whatever page a previously-hydrated token pointed at.
+  #renderPageScope() {
+    const wrap = document.createElement('div');
+    wrap.className = 'form-check pagetree-facets__page-scope';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input';
+    checkbox.id = 'pagetree-facets__page-scope';
+    checkbox.dataset.role = 'page-scope';
+    checkbox.checked = null !== this.#configuration.pageScope;
+
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', checkbox.id);
+    label.textContent = TYPO3.lang?.['pagetreeFacets.modal.pageScope'] ?? 'Search from current page down';
+    label.title = TYPO3.lang?.['pagetreeFacets.modal.pageScope.description']
+      ?? 'Only includes the page you currently have open and its subpages.';
+
+    wrap.append(checkbox, label);
+    return wrap;
+  }
+
   #renderPanel(tab) {
     const panel = document.createElement('div');
     panel.className = 'pagetree-facets__panel';
@@ -232,14 +456,32 @@ class FacetsModal {
     group.append(legend);
     const state = tab.state?.[field.name];
 
+    if (field.type === 'user-picker') {
+      group.append(this.#renderUserPicker(tab, field, state));
+      return group;
+    }
+
     if (field.type === 'checkbox-group' || field.type === 'radio-presets') {
       const isRadio = field.type === 'radio-presets';
+      // Options live in their own grid wrapper, not the fieldset itself - a
+      // <legend> that is a direct grid item gets extra browser-reserved space
+      // around it (a long-standing cross-browser fieldset/legend quirk),
+      // inflating the gap under the heading well beyond any margin we set.
+      const optionsWrap = document.createElement('div');
+      optionsWrap.className = 'pagetree-facets__options';
       for (const option of field.options ?? []) {
         const label = document.createElement('label');
-        label.className = 'form-check d-flex align-items-center gap-1';
+        // Checkboxes render as TYPO3's own toggle-switch style (form-switch,
+        // the same classes core uses for boolean settings) instead of plain
+        // browser checkboxes. Radios stay plain radios - a switch implies an
+        // independent on/off, which does not fit a mutually-exclusive group.
+        label.className = 'form-check d-flex align-items-center gap-1' + (isRadio ? '' : ' form-switch');
         const input = document.createElement('input');
         input.className = 'form-check-input';
         input.type = isRadio ? 'radio' : 'checkbox';
+        if (!isRadio) {
+          input.setAttribute('role', 'switch');
+        }
         input.name = `${tab.identifier}[${field.name}]`;
         input.value = option.value;
         input.checked = Array.isArray(state) ? state.includes(option.value) : state === option.value;
@@ -250,9 +492,17 @@ class FacetsModal {
           icon.setAttribute('size', 'small');
           label.append(icon);
         }
-        label.append(document.createTextNode(' ' + option.label));
-        group.append(label);
+        const optionLabel = document.createElement('span');
+        optionLabel.className = 'pagetree-facets__option-label';
+        optionLabel.textContent = option.label;
+        label.append(document.createTextNode(' '), optionLabel);
+        if (option.description) {
+          label.title = option.description;
+          label.append(this.#renderOptionHelp(input, option.description));
+        }
+        optionsWrap.append(label);
       }
+      group.append(optionsWrap);
       return group;
     }
 
@@ -277,6 +527,281 @@ class FacetsModal {
     return group;
   }
 
+  // A visually-hidden span wired via aria-describedby on the control itself -
+  // the caller also sets `title` on the enclosing label for a native mouse
+  // tooltip; this covers keyboard/screen-reader users a bare `title` would
+  // miss. No visible icon: it inflated .textContent (leaking the description
+  // into active-filter chips, which read a checkbox's label text) and was
+  // one more thing cluttering the row for a plain hover hint.
+  #renderOptionHelp(input, description) {
+    const descId = `pagetree-facets__option-help-${this.#nextHelpId++}`;
+    input.setAttribute('aria-describedby', descId);
+
+    const hiddenDescription = document.createElement('span');
+    hiddenDescription.id = descId;
+    hiddenDescription.className = 'visually-hidden';
+    hiddenDescription.textContent = description;
+    return hiddenDescription;
+  }
+
+  // Typeahead over be_users, backed by a small debounced AJAX search - one
+  // single mechanism, not a search box plus a separate "Me" toggle (the two
+  // used to show redundant, unstyled "Me"/"Me" text next to each other with
+  // no indication which one was actually selected). "Me" is pinned as the
+  // first suggestion whenever the dropdown opens, using the current user's
+  // own record the server already has in memory (no round trip). The input's
+  // visible value is a display label ("Me (admin)" or a picked user's own
+  // label); the value actually serialized/collected lives in
+  // input.dataset.value (uid or "me") - see the dataset.value fallback in
+  // #collectActiveCriteria/#serializeAndApply.
+  // ARIA "combobox with list autocomplete" pattern (WAI-ARIA APG): the input
+  // keeps real DOM focus at all times, arrow keys move a highlighted
+  // suggestion via aria-activedescendant, Enter selects it. This is not
+  // decoration - the suggestion list is reparented far from the input in the
+  // DOM (see #showUserResults's docblock), so plain Tab-key focus movement
+  // into it is either unreachable or lands wildly out of sequence; letting
+  // the browser's native Tab handling try was a real keyboard trap before
+  // this rewrite (Tab moved focus nowhere useful, and the list would hide
+  // itself out from under a focus that did land inside it).
+  #renderUserPicker(tab, field, state) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pagetree-facets__user-picker';
+
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.type = 'text';
+    input.name = `${tab.identifier}[${field.name}]`;
+    input.autocomplete = 'off';
+    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…';
+    // Marks this control as "dataset.value is the source of truth" - the typed
+    // text is a display-only query until a suggestion is picked, so the
+    // generic collectors must never treat mid-typing text as a criterion.
+    input.dataset.picker = '1';
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+
+    const results = document.createElement('ul');
+    const resultsId = `pagetree-facets__user-results-${this.#nextListId++}`;
+    results.id = resultsId;
+    results.className = 'pagetree-facets__user-results list-unstyled';
+    results.setAttribute('role', 'listbox');
+    results.hidden = true;
+    input.setAttribute('aria-controls', resultsId);
+
+    const meLabel = TYPO3.lang?.['pagetreeFacets.modal.me'] ?? 'Me';
+    const currentUser = field.currentUser?.uid ? field.currentUser : null;
+    const currentUserLabel = currentUser ? `${meLabel} (${currentUser.username})` : meLabel;
+
+    let highlighted = -1;
+    const options = () => Array.from(results.querySelectorAll('[role="option"]'));
+
+    const setHighlighted = (index) => {
+      const items = options();
+      highlighted = items.length ? ((index % items.length) + items.length) % items.length : -1;
+      for (const [i, item] of items.entries()) {
+        const isActive = i === highlighted;
+        item.classList.toggle('is-highlighted', isActive);
+        item.setAttribute('aria-selected', String(isActive));
+        if (isActive) {
+          item.scrollIntoView({ block: 'nearest' });
+        }
+      }
+      if (highlighted > -1) {
+        input.setAttribute('aria-activedescendant', items[highlighted].id);
+      } else {
+        input.removeAttribute('aria-activedescendant');
+      }
+    };
+
+    const selectUser = (value, label) => {
+      input.value = label;
+      input.dataset.value = value;
+      input.dataset.label = label;
+      this.#hideUserResults(input, results);
+      input.focus();
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const renderSuggestions = (users) => {
+      results.replaceChildren();
+      const items = currentUser ? [{ value: 'me', label: currentUserLabel }, ...users] : users;
+      items.forEach((item, index) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.id = `${resultsId}-option-${index}`;
+        button.setAttribute('role', 'option');
+        button.setAttribute('aria-selected', 'false');
+        // Reached via the input's own arrow-key handling, not Tab - a real
+        // tabindex would put it back in the same broken position as before.
+        button.tabIndex = -1;
+        button.className = 'pagetree-facets__user-result';
+        button.textContent = item.label;
+        // Keeps focus on the input for mouse clicks too, so selecting a
+        // suggestion never needs the blur/setTimeout dance to "just work".
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', () => selectUser(String(item.value ?? item.uid), item.label));
+        li.append(button);
+        results.append(li);
+      });
+      highlighted = -1;
+      if (items.length) {
+        this.#showUserResults(input, results);
+      } else {
+        this.#hideUserResults(input, results);
+      }
+    };
+
+    const existingValue = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
+    if ('me' === existingValue && currentUser) {
+      input.value = currentUserLabel;
+      input.dataset.value = 'me';
+      input.dataset.label = currentUserLabel;
+    } else if (existingValue) {
+      input.value = existingValue;
+      input.dataset.value = existingValue;
+      this.#resolveUserLabel(existingValue).then((label) => {
+        if (label && input.dataset.value === existingValue) {
+          input.value = label;
+          input.dataset.label = label;
+          this.#refreshActiveIndicators();
+        }
+      });
+    }
+
+    let debounceTimer = null;
+    // Guards against out-of-order AJAX responses: clearTimeout() only cancels
+    // a debounced search that has not fired yet, not one already in flight.
+    // Typing fast enough that an older request resolves after a newer one
+    // would otherwise let the stale response overwrite the newer, correct
+    // suggestions - each input event bumps the token, and a response is only
+    // applied if it is still the most recent one requested.
+    let searchToken = 0;
+    // Pin "Me" as a suggestion the moment the field gains focus, before any
+    // typing - the common case (filter by my own edits) needs no search at all.
+    input.addEventListener('focus', () => {
+      if (input.value.trim().length < 2) {
+        searchToken += 1;
+        renderSuggestions([]);
+      }
+    });
+
+    input.addEventListener('input', () => {
+      delete input.dataset.value;
+      delete input.dataset.label;
+      window.clearTimeout(debounceTimer);
+      const query = input.value.trim();
+      const token = ++searchToken;
+      if (query.length < 2) {
+        renderSuggestions([]);
+        return;
+      }
+      debounceTimer = window.setTimeout(async () => {
+        const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_users)
+          .withQueryArguments({ q: query })
+          .get();
+        const { users } = await response.resolve();
+        if (token !== searchToken) {
+          return; // a newer query has started since - this response is stale
+        }
+        renderSuggestions(users);
+      }, 300);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if ('ArrowDown' === event.key) {
+        event.preventDefault();
+        if (results.hidden) {
+          if (results.children.length) {
+            this.#showUserResults(input, results);
+          } else {
+            renderSuggestions([]);
+          }
+        }
+        setHighlighted(highlighted + 1);
+      } else if ('ArrowUp' === event.key && !results.hidden) {
+        event.preventDefault();
+        setHighlighted(highlighted - 1);
+      } else if ('Enter' === event.key && !results.hidden && highlighted > -1) {
+        event.preventDefault();
+        // Also stops this Enter from reaching the modal-wide "Enter applies
+        // and closes" handler (bound higher up on .pagetree-facets) - picking
+        // a suggestion should not also apply/close the whole modal.
+        event.stopPropagation();
+        options()[highlighted].click();
+      } else if ('Escape' === event.key && !results.hidden) {
+        event.preventDefault();
+        this.#hideUserResults(input, results);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      // Delayed so a mouse click outside the input (that isn't one of our
+      // own suggestion buttons, which prevent this via mousedown above) still
+      // gets a chance to register before the list disappears.
+      window.setTimeout(() => this.#hideUserResults(input, results), 150);
+    });
+
+    wrap.append(input, results);
+    return wrap;
+  }
+
+  // The dropdown lives inside .pagetree-facets__panels, which scrolls its own
+  // content - an absolutely positioned child gets clipped by that overflow
+  // once the input sits near the bottom of the visible area. Reparenting it to
+  // the modal root and positioning it `absolute` against that same root
+  // (coordinates relative to its own bounding box, not the viewport) escapes
+  // that clipping entirely. Deliberately not `fixed`: the modal dialog may
+  // itself establish a containing block (e.g. a transform-based open
+  // animation), which would silently reinterpret viewport coordinates against
+  // the dialog's box instead - .pagetree-facets never clips its own children,
+  // so `absolute` against it is the safer bet.
+  #showUserResults(input, results) {
+    if (this.#root && results.parentElement !== this.#root) {
+      this.#root.append(results);
+    }
+    const rootRect = this.#root.getBoundingClientRect();
+    const inputRect = input.getBoundingClientRect();
+    results.style.position = 'absolute';
+    results.style.left = `${inputRect.left - rootRect.left}px`;
+    results.style.top = `${inputRect.bottom - rootRect.top + 4}px`;
+    results.style.width = `${inputRect.width}px`;
+    results.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    if (!results.dataset.scrollBound) {
+      results.dataset.scrollBound = '1';
+      // Scroll events on inner scrollable containers do not bubble - a capture
+      // listener still sees them on the way down, regardless of which
+      // ancestor scrolled.
+      results.__hideOnScroll = () => this.#hideUserResults(input, results);
+      document.addEventListener('scroll', results.__hideOnScroll, true);
+    }
+  }
+
+  #hideUserResults(input, results) {
+    results.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+    if (results.__hideOnScroll) {
+      document.removeEventListener('scroll', results.__hideOnScroll, true);
+      delete results.__hideOnScroll;
+      delete results.dataset.scrollBound;
+    }
+  }
+
+  async #resolveUserLabel(uid) {
+    try {
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_users)
+        .withQueryArguments({ uid })
+        .get();
+      const { users } = await response.resolve();
+      return users[0]?.label ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   #renderFooter() {
     const footer = document.createElement('div');
     footer.className = 'pagetree-facets__favorites';
@@ -294,6 +819,13 @@ class FacetsModal {
 
   #switchTab(identifier) {
     this.#activeTab = identifier;
+    // Picking a tab directly always exits search mode - otherwise the results
+    // list and the newly-shown panel would be visible at the same time.
+    const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');
+    if (filterSearch) {
+      filterSearch.value = '';
+    }
+    this.#resultsPanel.hidden = true;
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
       el.classList.toggle('active', el.dataset.tab === identifier);
     });
@@ -331,6 +863,8 @@ class FacetsModal {
         input.checked = false;
       } else {
         input.value = '';
+        delete input.dataset.value;
+        delete input.dataset.label;
       }
     });
     const freetext = this.#modal.querySelector('[data-role="freetext"]');
@@ -340,6 +874,10 @@ class FacetsModal {
     const site = this.#modal.querySelector('[data-role="site-scope"]');
     if (site) {
       site.value = '';
+    }
+    const pageScope = this.#modal.querySelector('[data-role="page-scope"]');
+    if (pageScope) {
+      pageScope.checked = false;
     }
     this.#refreshActiveIndicators();
   }
@@ -373,16 +911,31 @@ class FacetsModal {
             }
           } else if (input.type === 'checkbox' || input.type === 'radio') {
             if (input.checked) {
-              const label = input.closest('label')?.textContent.trim() || input.value;
+              // Scoped to the dedicated label span, not the whole <label>'s
+              // textContent - that would also pick up the visually-hidden
+              // option-description span (see #renderOptionHelp).
+              const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
               criteria.push(this.#criterion(tab, label, () => { input.checked = false; }));
             }
-          } else if (input.value.trim() !== '') {
-            criteria.push(this.#criterion(tab, input.value.trim(), () => { input.value = ''; }));
+          } else if (this.#effectiveValue(input).trim() !== '') {
+            const label = input.dataset.label || input.value.trim();
+            criteria.push(this.#criterion(tab, label, () => {
+              input.value = '';
+              delete input.dataset.value;
+              delete input.dataset.label;
+            }));
           }
         }
       }
     }
     return criteria;
+  }
+
+  // For dataset.picker controls (currently: user-picker), the visible .value is
+  // a display label / in-progress query, not the wire value - dataset.value is
+  // the source of truth (absent/empty = no selection yet).
+  #effectiveValue(input) {
+    return undefined !== input.dataset.picker ? (input.dataset.value ?? '') : input.value;
   }
 
   #criterion(tab, valueLabel, remove) {
@@ -409,6 +962,13 @@ class FacetsModal {
   }
 
   async #serializeAndApply() {
+    this.#apply(await this.#computePhrase());
+  }
+
+  // Same serialization Apply uses, factored out so "copy link" can share it -
+  // both need the canonical phrase for whatever is currently configured in
+  // the modal, not just what has already been applied to the tree.
+  async #computePhrase() {
     const states = {};
     for (const tab of this.#configuration.tabs) {
       const state = {};
@@ -418,8 +978,12 @@ class FacetsModal {
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
             values.push(...Array.from(input.selectedOptions).map((o) => o.value));
-          } else if ((input.type === 'checkbox' || input.type === 'radio') ? input.checked : input.value !== '') {
-            values.push(input.value);
+          } else if (input.type === 'checkbox' || input.type === 'radio') {
+            if (input.checked) {
+              values.push(input.value);
+            }
+          } else if (this.#effectiveValue(input) !== '') {
+            values.push(this.#effectiveValue(input));
           }
         }
         if (values.length) {
@@ -432,10 +996,37 @@ class FacetsModal {
     }
     const site = this.#modal.querySelector('[data-role="site-scope"]')?.value ?? '';
     const freetext = this.#modal.querySelector('[data-role="freetext"]')?.value ?? '';
+    // Always the page open right now, not whatever page a previously-hydrated
+    // "under:" token pointed at - re-checking the box always means "here",
+    // same mental model as ticking it fresh.
+    const pageScopeCheckbox = this.#modal.querySelector('[data-role="page-scope"]');
+    const pageScope = pageScopeCheckbox?.checked ? this.#currentPageId : 0;
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_serialize)
-      .post({ states, site, freetext });
+      .post({ states, site, pageScope, freetext });
     const { phrase } = await response.resolve();
-    this.#apply(phrase);
+    return phrase;
+  }
+
+  // Copies the current URL (module, page id, ...) with the filter phrase
+  // attached as a query param, so opening the link reproduces this exact
+  // view - not just the filter in isolation. facets-toolbar.js reads the same
+  // param back out on load and applies it to the tree.
+  async #copyLink() {
+    const phrase = await this.#computePhrase();
+    const url = new URL(window.location.href);
+    url.searchParams.set('pagetreeFacetsFilter', phrase);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      Notification.success(
+        TYPO3.lang?.['pagetreeFacets.modal.linkCopied.title'] ?? 'Link copied',
+        TYPO3.lang?.['pagetreeFacets.modal.linkCopied.message'] ?? 'The filter link was copied to your clipboard.',
+      );
+    } catch {
+      Notification.error(
+        TYPO3.lang?.['pagetreeFacets.modal.linkCopyFailed.title'] ?? 'Copy failed',
+        TYPO3.lang?.['pagetreeFacets.modal.linkCopyFailed.message'] ?? 'Could not copy the link to your clipboard.',
+      );
+    }
   }
 
   #apply(phrase) {
