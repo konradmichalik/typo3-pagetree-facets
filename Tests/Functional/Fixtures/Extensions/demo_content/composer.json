@@ -1,0 +1,22 @@
+{
+	"name": "konradmichalik/pagetree-facets-demo-content",
+	"description": "Local-only console command that seeds a richer page tree (varied doktypes, page states, content elements, a translation, SEO flags) for testing pagetree_facets in the DDEV instance.",
+	"license": [
+		"GPL-2.0-or-later"
+	],
+	"type": "typo3-cms-extension",
+	"require": {
+		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
+		"typo3/cms-core": "^14.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"KonradMichalik\\PagetreeFacetsDemoContent\\": "Classes/"
+		}
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "demo_content"
+		}
+	}
+}
