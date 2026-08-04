@@ -36,6 +36,18 @@ final class TokenSerializerTest extends TestCase
     }
 
     #[Test]
+    public function quotesAKeyedValueContainingWhitespace(): void
+    {
+        $parser = new TokenParser();
+        $serializer = new TokenSerializer();
+
+        self::assertSame(
+            'text:"annual report"',
+            $serializer->serialize($parser->parse('text:"annual report"')),
+        );
+    }
+
+    #[Test]
     public function roundTripsCanonicalPhrase(): void
     {
         $parser = new TokenParser();
