@@ -50,7 +50,7 @@ final class FacetsModalControllerTest extends FunctionalTestCase
 
         // EXT:seo is not loaded -> the seo tab must NOT be registered.
         self::assertSame(
-            ['records', 'ce', 'activity', 'doktype', 'state', 'translations'],
+            ['ce', 'records', 'activity', 'doktype', 'state', 'translations'],
             array_column($payload['tabs'], 'identifier'),
         );
     }

@@ -111,7 +111,15 @@ final class TranslationsTab extends AbstractPagesQueryTab
 
         return [
             'fields' => [
-                ['type' => 'checkbox-group', 'name' => 'untranslated', 'label' => $this->getLabel(), 'options' => $options],
+                [
+                    'type' => 'checkbox-group',
+                    'name' => 'untranslated',
+                    // Not the tab label: the legend has to say which direction
+                    // the filter runs, otherwise a bare language list reads as
+                    // "pages that have this language".
+                    'label' => 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:translations.untranslated',
+                    'options' => $options,
+                ],
             ],
         ];
     }

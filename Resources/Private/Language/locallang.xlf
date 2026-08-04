@@ -33,7 +33,8 @@
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
 			<trans-unit id="tab.doktype"><source>Page type</source></trans-unit>
 			<trans-unit id="tab.state"><source>Page state</source></trans-unit>
-			<trans-unit id="tab.translations"><source>Translations</source></trans-unit>
+			<trans-unit id="tab.translations"><source>Missing translations</source></trans-unit>
+			<trans-unit id="translations.untranslated"><source>Translation missing in</source></trans-unit>
 			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
 			<trans-unit id="records.table"><source>Pages containing records of table</source></trans-unit>
 			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>

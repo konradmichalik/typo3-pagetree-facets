@@ -20,7 +20,7 @@ use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
  *
  * PSR-14 event: register filter tabs (built-in and third-party alike).
  *
- * Priority convention: built-ins occupy 100..40 (records 100, ce 90,
+ * Priority convention: built-ins occupy 100..40 (ce 100, records 90,
  * activity 80, doktype 70, state 60, translations 50, seo 40). Third-party
  * tabs default to 0 but may position themselves deliberately.
  *

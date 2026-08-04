@@ -31,8 +31,8 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 final readonly class BuiltInTabsListener
 {
     public function __construct(
-        private RecordsTab $recordsTab,
         private ContentElementTab $contentElementTab,
+        private RecordsTab $recordsTab,
         private ActivityTab $activityTab,
         private DoktypeTab $doktypeTab,
         private PageStateTab $pageStateTab,
@@ -42,8 +42,8 @@ final readonly class BuiltInTabsListener
 
     public function __invoke(RegisterFilterTabsEvent $event): void
     {
-        $event->addTab($this->recordsTab, 100);
-        $event->addTab($this->contentElementTab, 90);
+        $event->addTab($this->contentElementTab, 100);
+        $event->addTab($this->recordsTab, 90);
         $event->addTab($this->activityTab, 80);
         $event->addTab($this->doktypeTab, 70);
         $event->addTab($this->pageStateTab, 60);
