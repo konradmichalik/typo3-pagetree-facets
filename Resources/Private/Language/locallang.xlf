@@ -9,6 +9,14 @@
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.favorites"><source>Favorites</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.removeFavorite"><source>Remove favorite</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.saveFavorite"><source>Save current filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.saveFavorite.placeholder"><source>Name this filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.saveFavorite.save"><source>Save</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.saveFavorite.cancel"><source>Cancel</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.favoriteSaved.title"><source>Favorite saved</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.favoriteSaved.message"><source>The current filter was saved to your favorites.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clear"><source>Clear</source></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.text"><source>No pages match the current filter.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.reset"><source>Reset filter</source></trans-unit>

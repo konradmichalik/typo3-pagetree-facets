@@ -32,6 +32,12 @@ class FacetsModal {
   #nextHelpId = 0;
   #nextListId = 0;
   #currentPageId = null;
+  #favoritesList = null;
+  // Client-side pseudo-tab: favorites are not a filter criterion (no token
+  // keys), so they never come from the server tab list - the modal owns this
+  // identifier and renders the nav item and panel for it itself.
+  #favoritesTabId = '__favorites';
+  #favoritesNavItem = null;
 
   async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
@@ -93,7 +99,7 @@ class FacetsModal {
   #render() {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
-    wrap.append(this.#renderHeader(), this.#renderBody(), this.#renderFooter());
+    wrap.append(this.#renderHeader(), this.#renderBody());
     // One listener for the whole content: the body-level ones never see the
     // header controls (freetext, site scope, page scope), which change the
     // filter just as much.
@@ -155,14 +161,19 @@ class FacetsModal {
     reset.append(resetIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
     reset.addEventListener('click', () => this.#resetAll());
 
-    // Sharing or resetting an empty filter is meaningless, so the actions only
-    // appear once something is active (see #refreshActiveIndicators).
+    // "Save current filter" sits alongside "Copy link" - both export the phrase
+    // currently configured. The toggle reveals an inline name form (below), so
+    // the actions row itself stays a single tidy line of links.
+    const { toggle: saveToggle, form: saveForm } = this.#buildSaveFavorite();
+
+    // Sharing, saving or resetting an empty filter is meaningless, so the actions
+    // only appear once something is active (see #refreshActiveIndicators).
     this.#actions = document.createElement('div');
     this.#actions.className = 'pagetree-facets__actions';
     this.#actions.hidden = true;
-    this.#actions.append(copyLink, reset);
+    this.#actions.append(copyLink, saveToggle, reset);
     this.#utility.append(this.#actions);
-    header.append(this.#utility);
+    header.append(this.#utility, saveForm);
 
     // Active-filter row: the removable chips mirroring the current tab criteria.
     this.#active = document.createElement('div');
@@ -197,6 +208,10 @@ class FacetsModal {
     nav.append(this.#renderFilterSearch());
     const list = document.createElement('ul');
     list.className = 'list-unstyled';
+
+    // Favorites lead the navigation, above every filter group - quick access to
+    // saved filters is the first thing an editor reaches for.
+    list.append(this.#renderFavoritesNavItem());
 
     // Tabs arrive priority-ordered, so their groups interleave (content, state,
     // content, ...). Bucket them by group first, keeping first-seen order, so
@@ -266,6 +281,7 @@ class FacetsModal {
   #renderPanels() {
     const panels = document.createElement('div');
     panels.className = 'col-9 pagetree-facets__panels';
+    panels.append(this.#renderFavoritesPanel());
     for (const tab of this.#configuration.tabs) {
       panels.append(this.#renderPanel(tab));
     }
@@ -940,19 +956,192 @@ class FacetsModal {
     }
   }
 
-  #renderFooter() {
-    const footer = document.createElement('div');
-    footer.className = 'pagetree-facets__favorites';
-    for (const [index, favorite] of (this.#configuration.favorites ?? []).entries()) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'btn btn-sm btn-default me-1';
-      chip.textContent = favorite.label;
-      chip.title = favorite.tokenString;
-      chip.addEventListener('click', () => this.#apply(favorite.tokenString));
-      footer.append(chip);
+  // Personal favorites: saved filter phrases, surfaced as a first-class tab at
+  // the top of the navigation. The panel lists them (apply on click, × to
+  // remove); creating one lives in the header next to "Copy link". All three
+  // round-trip through the AJAX endpoints, updating the in-memory list in place.
+  #renderFavoritesNavItem() {
+    const item = document.createElement('li');
+    // No favorites yet -> the whole tab is hidden. It reveals itself the moment
+    // the first one is saved and hides again when the last is removed
+    // (see #updateFavoritesVisibility). The header's "Save current filter" is the
+    // entry point in the meantime, so nothing becomes unreachable.
+    item.hidden = 0 === (this.#configuration.favorites ?? []).length;
+    this.#favoritesNavItem = item;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'pagetree-facets__nav-item'
+      + (this.#favoritesTabId === this.#activeTab ? ' active' : '');
+    button.dataset.tab = this.#favoritesTabId;
+    const text = document.createElement('span');
+    text.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
+    button.append(text);
+    button.addEventListener('click', () => this.#switchTab(this.#favoritesTabId));
+    item.append(button);
+    return item;
+  }
+
+  #renderFavoritesPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'pagetree-facets__panel pagetree-facets__panel--favorites';
+    panel.dataset.panel = this.#favoritesTabId;
+    panel.hidden = this.#favoritesTabId !== this.#activeTab;
+    this.#favoritesList = document.createElement('div');
+    this.#favoritesList.className = 'pagetree-facets__favorites-list';
+    panel.append(this.#favoritesList);
+    this.#renderFavoriteChips();
+    return panel;
+  }
+
+  #renderFavoriteChips() {
+    const removeLabel = TYPO3.lang?.['pagetreeFacets.modal.removeFavorite'] ?? 'Remove favorite';
+    this.#favoritesList.replaceChildren(...(this.#configuration.favorites ?? []).map((favorite, index) => {
+      const row = document.createElement('div');
+      row.className = 'pagetree-facets__favorite';
+
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.className = 'pagetree-facets__favorite-apply';
+      apply.title = favorite.tokenString;
+      const label = document.createElement('span');
+      label.className = 'pagetree-facets__favorite-label';
+      label.textContent = favorite.label;
+      const phrase = document.createElement('code');
+      phrase.className = 'pagetree-facets__favorite-phrase';
+      phrase.textContent = favorite.tokenString;
+      apply.append(label, phrase);
+      apply.addEventListener('click', () => this.#apply(favorite.tokenString));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'pagetree-facets__favorite-remove';
+      remove.textContent = '×';
+      remove.title = removeLabel;
+      remove.setAttribute('aria-label', `${favorite.label} – ${removeLabel}`);
+      remove.addEventListener('click', () => this.#removeFavorite(index));
+
+      row.append(apply, remove);
+      return row;
+    }));
+  }
+
+  // Show the favorites tab only while there is at least one favorite. When the
+  // last one is removed while the tab is open, fall back to the first usable
+  // filter tab so the panel does not linger empty.
+  #updateFavoritesVisibility() {
+    const hasFavorites = (this.#configuration.favorites ?? []).length > 0;
+    if (this.#favoritesNavItem) {
+      this.#favoritesNavItem.hidden = !hasFavorites;
     }
-    return footer;
+    if (!hasFavorites && this.#favoritesTabId === this.#activeTab) {
+      const fallback = this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0];
+      if (fallback) {
+        this.#switchTab(fallback.identifier);
+      }
+    }
+  }
+
+  // A toggle that reveals an inline "name + save" form rather than a native
+  // prompt(), matching the modal's own control style. Returns both parts: the
+  // toggle joins the header actions row, the form is a separate header line that
+  // only unfolds on demand. The label is optional - the server falls back to the
+  // phrase itself when it is left empty.
+  #buildSaveFavorite() {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'pagetree-facets__favorite-add btn btn-sm btn-link d-inline-flex align-items-center gap-1';
+    const icon = document.createElement('typo3-backend-icon');
+    icon.setAttribute('identifier', 'actions-star');
+    icon.setAttribute('size', 'small');
+    toggle.append(icon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
+
+    const form = document.createElement('div');
+    form.className = 'pagetree-facets__favorite-form';
+    form.hidden = true;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control form-control-sm';
+    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.placeholder'] ?? 'Name this filter';
+    input.setAttribute('aria-label', TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.placeholder'] ?? 'Name this filter');
+
+    const save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'btn btn-sm btn-primary';
+    save.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.save'] ?? 'Save';
+
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn btn-sm btn-default';
+    cancel.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.cancel'] ?? 'Cancel';
+
+    const closeForm = () => {
+      form.hidden = true;
+      toggle.hidden = false;
+      input.value = '';
+    };
+    toggle.addEventListener('click', () => {
+      toggle.hidden = true;
+      form.hidden = false;
+      input.focus();
+    });
+    cancel.addEventListener('click', closeForm);
+    save.addEventListener('click', () => {
+      this.#saveFavorite(input.value);
+      closeForm();
+    });
+    input.addEventListener('keydown', (event) => {
+      if ('Enter' === event.key) {
+        // Stop the modal-wide "Enter applies and closes" handler from firing too.
+        event.preventDefault();
+        event.stopPropagation();
+        this.#saveFavorite(input.value);
+        closeForm();
+      } else if ('Escape' === event.key) {
+        event.preventDefault();
+        closeForm();
+      }
+    });
+
+    form.append(input, save, cancel);
+    return { toggle, form };
+  }
+
+  async #saveFavorite(label) {
+    const tokenString = await this.#computePhrase();
+    if ('' === tokenString.trim()) {
+      return; // nothing configured to save - the action is hidden in this case anyway
+    }
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_favorite_add)
+      .post({ label: label.trim(), tokenString });
+    this.#configuration.favorites = (await response.resolve()).favorites;
+    this.#renderFavoriteChips();
+    this.#updateFavoritesVisibility();
+    Notification.success(
+      TYPO3.lang?.['pagetreeFacets.modal.favoriteSaved.title'] ?? 'Favorite saved',
+      TYPO3.lang?.['pagetreeFacets.modal.favoriteSaved.message'] ?? 'The current filter was saved to your favorites.',
+    );
+  }
+
+  async #removeFavorite(index) {
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_favorite_remove)
+      .post({ index });
+    this.#configuration.favorites = (await response.resolve()).favorites;
+    this.#renderFavoriteChips();
+    this.#updateFavoritesVisibility();
+  }
+
+  // Is there anything worth saving as a favorite? Mirrors what #collectFormState
+  // feeds the serialize endpoint, so freetext and the two scopes count too, not
+  // just tab criteria.
+  #hasSavableFilter() {
+    const state = this.#collectFormState();
+
+    return Object.keys(state.states).length > 0
+      || '' !== state.site
+      || state.pageScope > 0
+      || '' !== state.freetext.trim();
   }
 
   #switchTab(identifier) {
@@ -981,7 +1170,10 @@ class FacetsModal {
     const criteria = this.#collectActiveCriteria();
     this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
     this.#active.hidden = criteria.length === 0;
-    this.#actions.hidden = criteria.length === 0;
+    // The actions (Copy link / Save current filter / Reset) act on the whole
+    // phrase, so they follow whether anything is savable - freetext or a scope
+    // alone counts, not just tab-criteria chips.
+    this.#actions.hidden = !this.#hasSavableFilter();
     // Without a page scope checkbox the utility row would be an empty flex item
     // that still costs the header's row gap, so collapse it with the actions.
     this.#utility.hidden = this.#actions.hidden && !this.#currentPageId;
@@ -994,6 +1186,10 @@ class FacetsModal {
       counts.set(criterion.tab, (counts.get(criterion.tab) ?? 0) + 1);
     }
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
+      // The favorites tab is not a filter criterion, so it never carries a count.
+      if (item.dataset.tab === this.#favoritesTabId) {
+        return;
+      }
       this.#setNavCount(item, counts.get(item.dataset.tab) ?? 0);
     });
   }
@@ -1047,12 +1243,18 @@ class FacetsModal {
   #collectActiveCriteria() {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
-      for (const field of this.#distinctFields(tab)) {
+      const fields = this.#distinctFields(tab);
+      // Prefix the chip with the field label only when a tab exposes several
+      // fields (e.g. Activity: "Last updated" vs "Created"), otherwise the tab
+      // label reads cleaner and a single field would just repeat itself.
+      const multi = fields.length > 1;
+      for (const field of fields) {
+        const prefix = multi ? field.label : tab.label;
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
             for (const option of input.selectedOptions) {
-              criteria.push(this.#criterion(tab, option.textContent.trim() || option.value, () => { option.selected = false; }));
+              criteria.push(this.#criterion(prefix, tab, option.textContent.trim() || option.value, () => { option.selected = false; }));
             }
           } else if (input.type === 'checkbox' || input.type === 'radio') {
             if (input.checked) {
@@ -1060,11 +1262,11 @@ class FacetsModal {
               // textContent - that would also pick up the visually-hidden
               // option-description span (see #renderOptionHelp).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
-              criteria.push(this.#criterion(tab, label, () => { input.checked = false; }));
+              criteria.push(this.#criterion(prefix, tab, label, () => { input.checked = false; }));
             }
           } else if (this.#effectiveValue(input).trim() !== '') {
             const label = input.dataset.label || input.value.trim();
-            criteria.push(this.#criterion(tab, label, () => {
+            criteria.push(this.#criterion(prefix, tab, label, () => {
               input.value = '';
               delete input.dataset.value;
               delete input.dataset.label;
@@ -1105,8 +1307,8 @@ class FacetsModal {
     return undefined !== input.dataset.picker ? (input.dataset.value ?? '') : input.value;
   }
 
-  #criterion(tab, valueLabel, remove) {
-    return { tab: tab.identifier, label: `${tab.label}: ${valueLabel}`, remove };
+  #criterion(prefix, tab, valueLabel, remove) {
+    return { tab: tab.identifier, label: `${prefix}: ${valueLabel}`, remove };
   }
 
   #renderChip(criterion) {
