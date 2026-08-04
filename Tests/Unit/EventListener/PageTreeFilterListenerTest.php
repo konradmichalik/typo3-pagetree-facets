@@ -154,6 +154,19 @@ final class PageTreeFilterListenerTest extends TestCase
     }
 
     #[Test]
+    public function pageScopeTokenIsParsedButNeverAppliedToAnAlreadyEmptyResult(): void
+    {
+        // PageSubtreeScopeService touches the database (BEgetRootLine()), so
+        // this deliberately stays a pure unit test: forcing the intersection
+        // empty beforehand (via an unmatched freetext) proves "under:" is
+        // parsed without ever reaching that DB-bound call.
+        $event = $this->createEvent('doktype:1 under:5 nirvana');
+        $this->createListener()($event);
+
+        self::assertSame([0], $event->searchUids);
+    }
+
+    #[Test]
     public function userTsConfigDisableIsRespected(): void
     {
         $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
