@@ -21,7 +21,8 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
  * Context passed to every tab when resolving page UIDs.
  *
  * Deliberately carries no hard "pages" assumption in its name or shape -
- * a possible future tree scope (see docs/ROADMAP.md) would extend this.
+ * this is what allowed the "under:<uid>" page-scope filter to be added later
+ * as a pure post-filter step in PageTreeFilterListener, with no changes here.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
