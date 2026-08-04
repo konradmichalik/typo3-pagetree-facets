@@ -1,5 +1,5 @@
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -11,11 +11,12 @@
 /* Self-contained, theme-aware palette. We do NOT derive colours from the
  * backend --bs-* variables here: inside the modal they do not reliably carry
  * the active dark-scheme values, which made headings render black and chips
- * too dark. Light values are the default; the dark override follows TYPO3's
- * [data-color-scheme="dark"] signal, which the backend sets to the effective
- * theme (it resolves the OS preference into that attribute in auto mode). We
- * deliberately avoid @media (prefers-color-scheme): it would disagree with a
- * backend manually pinned to light on a dark OS. */
+ * too dark. Light values are the default. Dark is applied via TWO signals,
+ * because the backend uses both: @media (prefers-color-scheme) when the theme
+ * is set to "auto" (no data-color-scheme attribute is emitted then), and the
+ * [data-color-scheme] attribute when a theme is picked explicitly. The explicit
+ * attribute has higher specificity, so it correctly overrides the OS media
+ * query for e.g. a light backend on a dark OS. */
 .pagetree-facets {
     --pl-text: #1e1e1e;
     --pl-muted: #737373;
@@ -34,6 +35,26 @@
      * positioned absolute against this element's own box once reparented
      * here, not against the viewport. */
     position: relative;
+}
+
+/* Auto mode: the backend follows the OS via this media query. */
+@media (prefers-color-scheme: dark) {
+    .pagetree-facets {
+        --pl-text: #e0e0e0;
+        --pl-muted: #9b9b9b;
+        --pl-border: rgba(255, 255, 255, 0.10);
+        --pl-hover: rgba(255, 255, 255, 0.07);
+        --pl-active: rgba(48, 133, 214, 0.30);
+    }
+}
+
+/* Explicit theme wins over the OS preference above (higher specificity). */
+[data-color-scheme="light"] .pagetree-facets {
+    --pl-text: #1e1e1e;
+    --pl-muted: #737373;
+    --pl-border: rgba(0, 0, 0, 0.08);
+    --pl-hover: rgba(0, 0, 0, 0.05);
+    --pl-active: rgba(48, 133, 214, 0.12);
 }
 
 [data-color-scheme="dark"] .pagetree-facets {
@@ -156,6 +177,17 @@
 }
 
 .pagetree-facets__page-scope {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Undo Bootstrap's .form-check float layout so the gap controls the spacing
+     * between the checkbox and its label instead of a fixed indent. */
+    padding-left: 0;
+}
+
+.pagetree-facets__page-scope .form-check-input {
+    float: none;
     margin: 0;
 }
 
@@ -576,7 +608,9 @@
 
 .pagetree-facets-toggle {
     position: relative;
-    color: var(--bs-secondary-color, #8a8a8a);
+    /* No colour override: inherit the themed .btn-borderless icon colour like
+     * the adjacent core toolbar buttons, so the icon stays legible in dark mode
+     * (an explicit --bs-secondary-color here resolved to the light-theme value). */
 }
 
 .pagetree-facets-toggle .badge {
