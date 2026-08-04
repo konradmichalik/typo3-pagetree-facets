@@ -47,7 +47,6 @@ final class PageTreeFilterListenerTest extends TestCase
     protected function tearDown(): void
     {
         unset($GLOBALS['BE_USER']);
-        parent::tearDown();
     }
 
     #[Test]

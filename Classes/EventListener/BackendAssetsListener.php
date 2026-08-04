@@ -32,11 +32,11 @@ use TYPO3\CMS\Core\Page\PageRenderer;
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(identifier: 'pagetree-facets/backend-assets')]
-final class BackendAssetsListener
+final readonly class BackendAssetsListener
 {
     public function __construct(
-        private readonly PageRenderer $pageRenderer,
-        private readonly TabRegistry $tabRegistry,
+        private PageRenderer $pageRenderer,
+        private TabRegistry $tabRegistry,
     ) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void

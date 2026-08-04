@@ -28,16 +28,16 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(identifier: 'pagetree-facets/built-in-tabs')]
-final class BuiltInTabsListener
+final readonly class BuiltInTabsListener
 {
     public function __construct(
-        private readonly RecordsTab $recordsTab,
-        private readonly ContentElementTab $contentElementTab,
-        private readonly ActivityTab $activityTab,
-        private readonly DoktypeTab $doktypeTab,
-        private readonly PageStateTab $pageStateTab,
-        private readonly TranslationsTab $translationsTab,
-        private readonly SeoTab $seoTab,
+        private RecordsTab $recordsTab,
+        private ContentElementTab $contentElementTab,
+        private ActivityTab $activityTab,
+        private DoktypeTab $doktypeTab,
+        private PageStateTab $pageStateTab,
+        private TranslationsTab $translationsTab,
+        private SeoTab $seoTab,
     ) {}
 
     public function __invoke(RegisterFilterTabsEvent $event): void

@@ -24,16 +24,16 @@ use KonradMichalik\PagetreeFacets\Token\Token;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class StubFilterTab implements FilterTabInterface
+final readonly class StubFilterTab implements FilterTabInterface
 {
     /**
      * @param list<non-empty-string>   $tokenKeys
      * @param array<string, list<int>> $uidMap
      */
     public function __construct(
-        private readonly string $identifier,
-        private readonly array $tokenKeys,
-        private readonly array $uidMap = [],
+        private string $identifier,
+        private array $tokenKeys,
+        private array $uidMap = [],
     ) {}
 
     public function getIdentifier(): string

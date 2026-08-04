@@ -43,7 +43,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
     identifier: 'pagetree-facets/filter',
     after: 'page-tree-wildcard-alias-filter',
 )]
-final class PageTreeFilterListener
+final readonly class PageTreeFilterListener
 {
     /**
      * Impossible page UID used to force an empty result set when the
@@ -52,11 +52,11 @@ final class PageTreeFilterListener
     private const int NO_MATCH_UID = 0;
 
     public function __construct(
-        private readonly TokenParser $tokenParser,
-        private readonly TabRegistry $tabRegistry,
-        private readonly SiteScopeService $siteScopeService,
-        private readonly PageSubtreeScopeService $pageSubtreeScopeService,
-        private readonly ContentQueryHelper $queryHelper,
+        private TokenParser $tokenParser,
+        private TabRegistry $tabRegistry,
+        private SiteScopeService $siteScopeService,
+        private PageSubtreeScopeService $pageSubtreeScopeService,
+        private ContentQueryHelper $queryHelper,
     ) {}
 
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void

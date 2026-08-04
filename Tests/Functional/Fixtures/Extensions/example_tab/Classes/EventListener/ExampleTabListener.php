@@ -32,10 +32,10 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(identifier: 'pagetree-facets-example-tab/register')]
-final class ExampleTabListener
+final readonly class ExampleTabListener
 {
     public function __construct(
-        private readonly ExampleTab $exampleTab,
+        private ExampleTab $exampleTab,
     ) {}
 
     public function __invoke(RegisterFilterTabsEvent $event): void

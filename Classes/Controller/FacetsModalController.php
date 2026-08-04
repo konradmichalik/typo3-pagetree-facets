@@ -35,15 +35,15 @@ use function sprintf;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class FacetsModalController
+final readonly class FacetsModalController
 {
     public function __construct(
-        private readonly TabRegistry $tabRegistry,
-        private readonly TokenParser $tokenParser,
-        private readonly TokenSerializer $tokenSerializer,
-        private readonly FavoriteService $favoriteService,
-        private readonly SiteFinder $siteFinder,
-        private readonly ConnectionPool $connectionPool,
+        private TabRegistry $tabRegistry,
+        private TokenParser $tokenParser,
+        private TokenSerializer $tokenSerializer,
+        private FavoriteService $favoriteService,
+        private SiteFinder $siteFinder,
+        private ConnectionPool $connectionPool,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse

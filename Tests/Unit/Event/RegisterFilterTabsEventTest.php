@@ -48,8 +48,8 @@ final class RegisterFilterTabsEventTest extends TestCase
 
     private function createTab(string $identifier): FilterTabInterface
     {
-        return new class($identifier) implements FilterTabInterface {
-            public function __construct(private readonly string $identifier) {}
+        return new readonly class($identifier) implements FilterTabInterface {
+            public function __construct(private string $identifier) {}
 
             public function getIdentifier(): string
             {

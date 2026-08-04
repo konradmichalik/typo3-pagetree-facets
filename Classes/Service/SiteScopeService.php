@@ -25,10 +25,10 @@ use TYPO3\CMS\Core\Site\SiteFinder;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class SiteScopeService
+final readonly class SiteScopeService
 {
     public function __construct(
-        private readonly SiteFinder $siteFinder,
+        private SiteFinder $siteFinder,
     ) {}
 
     /**
