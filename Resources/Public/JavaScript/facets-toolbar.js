@@ -34,10 +34,13 @@ class FacetsToolbar {
 
   #initialize() {
     // Official hotkeys API (shows up in the backend help cheatsheet).
-    // Cmd/Ctrl+Shift+F - Cmd+K is taken by the live search, Cmd+F by the
-    // browser. Verify against v14 defaults during the manual DDEV smoke test.
+    // Cmd/Ctrl+Shift+L: the core only claims Cmd+S, Cmd+Shift+S and Cmd+K, so
+    // the constraint is the browser, not TYPO3. Cmd+F is the browser's find,
+    // Cmd+Shift+F toggles fullscreen in Chrome, and Cmd+Shift+K opens the web
+    // console - none of which a page can preventDefault, since the browser
+    // handles them before the event reaches us.
     Hotkeys.register(
-      [Hotkeys.normalizedCtrlModifierKey, 'shift', 'f'],
+      [Hotkeys.normalizedCtrlModifierKey, 'shift', 'l'],
       () => this.#openModal(),
       { scope: 'all', allowOnEditables: true },
     );
@@ -105,7 +108,7 @@ class FacetsToolbar {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-sm btn-icon btn-default btn-borderless pagetree-facets-toggle';
-    button.title = 'Filter page tree (Ctrl/Cmd+Shift+F)';
+    button.title = `${TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree'} (Ctrl/Cmd+Shift+L)`;
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-filter');
     icon.setAttribute('size', 'small');

@@ -14,7 +14,7 @@
 </div>
 
 Type filter tokens into the backend page tree's search field, or press
-`Ctrl/Cmd+Shift+F` for a modal, to narrow the tree to matching pages:
+`Ctrl/Cmd+Shift+L` for a modal, to narrow the tree to matching pages:
 
 ```
 doktype:1 is:empty                # standard pages without content
@@ -43,7 +43,7 @@ Whitespace = AND, comma = OR within one criterion (`doktype:1,4`). Freetext
 
 ## ✨ Features
 
-- **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (`Ctrl/Cmd+Shift+F`) for a guided UI with active-filter chips and per-tab counts
+- **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (`Ctrl/Cmd+Shift+L`) for a guided UI with active-filter chips and per-tab counts
 - **Built-in filter tabs**: Records (`table:` `record:` `text:`), Content elements (`ce:`), Activity (`updated:` `created:` `by:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:`), SEO (`seo:`, requires EXT:seo)
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
 - **Extensible tab API**: register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`; built-in tabs use the exact same path
