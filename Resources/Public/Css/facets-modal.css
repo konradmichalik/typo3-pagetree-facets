@@ -293,16 +293,12 @@
 }
 
 /* Sub-heading inside an options grid (e.g. the content-element wizard groups).
-   Spans every column so the options below always start on a fresh row. */
+   Styled as a form-label; only the grid span and spacing are ours, so the
+   options below always start on a fresh row. */
 .pagetree-facets__option-group {
     grid-column: 1 / -1;
-    margin-top: 0.75rem;
+    margin: 0.75rem 0 0;
     padding-inline: 0.5rem;
-    padding-bottom: 0.2rem;
-    border-bottom: 1px solid var(--pl-border);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--pl-muted);
 }
 
 .pagetree-facets__option-group:first-child {

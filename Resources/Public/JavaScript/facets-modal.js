@@ -478,7 +478,7 @@ class FacetsModal {
         const groupLabel = field.groups?.[option.group];
         if (groupLabel && option.group !== renderedGroup) {
           const heading = document.createElement('span');
-          heading.className = 'pagetree-facets__option-group';
+          heading.className = 'form-label pagetree-facets__option-group';
           heading.textContent = groupLabel;
           optionsWrap.append(heading);
           renderedGroup = option.group;
