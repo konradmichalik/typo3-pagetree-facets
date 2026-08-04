@@ -45,4 +45,27 @@ final class TranslationsTabTest extends AbstractTabTestCase
         // is the union: uid 1 (missing both), uid 2 (missing 2), uid 4 (missing 1).
         self::assertSame([1, 2, 4], $this->resolve($this->get(TranslationsTab::class), 'untranslated:1,2'));
     }
+
+    #[Test]
+    public function findsDefaultLanguagePagesWithATranslation(): void
+    {
+        // The exact inverse of untranslated:1 - only uid 2 has a language-1
+        // translation. The translation record itself (uid 3) is never a result.
+        self::assertSame([2], $this->resolve($this->get(TranslationsTab::class), 'translated:1'));
+    }
+
+    #[Test]
+    public function commaValuesMeanTranslatedInAnyOfTheLanguages(): void
+    {
+        self::assertSame([2, 4], $this->resolve($this->get(TranslationsTab::class), 'translated:1,2'));
+    }
+
+    #[Test]
+    public function translatedExcludesNonContentDoktypesLikeUntranslatedDoes(): void
+    {
+        // Folder uid 5 carries no translation, so it can only ever surface via
+        // the untranslated branch - and must not, being a non-content doktype.
+        self::assertNotContains(5, $this->resolve($this->get(TranslationsTab::class), 'untranslated:1'));
+        self::assertNotContains(5, $this->resolve($this->get(TranslationsTab::class), 'translated:1'));
+    }
 }

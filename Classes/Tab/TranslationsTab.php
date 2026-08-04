@@ -55,7 +55,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
 
     public function getTokenKeys(): array
     {
-        return ['untranslated'];
+        return ['untranslated', 'translated'];
     }
 
     public function resolvePageUids(Token $token, FilterContext $context): array
@@ -65,20 +65,29 @@ final class TranslationsTab extends AbstractPagesQueryTab
             return [];
         }
 
+        // The two keys are exact inverses over the same candidate set, so both
+        // run through one code path - which also guarantees "translated" honours
+        // the doktype exclusion instead of leaking folders that happen to carry
+        // a translation record.
+        $wantTranslated = 'translated' === $token->key;
+        $candidates = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+            );
+            $this->excludeNonContentDoktypes($queryBuilder);
+        });
+
         $sets = [];
         foreach ($languageIds as $languageId) {
-            $translatedParents = $this->fetchTranslatedParentUids($languageId, $context);
-            $translated = array_flip($translatedParents);
-            $defaultLanguagePages = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
-                $queryBuilder->andWhere(
-                    $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-                );
-                $this->excludeNonContentDoktypes($queryBuilder);
-            });
-            $sets[] = array_values(array_filter($defaultLanguagePages, static fn (int $uid): bool => !isset($translated[$uid])));
+            $translated = array_flip($this->fetchTranslatedParentUids($languageId, $context));
+            $sets[] = array_values(array_filter(
+                $candidates,
+                static fn (int $uid): bool => isset($translated[$uid]) === $wantTranslated,
+            ));
         }
 
-        // Values within one token are OR-combined (untranslated in ANY of the languages).
+        // Values within one token are OR-combined (missing from - or present in -
+        // ANY of the languages).
         return array_values(array_unique(array_merge(...$sets)));
     }
 
@@ -109,15 +118,25 @@ final class TranslationsTab extends AbstractPagesQueryTab
             }
         }
 
+        $lll = 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:translations.';
+
+        // Two fields, one per direction. Never the tab label: the legend has to
+        // say which way the filter runs, otherwise a bare language list reads as
+        // "pages that have this language". Distinct names, so the two are
+        // independent criteria the engine ANDs - "missing Danish but has German"
+        // is a legitimate query.
         return [
             'fields' => [
                 [
                     'type' => 'checkbox-group',
                     'name' => 'untranslated',
-                    // Not the tab label: the legend has to say which direction
-                    // the filter runs, otherwise a bare language list reads as
-                    // "pages that have this language".
-                    'label' => 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:translations.untranslated',
+                    'label' => $lll.'untranslated',
+                    'options' => $options,
+                ],
+                [
+                    'type' => 'checkbox-group',
+                    'name' => 'translated',
+                    'label' => $lll.'translated',
                     'options' => $options,
                 ],
             ],
