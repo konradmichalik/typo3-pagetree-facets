@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -64,7 +64,7 @@ final class TabRegistryTest extends TestCase
         $registry = $this->createRegistry(
             [[new StubFilterTab('doktype', ['doktype']), 70], [new StubFilterTab('state', ['is']), 60]],
         );
-        $backendUser = $this->createBackendUser(['tx_pagetreefacets.' => ['disableTabs' => 'doktype']]);
+        $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disableTabs' => 'doktype']]);
 
         $tabs = $registry->getTabs($backendUser);
         self::assertCount(1, $tabs);
@@ -86,7 +86,7 @@ final class TabRegistryTest extends TestCase
     public function userTsConfigDisableSwitchesTheFeatureOff(): void
     {
         $registry = $this->createRegistry([[new StubFilterTab('doktype', ['doktype']), 70]]);
-        $backendUser = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
+        $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
 
         self::assertTrue($registry->isDisabledForUser($backendUser));
         self::assertSame([], $registry->getTabs($backendUser));

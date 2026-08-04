@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -90,5 +90,38 @@ final class FavoriteServiceTest extends FunctionalTestCase
         $this->subject->removeFavorite($this->backendUser, 5);
 
         self::assertCount(1, $this->subject->getFavorites($this->backendUser));
+    }
+
+    #[Test]
+    public function anEmptyTokenStringIsNotStored(): void
+    {
+        // A favorite is defined by its phrase - a label alone is meaningless.
+        $this->subject->addFavorite($this->backendUser, 'Label only', '');
+
+        self::assertSame([], $this->subject->getFavorites($this->backendUser));
+    }
+
+    #[Test]
+    public function favoritesAreCappedToBoundUcGrowth(): void
+    {
+        for ($i = 0; $i < 55; ++$i) {
+            $this->subject->addFavorite($this->backendUser, 'F'.$i, 'is:empty'.$i);
+        }
+
+        $favorites = $this->subject->getFavorites($this->backendUser);
+        self::assertCount(50, $favorites);
+        // Oldest five dropped, newest kept.
+        self::assertSame('F5', $favorites[0]['label']);
+        self::assertSame('F54', $favorites[49]['label']);
+    }
+
+    #[Test]
+    public function overlongLabelAndTokenStringAreTruncated(): void
+    {
+        $this->subject->addFavorite($this->backendUser, str_repeat('a', 300), str_repeat('b', 2500));
+
+        $favorite = $this->subject->getFavorites($this->backendUser)[0];
+        self::assertSame(255, mb_strlen($favorite['label']));
+        self::assertSame(2000, mb_strlen($favorite['tokenString']));
     }
 }

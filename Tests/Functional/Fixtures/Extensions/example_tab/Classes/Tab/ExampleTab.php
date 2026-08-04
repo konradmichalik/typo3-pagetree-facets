@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -45,7 +45,7 @@ final class ExampleTab extends AbstractPagesQueryTab
     /**
      * Stable, unique key for this tab. Used in the modal markup and as the name
      * administrators disable the tab under, via the "disabledTabs" extension
-     * setting or "tx_pagetreefacets.disableTabs" in User TSconfig - so treat it
+     * setting or "tx_typo3pagetreefacets.disableTabs" in User TSconfig - so treat it
      * as public API and do not rename it casually.
      */
     public function getIdentifier(): string

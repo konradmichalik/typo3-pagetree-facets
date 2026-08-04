@@ -1,6 +1,6 @@
 {
 	"name": "konradmichalik/pagetree-facets-example-tab",
-	"description": "Local-only example third-party filter tab demonstrating the pagetree_facets FilterTabInterface extension point.",
+	"description": "Local-only example third-party filter tab demonstrating the typo3_pagetree_facets FilterTabInterface extension point.",
 	"license": [
 		"GPL-2.0-or-later"
 	],

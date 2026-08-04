@@ -1,5 +1,5 @@
 /**
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -36,7 +36,7 @@ class FacetsModal {
   async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
     this.#currentPageId = currentPageId;
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_configuration)
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
     this.#configuration = await response.resolve();
@@ -836,7 +836,7 @@ class FacetsModal {
         return;
       }
       debounceTimer = window.setTimeout(async () => {
-        const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_users)
+        const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_users)
           .withQueryArguments({ q: query })
           .get();
         const { users } = await response.resolve();
@@ -930,7 +930,7 @@ class FacetsModal {
 
   async #resolveUserLabel(uid) {
     try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_users)
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_users)
         .withQueryArguments({ uid })
         .get();
       const { users } = await response.resolve();
@@ -1136,7 +1136,7 @@ class FacetsModal {
   // both need the canonical phrase for whatever is currently configured in
   // the modal, not just what has already been applied to the tree.
   async #computePhrase() {
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_serialize)
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_serialize)
       .post(this.#collectFormState());
     const { phrase } = await response.resolve();
     return phrase;

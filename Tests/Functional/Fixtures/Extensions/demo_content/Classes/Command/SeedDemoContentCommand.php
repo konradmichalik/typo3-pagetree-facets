@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -29,7 +29,7 @@ use function count;
  * SeedDemoContentCommand.
  *
  * Seeds a page tree with enough variety (page states, doktypes, content
- * elements, one translation, SEO flags) that every built-in pagetree_facets
+ * elements, one translation, SEO flags) that every built-in typo3_pagetree_facets
  * tab has something real to filter, instead of the single bare "Home" page
  * the base TYPO3 install produces. Dev-only, run via
  * `ddev 14 typo3 pagetree-facets:seed-demo-content`.
@@ -38,7 +38,7 @@ use function count;
  */
 #[AsCommand(
     name: 'pagetree-facets:seed-demo-content',
-    description: 'Seeds a richer page tree for local pagetree_facets testing.',
+    description: 'Seeds a richer page tree for local typo3_pagetree_facets testing.',
 )]
 final class SeedDemoContentCommand extends Command
 {

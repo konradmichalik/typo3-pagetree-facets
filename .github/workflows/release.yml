@@ -12,4 +12,4 @@ jobs:
     secrets:
       typo3-api-token: ${{ secrets.TYPO3_API_TOKEN }}
     with:
-      typo3-extension-key: 'pagetree_facets'
+      typo3-extension-key: 'typo3_pagetree_facets'

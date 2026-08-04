@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -46,9 +46,9 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer->expects(self::once())->method('loadJavaScriptModule')
             ->with('@konradmichalik/pagetree-facets/facets-toolbar.js');
         $pageRenderer->expects(self::once())->method('addCssFile')
-            ->with('EXT:pagetree_facets/Resources/Public/Css/facets-modal.css');
+            ->with('EXT:typo3_pagetree_facets/Resources/Public/Css/facets-modal.css');
         $pageRenderer->expects(self::once())->method('addInlineLanguageLabelFile')
-            ->with('EXT:pagetree_facets/Resources/Private/Language/locallang.xlf');
+            ->with('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
 
         (new BackendAssetsListener($pageRenderer, $this->createTabRegistry()))($this->createEvent());
     }
@@ -56,7 +56,7 @@ final class BackendAssetsListenerTest extends TestCase
     #[Test]
     public function skipsLoadingAssetsWhenDisabledForTheCurrentUser(): void
     {
-        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
+        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
 
         $pageRenderer = self::createMock(PageRenderer::class);
         $pageRenderer->expects(self::never())->method('loadJavaScriptModule');

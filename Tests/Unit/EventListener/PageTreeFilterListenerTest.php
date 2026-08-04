@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -168,7 +168,7 @@ final class PageTreeFilterListenerTest extends TestCase
     #[Test]
     public function userTsConfigDisableIsRespected(): void
     {
-        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_pagetreefacets.' => ['disable' => '1']]);
+        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
         $event = $this->createEvent('doktype:1');
         $this->createListener()($event);
 

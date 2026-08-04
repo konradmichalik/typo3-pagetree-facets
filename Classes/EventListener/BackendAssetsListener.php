@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -48,9 +48,9 @@ final readonly class BackendAssetsListener
             return;
         }
         $this->pageRenderer->loadJavaScriptModule('@konradmichalik/pagetree-facets/facets-toolbar.js');
-        $this->pageRenderer->addCssFile('EXT:pagetree_facets/Resources/Public/Css/facets-modal.css');
+        $this->pageRenderer->addCssFile('EXT:typo3_pagetree_facets/Resources/Public/Css/facets-modal.css');
         // The modal chrome (title, buttons, placeholders) is rendered client
         // side and reads its labels from TYPO3.lang - publish them inline.
-        $this->pageRenderer->addInlineLanguageLabelFile('EXT:pagetree_facets/Resources/Private/Language/locallang.xlf');
+        $this->pageRenderer->addInlineLanguageLabelFile('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
     }
 }

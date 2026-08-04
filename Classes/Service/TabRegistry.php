@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -78,12 +78,12 @@ final class TabRegistry
 
     public function isDisabledForUser(BackendUserAuthentication $backendUser): bool
     {
-        if ((bool) ($backendUser->getTSConfig()['tx_pagetreefacets.']['disable'] ?? false)) {
+        if ((bool) ($backendUser->getTSConfig()['tx_typo3pagetreefacets.']['disable'] ?? false)) {
             return true;
         }
         $adminOnly = false;
         try {
-            $adminOnly = (bool) $this->extensionConfiguration->get('pagetree_facets', 'adminOnly');
+            $adminOnly = (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'adminOnly');
         } catch (Throwable) {
         }
 
@@ -97,10 +97,10 @@ final class TabRegistry
     {
         $fromExtConf = '';
         try {
-            $fromExtConf = (string) $this->extensionConfiguration->get('pagetree_facets', 'disabledTabs');
+            $fromExtConf = (string) $this->extensionConfiguration->get('typo3_pagetree_facets', 'disabledTabs');
         } catch (Throwable) {
         }
-        $fromTsConfig = (string) ($backendUser->getTSConfig()['tx_pagetreefacets.']['disableTabs'] ?? '');
+        $fromTsConfig = (string) ($backendUser->getTSConfig()['tx_typo3pagetreefacets.']['disableTabs'] ?? '');
 
         return array_values(array_filter(array_map(
             trim(...),

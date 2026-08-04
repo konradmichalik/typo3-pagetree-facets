@@ -2,7 +2,7 @@
 services:
     web:
         environment:
-            - EXTENSION_KEY=pagetree_facets
+            - EXTENSION_KEY=typo3_pagetree_facets
             - EXTENSION_NAME=pagetree-facets
             - PACKAGE_NAME=konradmichalik/typo3-pagetree-facets
             - TYPO3_VERSIONS=14

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -49,6 +49,9 @@ final readonly class FacetsModalController
     public function configuration(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->getBackendUser();
+        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+            return $this->forbidden();
+        }
         $tokens = $this->tokenParser->parse((string) ($request->getQueryParams()['phrase'] ?? ''));
         $siteIdentifier = $this->extractSiteScope($tokens);
 
@@ -73,6 +76,9 @@ final readonly class FacetsModalController
     public function serialize(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->getBackendUser();
+        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+            return $this->forbidden();
+        }
         $body = (array) ($request->getParsedBody() ?? []);
         $states = (array) ($body['states'] ?? []);
         $siteIdentifier = (string) ($body['site'] ?? '');
@@ -105,22 +111,30 @@ final readonly class FacetsModalController
 
     public function addFavorite(ServerRequestInterface $request): JsonResponse
     {
+        $backendUser = $this->getBackendUser();
+        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+            return $this->forbidden();
+        }
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->addFavorite(
-            $this->getBackendUser(),
+            $backendUser,
             trim((string) ($body['label'] ?? '')),
             trim((string) ($body['tokenString'] ?? '')),
         );
 
-        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
+        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($backendUser)]);
     }
 
     public function removeFavorite(ServerRequestInterface $request): JsonResponse
     {
+        $backendUser = $this->getBackendUser();
+        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+            return $this->forbidden();
+        }
         $body = (array) ($request->getParsedBody() ?? []);
-        $this->favoriteService->removeFavorite($this->getBackendUser(), (int) ($body['index'] ?? -1));
+        $this->favoriteService->removeFavorite($backendUser, (int) ($body['index'] ?? -1));
 
-        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
+        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($backendUser)]);
     }
 
     /**
@@ -131,11 +145,26 @@ final readonly class FacetsModalController
      */
     public function users(ServerRequestInterface $request): JsonResponse
     {
+        $backendUser = $this->getBackendUser();
+        // Same access boundary as the rest of the feature: a user for whom the
+        // feature is switched off - or who has no tab owning the "by" key (the
+        // Activity tab this endpoint backs is disabled) - must not be able to
+        // enumerate be_users through the raw endpoint. The UI never loads for
+        // them anyway; this closes the direct-request bypass.
+        if ($this->tabRegistry->isDisabledForUser($backendUser)
+            || null === $this->tabRegistry->findTabForToken(new Token('by', ['0'], 'by:0'), $backendUser)
+        ) {
+            return new JsonResponse(['users' => []]);
+        }
+
         $queryParams = $request->getQueryParams();
         $uid = (int) ($queryParams['uid'] ?? 0);
         $search = trim((string) ($queryParams['q'] ?? ''));
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        // Only deleted users are excluded, not disabled ones: the picker filters
+        // pages by who edited/created them, and a now-disabled account can still
+        // be the author of pages that must stay findable - so it stays offered.
         $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
         $queryBuilder
             ->select('uid', 'username', 'realName')
@@ -195,22 +224,31 @@ final readonly class FacetsModalController
     {
         $languageService = $this->getLanguageService();
         foreach ($configuration['fields'] as $fieldIndex => $field) {
-            $configuration['fields'][$fieldIndex]['label'] = $this->translate($languageService, (string) ($field['label'] ?? ''));
-            if ('' !== (string) ($field['placeholder'] ?? '')) {
-                $configuration['fields'][$fieldIndex]['placeholder']
-                    = $this->translate($languageService, (string) $field['placeholder']);
-            }
-            foreach ($field['options'] ?? [] as $optionIndex => $option) {
-                $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
-                    = $this->translate($languageService, (string) ($option['label'] ?? ''));
-                if ('' !== (string) ($option['description'] ?? '')) {
-                    $configuration['fields'][$fieldIndex]['options'][$optionIndex]['description']
-                        = $this->translate($languageService, (string) $option['description']);
-                }
-            }
+            $configuration['fields'][$fieldIndex] = $this->translateField($languageService, $field);
         }
 
         return $configuration;
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     *
+     * @return array<string, mixed>
+     */
+    private function translateField(LanguageService $languageService, array $field): array
+    {
+        $field['label'] = $this->translate($languageService, (string) ($field['label'] ?? ''));
+        if ('' !== (string) ($field['placeholder'] ?? '')) {
+            $field['placeholder'] = $this->translate($languageService, (string) $field['placeholder']);
+        }
+        foreach ($field['options'] ?? [] as $optionIndex => $option) {
+            $field['options'][$optionIndex]['label'] = $this->translate($languageService, (string) ($option['label'] ?? ''));
+            if ('' !== (string) ($option['description'] ?? '')) {
+                $field['options'][$optionIndex]['description'] = $this->translate($languageService, (string) $option['description']);
+            }
+        }
+
+        return $field;
     }
 
     /**
@@ -283,6 +321,11 @@ final readonly class FacetsModalController
         // shorthand (e.g. "core.db.pages:doktype.default" used by the doktype TCA
         // items); it returns non-identifier strings unchanged, so no LLL: guard.
         return '' === $label ? $label : ($languageService->sL($label) ?: $label);
+    }
+
+    private function forbidden(): JsonResponse
+    {
+        return new JsonResponse(['error' => 'The page tree filter feature is disabled for this user.'], 403);
     }
 
     private function getBackendUser(): BackendUserAuthentication

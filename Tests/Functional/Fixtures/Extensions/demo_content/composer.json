@@ -1,6 +1,6 @@
 {
 	"name": "konradmichalik/pagetree-facets-demo-content",
-	"description": "Local-only console command that seeds a richer page tree (varied doktypes, page states, content elements, a translation, SEO flags) for testing pagetree_facets in the DDEV instance.",
+	"description": "Local-only console command that seeds a richer page tree (varied doktypes, page states, content elements, a translation, SEO flags) for testing typo3_pagetree_facets in the DDEV instance.",
 	"license": [
 		"GPL-2.0-or-later"
 	],

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -155,6 +155,38 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     public function usersReturnsNothingWithoutAQueryOrUid(): void
     {
         $payload = $this->decode($this->subject->users(new ServerRequest()));
+
+        self::assertSame([], $payload['users']);
+    }
+
+    #[Test]
+    public function aDisabledFeatureBlocksTheConfigurationEndpoint(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['adminOnly'] = '1';
+        $this->setUpBackendUser(2); // non-admin -> locked out by adminOnly
+
+        self::assertSame(403, $this->subject->configuration(new ServerRequest())->getStatusCode());
+    }
+
+    #[Test]
+    public function aDisabledFeatureClosesTheUserEnumerationEndpoint(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['adminOnly'] = '1';
+        $this->setUpBackendUser(2);
+
+        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
+
+        self::assertSame([], $payload['users']);
+    }
+
+    #[Test]
+    public function theUserEnumerationEndpointIsClosedWhenTheActivityTabIsDisabled(): void
+    {
+        // Feature stays on, but the tab that owns the "by" key is disabled - the
+        // endpoint backing its picker must not enumerate be_users regardless.
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['disabledTabs'] = 'activity';
+
+        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
 
         self::assertSame([], $payload['users']);
     }

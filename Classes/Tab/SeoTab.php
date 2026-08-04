@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -37,7 +37,7 @@ final class SeoTab extends AbstractPagesQueryTab
 
     public function getLabel(): string
     {
-        return 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:tab.seo';
+        return 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:tab.seo';
     }
 
     public function getGroup(): string
@@ -71,7 +71,7 @@ final class SeoTab extends AbstractPagesQueryTab
      */
     public function getModalConfiguration(FilterContext $context): array
     {
-        $lll = 'LLL:EXT:pagetree_facets/Resources/Private/Language/locallang.xlf:seo.';
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:seo.';
 
         return [
             'fields' => [

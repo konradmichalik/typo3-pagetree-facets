@@ -2,13 +2,13 @@
 
 /*
  * This file is part of the "demo_content" fixture extension, used only for
- * local development of "pagetree_facets" (seeds page-tree data for the
+ * local development of "typo3_pagetree_facets" (seeds page-tree data for the
  * interactive DDEV instance). Not part of the shipped package.
  */
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Pagetree Facets - Demo Content (dev fixture)',
-    'description' => 'Local-only console command seeding a richer page tree for testing pagetree_facets.',
+    'description' => 'Local-only console command seeding a richer page tree for testing typo3_pagetree_facets.',
     'category' => 'misc',
     'author' => 'Konrad Michalik',
     'author_email' => 'hej@konradmichalik.dev',

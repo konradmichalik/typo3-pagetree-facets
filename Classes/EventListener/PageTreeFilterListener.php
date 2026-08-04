@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -117,6 +117,17 @@ final readonly class PageTreeFilterListener
      */
     private function resolveUidSets(array $tokens, FilterContext $context, BackendUserAuthentication $backendUser): array
     {
+        // Resolve the (per-user config-filtered) tab set once for the whole
+        // phrase and index it by token key, instead of re-running getTabs() via
+        // findTabForToken() for every token. First-seen wins, mirroring the
+        // priority order findTabForToken() would return.
+        $tabByKey = [];
+        foreach ($this->tabRegistry->getTabs($backendUser) as $tab) {
+            foreach ($tab->getTokenKeys() as $key) {
+                $tabByKey[$key] ??= $tab;
+            }
+        }
+
         $uidSets = [];
         foreach ($tokens as $token) {
             if ($token->isFreetext()) {
@@ -126,7 +137,7 @@ final readonly class PageTreeFilterListener
             if ('site' === $token->key || 'under' === $token->key) {
                 continue; // scope, not a criterion - handled separately
             }
-            $tab = $this->tabRegistry->findTabForToken($token, $backendUser);
+            $tab = $tabByKey[$token->key] ?? null;
             if (null === $tab) {
                 continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
             }

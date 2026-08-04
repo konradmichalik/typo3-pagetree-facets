@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the "pagetree_facets" TYPO3 CMS extension.
+ * This file is part of the "typo3_pagetree_facets" TYPO3 CMS extension.
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
@@ -15,6 +15,8 @@ namespace KonradMichalik\PagetreeFacets\Service;
 
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
+use function array_slice;
+use function count;
 use function is_array;
 
 /**
@@ -28,7 +30,14 @@ use function is_array;
  */
 final class FavoriteService
 {
-    private const string UC_KEY = 'pagetree_facets';
+    private const string UC_KEY = 'typo3_pagetree_facets';
+
+    // Bounds on what a single BE user can persist into their own uc, so a
+    // scripted client cannot bloat be_users.uc without limit. Generous enough
+    // that no realistic manual use ever hits them.
+    private const int MAX_FAVORITES = 50;
+    private const int MAX_LABEL_LENGTH = 255;
+    private const int MAX_TOKEN_LENGTH = 2000;
 
     /**
      * @return list<array{label: string, tokenString: string, createdAt: int}>
@@ -42,12 +51,22 @@ final class FavoriteService
 
     public function addFavorite(BackendUserAuthentication $backendUser, string $label, string $tokenString): void
     {
+        $tokenString = mb_substr($tokenString, 0, self::MAX_TOKEN_LENGTH);
+        if ('' === $tokenString) {
+            return; // nothing to favorite - a favorite is defined by its phrase
+        }
+        $label = mb_substr($label, 0, self::MAX_LABEL_LENGTH);
+
         $favorites = $this->getFavorites($backendUser);
         $favorites[] = [
             'label' => '' !== $label ? $label : $tokenString,
             'tokenString' => $tokenString,
             'createdAt' => time(),
         ];
+        // Keep only the most recent entries - drops the oldest once at the cap.
+        if (count($favorites) > self::MAX_FAVORITES) {
+            $favorites = array_slice($favorites, -self::MAX_FAVORITES);
+        }
         $this->persist($backendUser, $favorites);
     }
 
