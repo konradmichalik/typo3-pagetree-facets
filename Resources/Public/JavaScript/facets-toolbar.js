@@ -4,6 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import Hotkeys from '@typo3/backend/hotkeys.js';
+import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
 
 /**
@@ -27,6 +28,12 @@ class FacetsToolbar {
   // Keep in sync with the same constant in facets-modal.js (#copyLink()).
   #shareParam = 'pagetreeFacetsFilter';
   #pendingSharedFilter = null;
+  // Opt-in session persistence (persistFilter setting), exposed via inline
+  // settings by BackendAssetsListener. When on, restore the stored phrase on
+  // load and save changes back (debounced).
+  #persistEnabled = false;
+  #pendingPersistedFilter = '';
+  #persistTimer = null;
 
   constructor() {
     document.addEventListener('DOMContentLoaded', () => this.#initialize());
@@ -51,6 +58,8 @@ class FacetsToolbar {
     // URL immediately - the tree may not exist yet, so applying it happens
     // later in #injectButton() once the filter input is actually found.
     this.#pendingSharedFilter = this.#extractSharedFilter();
+    this.#persistEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.persistFilter ?? '');
+    this.#pendingPersistedFilter = this.#persistEnabled ? (TYPO3.settings?.PagetreeFacets?.persistedFilter ?? '') : '';
     // The tree web component renders asynchronously - a single injection
     // attempt at DOMContentLoaded races it and silently loses. Retry with a
     // capped backoff instead of observing the whole document.
@@ -93,7 +102,15 @@ class FacetsToolbar {
       filterInput.value = this.#pendingSharedFilter;
       filterInput.dispatchEvent(new Event('input', { bubbles: true }));
       this.#pendingSharedFilter = null;
+    } else if ('' !== this.#pendingPersistedFilter) {
+      // Restore the session filter, but never clobber a value the user is
+      // already looking at (e.g. a deep link without our share param).
+      if ('' === filterInput.value) {
+        filterInput.value = this.#pendingPersistedFilter;
+        filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
+    this.#pendingPersistedFilter = '';
     // v14 tree toolbar markup: .tree-toolbar__menu > .tree-toolbar__search > input,
     // followed by sibling buttons (options dropdown, collapse-all). A native
     // type="search" input renders its own browser clear ("x") button in its
@@ -131,10 +148,26 @@ class FacetsToolbar {
     } else {
       menu.append(button);
     }
-    filterInput.addEventListener('input', () => this.#updateBadge());
+    filterInput.addEventListener('input', () => {
+      this.#updateBadge();
+      this.#schedulePersist(filterInput.value);
+    });
     this.#updateBadge();
     this.#watchForEmptyResult(filterInput);
     return button;
+  }
+
+  // Save the current phrase to the session, debounced so live typing produces
+  // one request after the user pauses rather than one per keystroke. No-op
+  // unless the persistFilter setting is on.
+  #schedulePersist(phrase) {
+    if (!this.#persistEnabled) {
+      return;
+    }
+    window.clearTimeout(this.#persistTimer);
+    this.#persistTimer = window.setTimeout(() => {
+      new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_persist).post({ phrase });
+    }, 400);
   }
 
   // "Filter matched nothing" is a dead end otherwise: the tree just goes blank,

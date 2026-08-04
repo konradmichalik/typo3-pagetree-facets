@@ -34,4 +34,8 @@ return [
         'path' => '/pagetree-facets/users',
         'target' => FacetsModalController::class.'::users',
     ],
+    'typo3_pagetree_facets_persist' => [
+        'path' => '/pagetree-facets/persist',
+        'target' => FacetsModalController::class.'::persist',
+    ],
 ];

@@ -88,6 +88,7 @@ You can find the extension settings in the TYPO3 backend under
 |---|---|---|
 | `adminOnly` | `0` | Only administrators can use the filter modal and tokens. |
 | `disabledTabs` | *(empty)* | Comma-separated list of built-in tab identifiers to disable installation-wide. |
+| `persistFilter` | `0` | Remember each backend user's current page tree filter for their session, so it survives a reload or module switch (cleared on logout). |
 
 Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
 `translations`, `seo`.

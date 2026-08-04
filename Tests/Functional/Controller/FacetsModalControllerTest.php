@@ -17,7 +17,7 @@ use KonradMichalik\PagetreeFacets\Controller\FacetsModalController;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
-use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Http\{PropagateResponseException, ServerRequest};
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -165,7 +165,14 @@ final class FacetsModalControllerTest extends FunctionalTestCase
         $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['adminOnly'] = '1';
         $this->setUpBackendUser(2); // non-admin -> locked out by adminOnly
 
-        self::assertSame(403, $this->subject->configuration(new ServerRequest())->getStatusCode());
+        // The disabled feature short-circuits with a propagated 403 response
+        // (the ResponsePropagation middleware returns it in a real request).
+        try {
+            $this->subject->configuration(new ServerRequest());
+            self::fail('Expected the disabled feature to block the endpoint.');
+        } catch (PropagateResponseException $exception) {
+            self::assertSame(403, $exception->getResponse()->getStatusCode());
+        }
     }
 
     #[Test]

@@ -14,13 +14,13 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FavoriteService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{FavoriteService, SessionFilterService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Http\{JsonResponse, PropagateResponseException};
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
@@ -42,16 +42,14 @@ final readonly class FacetsModalController
         private TokenParser $tokenParser,
         private TokenSerializer $tokenSerializer,
         private FavoriteService $favoriteService,
+        private SessionFilterService $sessionFilterService,
         private SiteFinder $siteFinder,
         private ConnectionPool $connectionPool,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
     {
-        $backendUser = $this->getBackendUser();
-        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
-            return $this->forbidden();
-        }
+        $backendUser = $this->requireEnabledUser();
         $tokens = $this->tokenParser->parse((string) ($request->getQueryParams()['phrase'] ?? ''));
         $siteIdentifier = $this->extractSiteScope($tokens);
 
@@ -75,10 +73,7 @@ final readonly class FacetsModalController
 
     public function serialize(ServerRequestInterface $request): JsonResponse
     {
-        $backendUser = $this->getBackendUser();
-        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
-            return $this->forbidden();
-        }
+        $backendUser = $this->requireEnabledUser();
         $body = (array) ($request->getParsedBody() ?? []);
         $states = (array) ($body['states'] ?? []);
         $siteIdentifier = (string) ($body['site'] ?? '');
@@ -111,10 +106,7 @@ final readonly class FacetsModalController
 
     public function addFavorite(ServerRequestInterface $request): JsonResponse
     {
-        $backendUser = $this->getBackendUser();
-        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
-            return $this->forbidden();
-        }
+        $backendUser = $this->requireEnabledUser();
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->addFavorite(
             $backendUser,
@@ -127,14 +119,27 @@ final readonly class FacetsModalController
 
     public function removeFavorite(ServerRequestInterface $request): JsonResponse
     {
-        $backendUser = $this->getBackendUser();
-        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
-            return $this->forbidden();
-        }
+        $backendUser = $this->requireEnabledUser();
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->removeFavorite($backendUser, (int) ($body['index'] ?? -1));
 
         return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($backendUser)]);
+    }
+
+    /**
+     * Store the current tree filter phrase in the session so it survives a
+     * reload (opt-in via the persistFilter setting). A no-op when the setting
+     * is off, so a stale client cannot write session data behind the setting.
+     */
+    public function persist(ServerRequestInterface $request): JsonResponse
+    {
+        $backendUser = $this->requireEnabledUser();
+        if ($this->sessionFilterService->isEnabled()) {
+            $body = (array) ($request->getParsedBody() ?? []);
+            $this->sessionFilterService->set($backendUser, trim((string) ($body['phrase'] ?? '')));
+        }
+
+        return new JsonResponse(['ok' => true]);
     }
 
     /**
@@ -326,6 +331,21 @@ final readonly class FacetsModalController
     private function forbidden(): JsonResponse
     {
         return new JsonResponse(['error' => 'The page tree filter feature is disabled for this user.'], 403);
+    }
+
+    /**
+     * Shared access boundary for the modal endpoints: returns the backend user,
+     * or short-circuits the request with a 403 (caught by the ResponsePropagation
+     * middleware) when the feature is disabled for them.
+     */
+    private function requireEnabledUser(): BackendUserAuthentication
+    {
+        $backendUser = $this->getBackendUser();
+        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+            throw new PropagateResponseException($this->forbidden());
+        }
+
+        return $backendUser;
     }
 
     private function getBackendUser(): BackendUserAuthentication

@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\EventListener\BackendAssetsListener;
-use KonradMichalik\PagetreeFacets\Service\TabRegistry;
+use KonradMichalik\PagetreeFacets\Service\{SessionFilterService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\CollectingEventDispatcher;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -49,8 +49,29 @@ final class BackendAssetsListenerTest extends TestCase
             ->with('EXT:typo3_pagetree_facets/Resources/Public/Css/facets-modal.css');
         $pageRenderer->expects(self::once())->method('addInlineLanguageLabelFile')
             ->with('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
+        // Session persistence is off by default - no inline settings emitted.
+        $pageRenderer->expects(self::never())->method('addInlineSetting');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry()))($this->createEvent());
+        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
+    }
+
+    #[Test]
+    public function injectsThePersistedFilterWhenSessionPersistenceIsEnabled(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser();
+
+        $inlineSettings = [];
+        $pageRenderer = self::createStub(PageRenderer::class);
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
+
+        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService('1')))($this->createEvent());
+
+        self::assertSame('1', $inlineSettings['persistFilter'] ?? null);
+        self::assertSame('doktype:1', $inlineSettings['persistedFilter'] ?? null);
     }
 
     #[Test]
@@ -63,7 +84,7 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer->expects(self::never())->method('addCssFile');
         $pageRenderer->expects(self::never())->method('addInlineLanguageLabelFile');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry()))($this->createEvent());
+        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
     }
 
     #[Test]
@@ -72,7 +93,7 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer = self::createMock(PageRenderer::class);
         $pageRenderer->expects(self::never())->method('loadJavaScriptModule');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry()))($this->createEvent());
+        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
     }
 
     private function createEvent(): AfterBackendPageRenderEvent
@@ -88,6 +109,14 @@ final class BackendAssetsListenerTest extends TestCase
         return new TabRegistry(new CollectingEventDispatcher([]), $extensionConfiguration);
     }
 
+    private function createSessionFilterService(string $persistFilter = '0'): SessionFilterService
+    {
+        $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
+        $extensionConfiguration->method('get')->willReturn($persistFilter);
+
+        return new SessionFilterService($extensionConfiguration);
+    }
+
     /**
      * @param array<string, mixed> $tsConfig
      */
@@ -96,6 +125,7 @@ final class BackendAssetsListenerTest extends TestCase
         $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('getTSConfig')->willReturn($tsConfig);
         $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->method('getSessionData')->willReturn('doktype:1');
 
         return $backendUser;
     }

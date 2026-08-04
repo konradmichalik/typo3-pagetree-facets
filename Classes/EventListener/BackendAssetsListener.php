@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeFacets\Service\TabRegistry;
+use KonradMichalik\PagetreeFacets\Service\{SessionFilterService, TabRegistry};
 use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -37,6 +37,7 @@ final readonly class BackendAssetsListener
     public function __construct(
         private PageRenderer $pageRenderer,
         private TabRegistry $tabRegistry,
+        private SessionFilterService $sessionFilterService,
     ) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
@@ -52,5 +53,13 @@ final readonly class BackendAssetsListener
         // The modal chrome (title, buttons, placeholders) is rendered client
         // side and reads its labels from TYPO3.lang - publish them inline.
         $this->pageRenderer->addInlineLanguageLabelFile('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
+
+        // Optional session persistence (opt-in): expose the flag so the toolbar
+        // saves changes back, and the stored phrase so it can restore the tree
+        // filter on load. Kept out entirely when the setting is off.
+        if ($this->sessionFilterService->isEnabled()) {
+            $this->pageRenderer->addInlineSetting('PagetreeFacets', 'persistFilter', '1');
+            $this->pageRenderer->addInlineSetting('PagetreeFacets', 'persistedFilter', $this->sessionFilterService->get($backendUser));
+        }
     }
 }
