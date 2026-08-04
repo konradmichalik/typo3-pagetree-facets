@@ -469,7 +469,20 @@ class FacetsModal {
       // inflating the gap under the heading well beyond any margin we set.
       const optionsWrap = document.createElement('div');
       optionsWrap.className = 'pagetree-facets__options';
+      // Options stay a flat list; when the tab supplies group labels they arrive
+      // pre-sorted and contiguous, so one heading per group change is enough.
+      // Keeping the list flat is what leaves the cross-tab search, #isTabEmpty
+      // and serialize()/hydrate() untouched.
+      let renderedGroup = null;
       for (const option of field.options ?? []) {
+        const groupLabel = field.groups?.[option.group];
+        if (groupLabel && option.group !== renderedGroup) {
+          const heading = document.createElement('span');
+          heading.className = 'pagetree-facets__option-group';
+          heading.textContent = groupLabel;
+          optionsWrap.append(heading);
+          renderedGroup = option.group;
+        }
         const label = document.createElement('label');
         // Checkboxes render as TYPO3's own toggle-switch style (form-switch,
         // the same classes core uses for boolean settings) instead of plain

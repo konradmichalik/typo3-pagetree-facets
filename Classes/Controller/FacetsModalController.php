@@ -196,6 +196,10 @@ final readonly class FacetsModalController
         $languageService = $this->getLanguageService();
         foreach ($configuration['fields'] as $fieldIndex => $field) {
             $configuration['fields'][$fieldIndex]['label'] = $this->translate($languageService, (string) ($field['label'] ?? ''));
+            foreach ($field['groups'] ?? [] as $groupKey => $groupLabel) {
+                $configuration['fields'][$fieldIndex]['groups'][$groupKey]
+                    = $this->translate($languageService, (string) $groupLabel);
+            }
             foreach ($field['options'] ?? [] as $optionIndex => $option) {
                 $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
                     = $this->translate($languageService, (string) ($option['label'] ?? ''));

@@ -61,6 +61,63 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     }
 
     #[Test]
+    public function contentElementOptionsCarryWizardGroups(): void
+    {
+        $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext());
+        $field = $configuration['fields'][0];
+
+        // Raw LLL labels, like every other label in a modal configuration -
+        // FacetsModalController translates them on the way out. Groups without a
+        // single option are omitted, so this is a subset of the TCA itemGroups.
+        $itemGroups = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['itemGroups'];
+        self::assertArrayHasKey('default', $field['groups']);
+        foreach ($field['groups'] as $key => $label) {
+            self::assertSame($itemGroups[$key], $label, 'Group label must be the TCA itemGroups label, unchanged');
+        }
+        self::assertSame(
+            array_keys($field['groups']),
+            array_values(array_intersect(array_keys($itemGroups), array_keys($field['groups']))),
+            'Groups must keep the TCA itemGroups order',
+        );
+
+        $groupsInOrder = array_column($field['options'], 'group');
+        self::assertNotContains('', $groupsInOrder, 'Every option must carry its wizard group');
+        // Contiguity is what lets the modal emit one heading per group while
+        // keeping the options list flat.
+        $seen = [];
+        $previous = null;
+        foreach ($groupsInOrder as $group) {
+            if ($group !== $previous) {
+                self::assertNotContains($group, $seen, 'Options of group "'.$group.'" must be contiguous');
+                $seen[] = $group;
+                $previous = $group;
+            }
+        }
+    }
+
+    #[Test]
+    public function contentElementOptionsAreRestrictedByCTypePermissions(): void
+    {
+        $editor = $this->setUpBackendUser(2);
+        $editor->groupData['explicit_allowdeny'] = 'tt_content:CType:textmedia';
+
+        $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+
+        self::assertSame(['textmedia'], array_column($configuration['fields'][0]['options'], 'value'));
+    }
+
+    #[Test]
+    public function doktypeOptionsAreRestrictedByPageTypePermissions(): void
+    {
+        $editor = $this->setUpBackendUser(2);
+        $editor->groupData['pagetypes_select'] = '1';
+
+        $configuration = $this->get(DoktypeTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+
+        self::assertSame(['1'], array_column($configuration['fields'][0]['options'], 'value'));
+    }
+
+    #[Test]
     public function recordsTableOptionsRespectHideTable(): void
     {
         $configuration = $this->get(RecordsTab::class)->getModalConfiguration($this->createContext());

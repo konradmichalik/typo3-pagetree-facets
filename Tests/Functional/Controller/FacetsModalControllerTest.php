@@ -62,6 +62,11 @@ final class FacetsModalControllerTest extends FunctionalTestCase
 
         foreach ($payload['tabs'] as $tab) {
             self::assertStringNotContainsString('LLL:', $tab['label'], 'Unresolved label in tab '.$tab['identifier']);
+            foreach ($tab['configuration']['fields'] as $field) {
+                foreach ($field['groups'] ?? [] as $groupLabel) {
+                    self::assertStringNotContainsString('LLL:', $groupLabel, 'Unresolved option-group label in tab '.$tab['identifier']);
+                }
+            }
         }
     }
 

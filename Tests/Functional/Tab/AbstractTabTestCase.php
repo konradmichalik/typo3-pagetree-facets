@@ -44,10 +44,10 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($this->backendUser);
     }
 
-    protected function createContext(?string $siteIdentifier = null): FilterContext
+    protected function createContext(?string $siteIdentifier = null, ?BackendUserAuthentication $backendUser = null): FilterContext
     {
         return new FilterContext(
-            backendUser: $this->backendUser,
+            backendUser: $backendUser ?? $this->backendUser,
             workspaceId: 0,
             siteIdentifier: $siteIdentifier,
         );

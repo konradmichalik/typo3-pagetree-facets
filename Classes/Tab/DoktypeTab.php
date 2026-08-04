@@ -73,6 +73,13 @@ final class DoktypeTab extends AbstractPagesQueryTab
             if ('' === $value || str_starts_with($value, '--')) {
                 continue;
             }
+            // pages.doktype carries no authMode; page types are gated by the
+            // "pagetypes_select" group permission instead - the same list the
+            // core's page tree and doktype select field honour. Offering a facet
+            // for a page type the user cannot work with is noise.
+            if (!$context->backendUser->check('pagetypes_select', $value)) {
+                continue;
+            }
             $options[] = [
                 'value' => $value,
                 'label' => (string) ($item['label'] ?? $value),
