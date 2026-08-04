@@ -9,6 +9,13 @@
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help"><source>Filter syntax</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.intro"><source>Type filter tokens into the page tree search field, or build them here. Examples:</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.grammar"><source>Whitespace combines criteria (AND), a comma offers alternatives within one criterion (doktype:1,4). Text without a "key:" prefix searches page titles and UIDs; unknown tokens are ignored.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.example.emptyPages"><source>Standard pages without content</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.example.records"><source>Pages containing news records</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.example.recentUploads"><source>Pages with an uploads content element, changed in the last 30 days</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.example.seo"><source>Indexable pages without a meta description</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tabEmpty"><source>No options available</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.search"><source>Search filters</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source></trans-unit>

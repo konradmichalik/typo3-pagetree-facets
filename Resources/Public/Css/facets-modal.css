@@ -67,6 +67,31 @@
     margin: 0;
 }
 
+.pagetree-facets__help-toggle {
+    flex: 0 0 auto;
+}
+
+/* Syntax cheat sheet, collapsed by default. Styled as a Bootstrap alert, so
+   only the example list layout is ours. */
+.pagetree-facets__help {
+    margin: 0;
+}
+
+.pagetree-facets__help-examples {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 1rem;
+    margin: 0.5rem 0;
+}
+
+.pagetree-facets__help-examples dt {
+    font-weight: 400;
+}
+
+.pagetree-facets__help-examples dd {
+    margin: 0;
+}
+
 .pagetree-facets__site {
     flex: 0 0 auto;
     min-width: 12rem;

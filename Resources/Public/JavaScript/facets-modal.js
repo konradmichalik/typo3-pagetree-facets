@@ -61,7 +61,10 @@ class FacetsModal {
     this.#modal.addEventListener('typo3-modal-shown', () => {
       const root = this.#modal.querySelector('.pagetree-facets');
       root?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+        // Buttons are excluded: Enter is their own activation key, and
+        // preventDefault() here would swallow it - a keyboard user could never
+        // reach the help toggle or "copy link".
+        if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
           event.preventDefault();
           this.#serializeAndApply();
         }
@@ -97,7 +100,9 @@ class FacetsModal {
     if ((this.#configuration.sites ?? []).length > 1) {
       search.append(this.#renderSiteScope());
     }
-    header.append(search);
+    const help = this.#renderHelp();
+    search.append(this.#renderHelpToggle(help));
+    header.append(search, help);
 
     // No page open (e.g. a module without a page context) -> nothing to
     // scope to, so the control would be permanently unusable; skip it
@@ -374,6 +379,72 @@ class FacetsModal {
 
     item.append(label);
     return item;
+  }
+
+  // Syntax help. The token grammar is not discoverable from the controls alone
+  // (nothing on screen says whitespace means AND), so the modal carries the same
+  // cheat sheet as the README. Collapsed by default - reference material, not a
+  // step in the flow.
+  #renderHelp() {
+    const panel = document.createElement('div');
+    panel.className = 'alert alert-info pagetree-facets__help';
+    panel.id = `pagetree-facets__help-${this.#nextHelpId++}`;
+    panel.hidden = true;
+
+    const intro = document.createElement('p');
+    intro.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.intro']
+      ?? 'Type filter tokens into the page tree search field, or build them here. Examples:';
+    panel.append(intro);
+
+    // Token strings are syntax, not prose - only their explanations are
+    // translated.
+    const examples = [
+      ['doktype:1 is:empty', 'emptyPages', 'Standard pages without content'],
+      ['table:tx_news_domain_model_news', 'records', 'Pages containing news records'],
+      ['ce:uploads updated:<30d', 'recentUploads', 'Pages with an uploads content element, changed in the last 30 days'],
+      ['seo:missing-description', 'seo', 'Indexable pages without a meta description'],
+    ];
+    const list = document.createElement('dl');
+    list.className = 'pagetree-facets__help-examples';
+    for (const [token, key, fallback] of examples) {
+      const term = document.createElement('dt');
+      const code = document.createElement('code');
+      code.textContent = token;
+      term.append(code);
+      const description = document.createElement('dd');
+      description.textContent = TYPO3.lang?.[`pagetreeFacets.modal.help.example.${key}`] ?? fallback;
+      list.append(term, description);
+    }
+    panel.append(list);
+
+    const grammar = document.createElement('p');
+    grammar.className = 'mb-0';
+    grammar.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.grammar']
+      ?? 'Whitespace combines criteria (AND), a comma offers alternatives within one criterion (doktype:1,4). Text without a "key:" prefix searches page titles and UIDs; unknown tokens are ignored.';
+    panel.append(grammar);
+
+    return panel;
+  }
+
+  #renderHelpToggle(panel) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__help-toggle';
+    const label = TYPO3.lang?.['pagetreeFacets.modal.help'] ?? 'Filter syntax';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-controls', panel.id);
+    const icon = document.createElement('typo3-backend-icon');
+    icon.setAttribute('identifier', 'actions-info-circle');
+    icon.setAttribute('size', 'small');
+    button.append(icon);
+    button.addEventListener('click', () => {
+      const expand = panel.hidden;
+      panel.hidden = !expand;
+      button.setAttribute('aria-expanded', String(expand));
+    });
+    return button;
   }
 
   #renderFreetext() {
