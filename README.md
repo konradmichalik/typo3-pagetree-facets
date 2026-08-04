@@ -65,6 +65,37 @@ composer require konradmichalik/typo3-pagetree-facets
 > [!NOTE]
 > Not yet released to Packagist or TER; install from a VCS repository until the first tagged release.
 
+## ⚙️ Configuration
+
+### Extension settings
+
+You can find the extension settings in the TYPO3 backend under
+`Admin Tools > Settings > Extension Configuration > pagetree_facets`.
+
+| Setting | Default | Description |
+|---|---|---|
+| `adminOnly` | `0` | Only administrators can use the filter modal and tokens. |
+| `disabledTabs` | *(empty)* | Comma-separated list of built-in tab identifiers to disable installation-wide. |
+
+Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
+`translations`, `seo`.
+
+> [!NOTE]
+> Disabling a tab also makes its token keys unknown to the filter engine, so the
+> restriction cannot be bypassed by typing the token into the search field manually.
+
+### User TSconfig
+
+Both restrictions can also be applied per backend user or group:
+
+``` typoscript
+# Disable the extension entirely for this user/group
+tx_pagetreefacets.disable = 1
+
+# Disable individual tabs (merged with the disabledTabs extension setting)
+tx_pagetreefacets.disableTabs = seo, translations
+```
+
 ## 🔌 Extending
 
 Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
