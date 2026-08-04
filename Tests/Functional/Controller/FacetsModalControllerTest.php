@@ -16,6 +16,7 @@ namespace KonradMichalik\PagetreeFacets\Tests\Functional\Controller;
 use KonradMichalik\PagetreeFacets\Controller\FacetsModalController;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Core\Configuration\SiteWriter;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -86,12 +87,36 @@ final class FacetsModalControllerTest extends FunctionalTestCase
                 'doktype' => ['doktype' => ['4', '1']],
             ],
             'site' => 'main',
+            'pageScope' => 5,
             'freetext' => 'annual report',
         ]);
         $payload = $this->decode($this->subject->serialize($request));
 
         // Stable alphabetical order, freetext last, spaces quoted.
-        self::assertSame('doktype:4,1 is:empty site:main "annual report"', $payload['phrase']);
+        self::assertSame('doktype:4,1 is:empty site:main under:5 "annual report"', $payload['phrase']);
+    }
+
+    #[Test]
+    public function configurationExposesTheActiveSiteAndPageScopeFromThePhrase(): void
+    {
+        $request = (new ServerRequest())->withQueryParams(['phrase' => 'site:main under:5']);
+        $payload = $this->decode($this->subject->configuration($request));
+
+        self::assertSame('main', $payload['activeSite']);
+        self::assertSame(5, $payload['pageScope']);
+    }
+
+    #[Test]
+    public function configurationListsAccessibleSitesFromRealSiteConfiguration(): void
+    {
+        $this->get(SiteWriter::class)->write('main', [
+            'rootPageId' => 1,
+            'base' => '/',
+        ]);
+
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+
+        self::assertSame([['identifier' => 'main', 'rootPageId' => 1]], $payload['sites']);
     }
 
     #[Test]
