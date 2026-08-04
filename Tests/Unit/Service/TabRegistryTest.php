@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 /**
@@ -98,6 +99,26 @@ final class TabRegistryTest extends TestCase
 
         self::assertTrue($registry->isDisabledForUser($this->createBackendUser(admin: false)));
         self::assertFalse($registry->isDisabledForUser($this->createBackendUser(admin: true)));
+    }
+
+    #[Test]
+    public function missingExtensionConfigurationIsTreatedAsNotSet(): void
+    {
+        // Extension configuration paths do not exist before the extension has
+        // ever been saved through the Settings module - get() throws in that
+        // case; both isDisabledForUser() and the disabled-tabs lookup must
+        // degrade to "nothing configured" rather than propagate the exception.
+        $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
+        $extensionConfigurationMock->method('get')->willThrowException(
+            new ExtensionConfigurationPathDoesNotExistException('not configured', 1668941190),
+        );
+        $registry = new TabRegistry(
+            new CollectingEventDispatcher([[new StubFilterTab('doktype', ['doktype']), 70]]),
+            $extensionConfigurationMock,
+        );
+
+        self::assertFalse($registry->isDisabledForUser($this->createBackendUser()));
+        self::assertCount(1, $registry->getTabs($this->createBackendUser()));
     }
 
     #[Test]
