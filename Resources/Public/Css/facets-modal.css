@@ -157,6 +157,9 @@
 .pagetree-facets__nav {
     border-inline-end: 1px solid var(--pl-border);
     padding-inline-end: 0;
+    /* Room for the search input's focus ring, which would otherwise be clipped
+       by this scroll container's top edge. */
+    padding-block-start: 0.25rem;
     overflow-y: auto;
 }
 
