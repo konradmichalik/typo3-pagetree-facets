@@ -47,4 +47,37 @@ final class SeoTabTest extends AbstractTabTestCase
         // no_index -> irrelevant for SEO; folder uid 5 is excluded by doktype.
         self::assertSame([4], $this->resolve($this->get(SeoTab::class), 'seo:missing-description'));
     }
+
+    #[Test]
+    public function multipleChecksAreCombinedAsOr(): void
+    {
+        self::assertSame([2, 3], $this->resolve($this->get(SeoTab::class), 'seo:noindex,nofollow'));
+    }
+
+    #[Test]
+    public function anUnknownCheckResolvesToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(SeoTab::class), 'seo:bogus'));
+    }
+
+    #[Test]
+    public function modalConfigurationOffersAllThreeChecks(): void
+    {
+        $configuration = $this->get(SeoTab::class)->getModalConfiguration($this->createContext());
+
+        self::assertSame(
+            ['noindex', 'nofollow', 'missing-description'],
+            array_column($configuration['fields'][0]['options'], 'value'),
+        );
+    }
+
+    #[Test]
+    public function identityAndGroupingMetadataIsStable(): void
+    {
+        $tab = $this->get(SeoTab::class);
+
+        self::assertSame('seo', $tab->getIdentifier());
+        self::assertSame('quality', $tab->getGroup());
+        self::assertSame(['seo'], $tab->getTokenKeys());
+    }
 }
