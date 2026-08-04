@@ -21,6 +21,9 @@ import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
  */
 class FacetsToolbar {
   #treeSelector = 'typo3-backend-navigation-component-pagetree';
+  // The element that actually holds the nodes and dispatches the tree events -
+  // a child of #treeSelector, which only wraps toolbar plus tree.
+  #treeNodesSelector = 'typo3-backend-navigation-component-pagetree-tree';
   // Keep in sync with the same constant in facets-modal.js (#copyLink()).
   #shareParam = 'pagetreeFacetsFilter';
   #pendingSharedFilter = null;
@@ -141,26 +144,28 @@ class FacetsToolbar {
   // Driven by the core's own typo3:tree:nodes-prepared event rather than by
   // watching the DOM - it carries the prepared node list, so "no results" is a
   // data check instead of a guess about markup. The event does not bubble, hence
-  // the listener sits on the tree component itself.
-  #watchForEmptyResult(filterInput) {
-    const tree = document.querySelector(this.#treeSelector)?.querySelector('typo3-backend-tree, [role="tree"]')
-      ?? document.querySelector(this.#treeSelector);
+  // the listener sits on the tree component itself, which renders asynchronously
+  // and is therefore retried the same way the toolbar button is.
+  #watchForEmptyResult(filterInput, attemptsLeft = 20) {
+    const tree = document.querySelector(this.#treeSelector)?.querySelector(this.#treeNodesSelector);
     if (!tree) {
+      if (attemptsLeft > 0) {
+        window.setTimeout(() => this.#watchForEmptyResult(filterInput, attemptsLeft - 1), 250);
+      }
       return;
     }
+    if (tree.dataset.pagetreeFacetsWatched) {
+      return;
+    }
+    tree.dataset.pagetreeFacetsWatched = '1';
     tree.addEventListener('typo3:tree:nodes-prepared', (event) => {
       const nodes = event.detail?.nodes ?? [];
-      this.#toggleEmptyNotice(filterInput, '' !== filterInput.value.trim() && 0 === nodes.length);
+      this.#toggleEmptyNotice(filterInput, tree, '' !== filterInput.value.trim() && 0 === nodes.length);
     });
   }
 
-  #toggleEmptyNotice(filterInput, show) {
-    const container = filterInput.closest('.tree-toolbar')?.parentElement
-      ?? document.querySelector(this.#treeSelector);
-    if (!container) {
-      return;
-    }
-    const existing = container.querySelector('.pagetree-facets-empty');
+  #toggleEmptyNotice(filterInput, tree, show) {
+    const existing = document.querySelector('.pagetree-facets-empty');
     if (!show) {
       existing?.remove();
       return;
@@ -169,9 +174,9 @@ class FacetsToolbar {
       return;
     }
 
-    // Appended to the tree's container, never into the tree component's own
-    // render tree: nodes it did not create are outside its Lit template and get
-    // discarded on the next render.
+    // Placed as a SIBLING of the tree component, never inside it: the tree
+    // renders into its own light DOM (createRenderRoot returns this), so any
+    // node we put in there is discarded on its next render.
     const notice = document.createElement('div');
     notice.className = 'pagetree-facets-empty';
     notice.setAttribute('role', 'status');
@@ -191,12 +196,12 @@ class FacetsToolbar {
       // it reload unfiltered - same path as clearing the field by hand.
       filterInput.dispatchEvent(new Event('input', { bubbles: true }));
       filterInput.dispatchEvent(new Event('change', { bubbles: true }));
-      this.#toggleEmptyNotice(filterInput, false);
+      this.#toggleEmptyNotice(filterInput, tree, false);
       this.#updateBadge();
     });
     notice.append(reset);
 
-    container.append(notice);
+    tree.after(notice);
   }
 
   #findFilterInput() {
