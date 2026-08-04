@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 return [
     'directories' => [
-        '.build',
+        '.Build',
         '.ddev',
         '.git',
         '.github',

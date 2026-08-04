@@ -16,13 +16,11 @@ namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, RecordsTab};
 use PHPUnit\Framework\Attributes\Test;
 
-
 /**
  * ContentElementTabTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class ContentElementTabTest extends AbstractTabTestCase
 {
     protected function setUp(): void

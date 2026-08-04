@@ -20,13 +20,11 @@ use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
-
 /**
  * SiteScopeServiceTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class SiteScopeServiceTest extends TestCase
 {
     #[Test]

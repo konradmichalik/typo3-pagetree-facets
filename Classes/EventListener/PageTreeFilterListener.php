@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -43,7 +43,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
     identifier: 'pagetree-facets/filter',
     after: 'page-tree-wildcard-alias-filter',
 )]
-final class PageTreeFilterListener
+final readonly class PageTreeFilterListener
 {
     /**
      * Impossible page UID used to force an empty result set when the
@@ -52,10 +52,11 @@ final class PageTreeFilterListener
     private const int NO_MATCH_UID = 0;
 
     public function __construct(
-        private readonly TokenParser $tokenParser,
-        private readonly TabRegistry $tabRegistry,
-        private readonly SiteScopeService $siteScopeService,
-        private readonly ContentQueryHelper $queryHelper,
+        private TokenParser $tokenParser,
+        private TabRegistry $tabRegistry,
+        private SiteScopeService $siteScopeService,
+        private PageSubtreeScopeService $pageSubtreeScopeService,
+        private ContentQueryHelper $queryHelper,
     ) {}
 
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void
@@ -93,6 +94,14 @@ final class PageTreeFilterListener
             $uids = $this->siteScopeService->filterUidsBySite($uids, $context->siteIdentifier);
         }
 
+        // Page scope ("under:<uid>", set from the modal's "current page and
+        // its subpages" toggle): same treatment, post-filter by rootline
+        // rather than materializing the scope page's subtree upfront.
+        $pageScope = $this->extractPageScope($tokens);
+        if (null !== $pageScope && [] !== $uids) {
+            $uids = $this->pageSubtreeScopeService->filterUidsUnderPage($uids, $pageScope);
+        }
+
         $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
     }
 
@@ -114,7 +123,7 @@ final class PageTreeFilterListener
                 $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
                 continue;
             }
-            if ('site' === $token->key) {
+            if ('site' === $token->key || 'under' === $token->key) {
                 continue; // scope, not a criterion - handled separately
             }
             $tab = $this->tabRegistry->findTabForToken($token, $backendUser);
@@ -135,6 +144,22 @@ final class PageTreeFilterListener
         foreach ($tokens as $token) {
             if ('site' === $token->key) {
                 return $token->firstValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     */
+    private function extractPageScope(array $tokens): ?int
+    {
+        foreach ($tokens as $token) {
+            if ('under' === $token->key) {
+                $uid = (int) $token->firstValue();
+
+                return $uid > 0 ? $uid : null;
             }
         }
 

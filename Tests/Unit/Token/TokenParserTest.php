@@ -17,13 +17,11 @@ use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-
 /**
  * TokenParserTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class TokenParserTest extends TestCase
 {
     private TokenParser $subject;

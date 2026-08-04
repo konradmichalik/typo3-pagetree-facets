@@ -1,3 +1,5 @@
 "be_users"
-,"uid","pid","username","password","admin","deleted"
-,1,0,"admin","$argon2i$fixture",1,0
+,"uid","pid","username","password","admin","deleted","realName"
+,1,0,"admin","$argon2i$fixture",1,0,""
+,2,0,"jane","$argon2i$fixture",0,0,"Jane Doe"
+,3,0,"gone","$argon2i$fixture",0,1,"Deleted User"

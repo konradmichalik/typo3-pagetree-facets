@@ -19,13 +19,11 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-
 /**
  * RegisterFilterTabsEventTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class RegisterFilterTabsEventTest extends TestCase
 {
     #[Test]
@@ -50,8 +48,8 @@ final class RegisterFilterTabsEventTest extends TestCase
 
     private function createTab(string $identifier): FilterTabInterface
     {
-        return new class($identifier) implements FilterTabInterface {
-            public function __construct(private readonly string $identifier) {}
+        return new readonly class($identifier) implements FilterTabInterface {
+            public function __construct(private string $identifier) {}
 
             public function getIdentifier(): string
             {

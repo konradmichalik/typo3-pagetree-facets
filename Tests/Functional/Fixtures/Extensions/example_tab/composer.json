@@ -1,0 +1,23 @@
+{
+	"name": "konradmichalik/pagetree-facets-example-tab",
+	"description": "Local-only example third-party filter tab demonstrating the pagetree_facets FilterTabInterface extension point.",
+	"license": [
+		"GPL-2.0-or-later"
+	],
+	"type": "typo3-cms-extension",
+	"require": {
+		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
+		"konradmichalik/typo3-pagetree-facets": "*",
+		"typo3/cms-core": "^14.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"KonradMichalik\\PagetreeFacetsExampleTab\\": "Classes/"
+		}
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "example_tab"
+		}
+	}
+}

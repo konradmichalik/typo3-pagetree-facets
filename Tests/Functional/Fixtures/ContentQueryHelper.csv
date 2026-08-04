@@ -1,0 +1,9 @@
+"pages"
+,"uid","pid","title","doktype","deleted"
+,1,0,"Root",1,0
+,2,1,"Solar Park Alpha",1,0
+,3,1,"Wind Farm Beta",1,0
+"tt_content"
+,"uid","pid","CType","header","hidden","deleted"
+,200,2,"text","Alpha content",0,0
+,201,3,"text","Beta content",0,1

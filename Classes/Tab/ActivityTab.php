@@ -78,7 +78,15 @@ final class ActivityTab extends AbstractPagesQueryTab
             'fields' => [
                 ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions],
                 ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll.'created', 'options' => $presetOptions],
-                ['type' => 'text', 'name' => 'by', 'label' => $lll.'by', 'options' => []],
+                [
+                    'type' => 'user-picker',
+                    'name' => 'by',
+                    'label' => $lll.'by',
+                    'options' => [],
+                    // Lets the modal pin "Me" as a suggestion without a round
+                    // trip - the current user's own record is already loaded.
+                    'currentUser' => ['uid' => (int) ($context->backendUser->user['uid'] ?? 0), 'username' => (string) ($context->backendUser->user['username'] ?? '')],
+                ],
             ],
         ];
     }

@@ -18,3 +18,9 @@ parameters:
 		- ../../Configuration
 		- ../../Tests/Unit
 		- ../../Tests/Functional
+	# ext_emconf.php/ext_localconf.php rely on TYPO3-injected globals
+	# ($EM_CONF, $_EXTKEY) - never statically analysable, same as the main
+	# extension's own root-level versions (outside these paths already).
+	excludePaths:
+		- ../../Tests/Functional/Fixtures/Extensions/*/ext_emconf.php
+		- ../../Tests/Functional/Fixtures/Extensions/*/ext_localconf.php

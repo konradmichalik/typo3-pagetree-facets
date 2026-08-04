@@ -36,7 +36,6 @@ use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 class ContentQueryHelper
 {
     /**

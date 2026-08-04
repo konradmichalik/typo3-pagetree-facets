@@ -30,6 +30,10 @@
     flex-direction: column;
     min-height: 480px;
     max-height: min(72vh, 720px);
+    /* Containing block for the user-picker dropdown (#showUserResults) -
+     * positioned absolute against this element's own box once reparented
+     * here, not against the viewport. */
+    position: relative;
 }
 
 [data-color-scheme="dark"] .pagetree-facets {
@@ -69,6 +73,14 @@
     margin: 0;
 }
 
+.pagetree-facets__filter-search {
+    margin: 0 0.75rem 0.75rem;
+}
+
+.pagetree-facets__page-scope {
+    margin: 0;
+}
+
 .pagetree-facets__active {
     display: flex;
     align-items: flex-start;
@@ -86,6 +98,7 @@
     gap: 0.375rem;
 }
 
+.pagetree-facets__copy-link,
 .pagetree-facets__reset {
     flex: 0 0 auto;
     padding-inline: 0;
@@ -199,6 +212,16 @@
     outline-offset: 1px;
 }
 
+.pagetree-facets__nav-item.is-empty {
+    color: var(--pl-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagetree-facets__nav-item.is-empty:hover {
+    background: transparent;
+}
+
 /* Active-criteria count per tab (kept subtle: a small pill, not a loud badge). */
 .pagetree-facets__nav-count {
     flex: 0 0 auto;
@@ -237,25 +260,37 @@
     color: var(--pl-muted);
 }
 
-/* Multiple fieldsets within one tab (e.g. Activity: updated / created / by). */
+/* Multiple fieldsets within one tab (e.g. Activity: updated / created / by) get
+ * a divider - the same treatment used elsewhere for section breaks (header vs.
+ * active-filter row) - so stacked fieldsets read as distinct groups without
+ * introducing a one-off look for any single tab. The gap between the divider
+ * line and the legend text is set as the LEGEND's own margin-top, not the
+ * fieldset's padding-top: a <legend> positions itself against the fieldset's
+ * border box regardless of padding (a long-standing browser quirk), so
+ * padding-top there ends up as extra space AFTER the legend instead of
+ * before it - tripling the visible gap under the heading. */
 .pagetree-facets__panel fieldset + fieldset {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--pl-border);
+}
+
+.pagetree-facets__panel fieldset + fieldset > legend {
     margin-top: 1.5rem;
 }
 
 /* Choice lists wrap into responsive columns instead of one long column
  * (the content-element list has 25+ entries). The whole panels column
- * scrolls, so the list itself is not separately capped. */
-.pagetree-facets__panel fieldset:has(.form-check) {
+ * scrolls, so the list itself is not separately capped. Lives on its own
+ * wrapper, not the fieldset - see #renderField()'s docblock for why the
+ * <legend> must stay out of the grid. */
+.pagetree-facets__options {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.15rem 1rem;
 }
 
-.pagetree-facets__panel legend {
-    grid-column: 1 / -1;
-}
-
-.pagetree-facets__panel .form-check {
+.pagetree-facets__panel .form-check,
+.pagetree-facets__search-result {
     margin: 0;
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
@@ -263,12 +298,108 @@
     transition: background-color 0.12s ease;
 }
 
-.pagetree-facets__panel .form-check:hover {
+.pagetree-facets__panel .form-check:hover,
+.pagetree-facets__search-result:hover {
     background: var(--pl-hover);
 }
 
-.pagetree-facets__panel .form-check typo3-backend-icon {
+.pagetree-facets__panel .form-check typo3-backend-icon,
+.pagetree-facets__search-result typo3-backend-icon {
     flex: 0 0 auto;
+}
+
+/* --- Cross-tab filter search --------------------------------------------
+ * Replaces .pagetree-facets__panels while the search field has text; a flat,
+ * clickable list of matches aggregated across every tab. */
+
+.pagetree-facets__search-results {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.pagetree-facets__search-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pagetree-facets__search-result {
+    width: 100%;
+    color: var(--pl-text);
+}
+
+.pagetree-facets__search-result:has(.form-check-input:focus-visible) {
+    outline: 2px solid var(--pl-accent);
+    outline-offset: 1px;
+}
+
+.pagetree-facets__search-result:has(.form-check-input:checked) {
+    background: var(--pl-active);
+    color: var(--pl-accent);
+    font-weight: 500;
+}
+
+.pagetree-facets__search-result-label {
+    flex: 1 1 auto;
+}
+
+.pagetree-facets__search-result-tab {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--pl-hover);
+    color: var(--pl-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+}
+
+.pagetree-facets__search-empty {
+    padding: 0.4rem 0.6rem;
+    color: var(--pl-muted);
+}
+
+/* --- Activity "Edited by" user picker ----------------------------------- */
+
+.pagetree-facets__user-picker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagetree-facets__user-picker input {
+    flex: 1 1 auto;
+}
+
+/* Position (absolute, left/top/width) is set inline by #showUserResults()
+ * once reparented to the modal root - see the docblock there for why. */
+.pagetree-facets__user-results {
+    z-index: 1000;
+    padding: 0.25rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--pl-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.pagetree-facets__user-result {
+    display: block;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--pl-text);
+    text-align: start;
+    cursor: pointer;
+}
+
+.pagetree-facets__user-result:hover,
+.pagetree-facets__user-result.is-highlighted {
+    background: var(--pl-hover);
 }
 
 /* --- Favorites footer -------------------------------------------------- */
@@ -287,46 +418,54 @@
     display: none;
 }
 
-/* --- Page-tree toolbar button (merged into the search field) -----------
- * Floats over the trailing edge of the tree filter input so it reads as part
- * of the field and adds no width to the toolbar. Lives outside .pagetree-facets
+/* --- Page-tree toolbar button --------------------------------------------
+ * .tree-toolbar__search (label + input) and our button share this wrapper as
+ * one flex item within .tree-toolbar__menu (see facets-toolbar.js) - its own
+ * zero gap plus joined border-radius makes the button read as glued to the
+ * input's trailing edge ("button group"), while .tree-toolbar__menu's own
+ * gap to the OTHER toolbar buttons (options dropdown, collapse) is untouched.
+ * Not overlaid directly on the input - that collided with the browser's
+ * native type="search" clear ("x") button. Lives outside .pagetree-facets
  * (the modal scope), so it uses the backend --bs-* vars with safe fallbacks. */
 
-.tree-toolbar__search.pagetree-facets-host {
-    position: relative;
+.pagetree-facets-search-group {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    gap: 0;
 }
 
-.tree-toolbar__search.pagetree-facets-host .search-input {
-    padding-inline-end: 2.5rem;
+.pagetree-facets-search-group .tree-toolbar__search {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pagetree-facets-search-group .search-input {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.pagetree-facets-search-group .pagetree-facets-toggle {
+    flex: 0 0 auto;
+    /* Full border, not just the joining edge - .btn-borderless has none by
+     * default, so at rest (no hover) the button read as a bare floating icon
+     * rather than part of a group. The start (left) edge overlaps the
+     * input's own end border by 1px, same as Bootstrap's own input-group. */
+    border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.15));
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    margin-inline-start: -1px;
 }
 
 .pagetree-facets-toggle {
-    position: absolute;
-    inset-inline-end: 0.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    padding: 0.15rem 0.3rem;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
+    position: relative;
     color: var(--bs-secondary-color, #8a8a8a);
-    line-height: 1;
-}
-
-.pagetree-facets-toggle:hover,
-.pagetree-facets-toggle:focus-visible {
-    background: transparent;
-    color: var(--bs-primary, #3085d6);
-}
-
-.pagetree-facets-toggle.is-active {
-    color: var(--bs-primary, #3085d6);
 }
 
 .pagetree-facets-toggle .badge {
+    position: absolute;
+    top: -0.15rem;
+    inset-inline-end: -0.15rem;
     min-width: 1.05rem;
     padding: 0 0.3rem;
     border-radius: 999px;

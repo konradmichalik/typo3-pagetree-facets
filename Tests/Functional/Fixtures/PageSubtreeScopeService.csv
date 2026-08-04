@@ -1,0 +1,7 @@
+"pages"
+,"uid","pid","title","doktype","deleted"
+,1,0,"Root",1,0
+,2,1,"Section A",1,0
+,3,2,"Section A Child",1,0
+,4,1,"Section B",1,0
+,5,4,"Section B Child",1,0

@@ -18,13 +18,11 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
-
 /**
  * PageStateTab.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class PageStateTab extends AbstractPagesQueryTab
 {
     public function getIdentifier(): string
@@ -86,11 +84,11 @@ final class PageStateTab extends AbstractPagesQueryTab
                     // icons. Activity presets deliberately get none (no natural
                     // symbol; avoid decoration).
                     'options' => [
-                        ['value' => 'empty', 'label' => $lll.'empty', 'icon' => 'actions-file'],
-                        ['value' => 'restricted', 'label' => $lll.'restricted', 'icon' => 'status-status-locked'],
-                        ['value' => 'hidden', 'label' => $lll.'hidden', 'icon' => 'actions-eye-slash'],
-                        ['value' => 'timed', 'label' => $lll.'timed', 'icon' => 'actions-clock'],
-                        ['value' => 'editlocked', 'label' => $lll.'editlocked', 'icon' => 'actions-lock'],
+                        ['value' => 'empty', 'label' => $lll.'empty', 'icon' => 'actions-file', 'description' => $lll.'empty.description'],
+                        ['value' => 'restricted', 'label' => $lll.'restricted', 'icon' => 'overlay-locked', 'description' => $lll.'restricted.description'],
+                        ['value' => 'hidden', 'label' => $lll.'hidden', 'icon' => 'overlay-hidden'],
+                        ['value' => 'timed', 'label' => $lll.'timed', 'icon' => 'actions-clock', 'description' => $lll.'timed.description'],
+                        ['value' => 'editlocked', 'label' => $lll.'editlocked', 'icon' => 'actions-lock', 'description' => $lll.'editlocked.description'],
                     ],
                 ],
             ],

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" datatype="plaintext" original="EXT:example_tab/Resources/Private/Language/locallang.xlf" date="2026-08-03T00:00:00Z" product-name="example_tab">
+		<body>
+			<trans-unit id="tab.example"><source>Example</source></trans-unit>
+			<trans-unit id="example.set"><source>Has teaser text</source></trans-unit>
+			<trans-unit id="example.set.description"><source>The page's abstract field (shown as a teaser on some templates) is filled in.</source></trans-unit>
+			<trans-unit id="example.empty"><source>No teaser text</source></trans-unit>
+			<trans-unit id="example.empty.description"><source>The page's abstract field is empty or not set.</source></trans-unit>
+		</body>
+	</file>
+</xliff>

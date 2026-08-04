@@ -17,13 +17,11 @@ use KonradMichalik\PagetreeFacets\Token\{TokenParser, TokenSerializer};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-
 /**
  * TokenSerializerTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-
 final class TokenSerializerTest extends TestCase
 {
     #[Test]
@@ -34,6 +32,18 @@ final class TokenSerializerTest extends TestCase
         self::assertSame(
             'doktype:1,4 is:empty "annual report"',
             $serializer->serialize($parser->parse('is:empty doktype:1,4 "annual report"')),
+        );
+    }
+
+    #[Test]
+    public function quotesAKeyedValueContainingWhitespace(): void
+    {
+        $parser = new TokenParser();
+        $serializer = new TokenSerializer();
+
+        self::assertSame(
+            'text:"annual report"',
+            $serializer->serialize($parser->parse('text:"annual report"')),
         );
     }
 

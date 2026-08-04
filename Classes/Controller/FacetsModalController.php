@@ -18,9 +18,13 @@ use KonradMichalik\PagetreeFacets\Service\{FavoriteService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Site\SiteFinder;
+
+use function sprintf;
 
 /**
  * FacetsModalController.
@@ -31,14 +35,15 @@ use TYPO3\CMS\Core\Site\SiteFinder;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class FacetsModalController
+final readonly class FacetsModalController
 {
     public function __construct(
-        private readonly TabRegistry $tabRegistry,
-        private readonly TokenParser $tokenParser,
-        private readonly TokenSerializer $tokenSerializer,
-        private readonly FavoriteService $favoriteService,
-        private readonly SiteFinder $siteFinder,
+        private TabRegistry $tabRegistry,
+        private TokenParser $tokenParser,
+        private TokenSerializer $tokenSerializer,
+        private FavoriteService $favoriteService,
+        private SiteFinder $siteFinder,
+        private ConnectionPool $connectionPool,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
@@ -57,6 +62,9 @@ final class FacetsModalController
             'tabs' => $this->buildTabs($context, $tokens),
             'sites' => $this->buildSiteOptions($backendUser),
             'activeSite' => $siteIdentifier,
+            // "under:<uid>" scope, set from the modal's "current page and its
+            // subpages" toggle - null when no such scope is active.
+            'pageScope' => $this->extractPageScope($tokens),
             'freetext' => $this->extractFreetext($tokens),
             'favorites' => $this->favoriteService->getFavorites($backendUser),
         ]);
@@ -68,6 +76,7 @@ final class FacetsModalController
         $body = (array) ($request->getParsedBody() ?? []);
         $states = (array) ($body['states'] ?? []);
         $siteIdentifier = (string) ($body['site'] ?? '');
+        $pageScope = (int) ($body['pageScope'] ?? 0);
         $freetext = trim((string) ($body['freetext'] ?? ''));
 
         $tokens = [];
@@ -79,6 +88,9 @@ final class FacetsModalController
         }
         if ('' !== $siteIdentifier) {
             $tokens[] = new Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
+        }
+        if ($pageScope > 0) {
+            $tokens[] = new Token('under', [(string) $pageScope], 'under:'.$pageScope);
         }
         if ('' !== $freetext) {
             $tokens[] = new Token(
@@ -109,6 +121,47 @@ final class FacetsModalController
         $this->favoriteService->removeFavorite($this->getBackendUser(), (int) ($body['index'] ?? -1));
 
         return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($this->getBackendUser())]);
+    }
+
+    /**
+     * Backs the Activity tab's "Edited by" typeahead: either an exact uid
+     * lookup (re-resolving a hydrated filter to a display label) or a LIKE
+     * search across username/realName. Never both in the same request - uid
+     * takes precedence so a stale query string cannot widen an exact lookup.
+     */
+    public function users(ServerRequestInterface $request): JsonResponse
+    {
+        $queryParams = $request->getQueryParams();
+        $uid = (int) ($queryParams['uid'] ?? 0);
+        $search = trim((string) ($queryParams['q'] ?? ''));
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
+        $queryBuilder
+            ->select('uid', 'username', 'realName')
+            ->from('be_users')
+            ->orderBy('username')
+            ->setMaxResults(20);
+
+        if ($uid > 0) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)));
+        } elseif ('' !== $search) {
+            $wildcard = '%'.$queryBuilder->escapeLikeWildcards($search).'%';
+            $queryBuilder->andWhere($queryBuilder->expr()->or(
+                $queryBuilder->expr()->like('username', $queryBuilder->createNamedParameter($wildcard)),
+                $queryBuilder->expr()->like('realName', $queryBuilder->createNamedParameter($wildcard)),
+            ));
+        } else {
+            return new JsonResponse(['users' => []]);
+        }
+
+        return new JsonResponse(['users' => array_map(
+            static fn (array $row): array => [
+                'uid' => (int) $row['uid'],
+                'label' => '' !== $row['realName'] ? sprintf('%s (%s)', $row['realName'], $row['username']) : $row['username'],
+            ],
+            $queryBuilder->executeQuery()->fetchAllAssociative(),
+        )]);
     }
 
     /**
@@ -146,6 +199,10 @@ final class FacetsModalController
             foreach ($field['options'] ?? [] as $optionIndex => $option) {
                 $configuration['fields'][$fieldIndex]['options'][$optionIndex]['label']
                     = $this->translate($languageService, (string) ($option['label'] ?? ''));
+                if ('' !== (string) ($option['description'] ?? '')) {
+                    $configuration['fields'][$fieldIndex]['options'][$optionIndex]['description']
+                        = $this->translate($languageService, (string) $option['description']);
+                }
             }
         }
 
@@ -180,6 +237,22 @@ final class FacetsModalController
         foreach ($tokens as $token) {
             if ('site' === $token->key) {
                 return $token->firstValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<Token> $tokens
+     */
+    private function extractPageScope(array $tokens): ?int
+    {
+        foreach ($tokens as $token) {
+            if ('under' === $token->key) {
+                $uid = (int) $token->firstValue();
+
+                return $uid > 0 ? $uid : null;
             }
         }
 

@@ -24,13 +24,13 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class CollectingEventDispatcher implements EventDispatcherInterface
+final readonly class CollectingEventDispatcher implements EventDispatcherInterface
 {
     /**
      * @param list<array{0: FilterTabInterface, 1: int}> $registrations
      */
     public function __construct(
-        private readonly array $registrations,
+        private array $registrations,
     ) {}
 
     public function dispatch(object $event): object
