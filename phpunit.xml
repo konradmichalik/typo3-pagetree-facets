@@ -2,7 +2,7 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
          bootstrap="vendor/autoload.php"
-         cacheDirectory=".build/phpunit"
+         cacheDirectory=".Build/phpunit"
          colors="true"
          failOnWarning="true"
          failOnRisky="true">
@@ -13,7 +13,7 @@
 	</testsuites>
 	<coverage>
 		<report>
-			<clover outputFile=".build/coverage/clover.xml"/>
+			<clover outputFile=".Build/coverage/clover.xml"/>
 		</report>
 	</coverage>
 	<source>
