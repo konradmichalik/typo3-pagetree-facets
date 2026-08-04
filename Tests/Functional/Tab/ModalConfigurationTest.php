@@ -17,6 +17,8 @@ use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab, PageStateT
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
 
+use function count;
+
 /**
  * ModalConfigurationTest.
  *
@@ -51,7 +53,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     public function contentElementOptionsComeFromTcaIncludingIcons(): void
     {
         $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext());
-        $options = array_column($configuration['fields'][0]['options'], null, 'value');
+        $options = array_column($this->flattenOptions($configuration), null, 'value');
 
         self::assertArrayHasKey('textmedia', $options);
         self::assertNotSame('', $options['textmedia']['icon']);
@@ -61,37 +63,31 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     }
 
     #[Test]
-    public function contentElementOptionsCarryWizardGroups(): void
+    public function contentElementOptionsAreSplitIntoOneFieldPerWizardGroup(): void
     {
         $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext());
-        $field = $configuration['fields'][0];
 
         // Raw LLL labels, like every other label in a modal configuration -
         // FacetsModalController translates them on the way out. Groups without a
-        // single option are omitted, so this is a subset of the TCA itemGroups.
+        // single option are omitted, so these are a subset of the TCA itemGroups
+        // in itemGroups order.
         $itemGroups = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['itemGroups'];
-        self::assertArrayHasKey('default', $field['groups']);
-        foreach ($field['groups'] as $key => $label) {
-            self::assertSame($itemGroups[$key], $label, 'Group label must be the TCA itemGroups label, unchanged');
-        }
+        $labels = array_column($configuration['fields'], 'label');
+
+        self::assertGreaterThan(1, count($labels), 'Core plus fluid_styled_content span several wizard groups');
+        self::assertContains($itemGroups['default'], $labels);
         self::assertSame(
-            array_keys($field['groups']),
-            array_values(array_intersect(array_keys($itemGroups), array_keys($field['groups']))),
-            'Groups must keep the TCA itemGroups order',
+            $labels,
+            array_values(array_intersect($itemGroups, $labels)),
+            'Fields must keep the TCA itemGroups order',
         );
 
-        $groupsInOrder = array_column($field['options'], 'group');
-        self::assertNotContains('', $groupsInOrder, 'Every option must carry its wizard group');
-        // Contiguity is what lets the modal emit one heading per group while
-        // keeping the options list flat.
-        $seen = [];
-        $previous = null;
-        foreach ($groupsInOrder as $group) {
-            if ($group !== $previous) {
-                self::assertNotContains($group, $seen, 'Options of group "'.$group.'" must be contiguous');
-                $seen[] = $group;
-                $previous = $group;
-            }
+        foreach ($configuration['fields'] as $field) {
+            self::assertSame('checkbox-group', $field['type']);
+            // One shared name is what keeps the groups a single criterion for
+            // serialize()/hydrate() and the modal's value collection.
+            self::assertSame('ce', $field['name']);
+            self::assertNotSame([], $field['options'], 'An empty group must not produce a field');
         }
     }
 
@@ -103,7 +99,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
 
         $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
 
-        self::assertSame(['textmedia'], array_column($configuration['fields'][0]['options'], 'value'));
+        self::assertSame(['textmedia'], array_column($this->flattenOptions($configuration), 'value'));
     }
 
     #[Test]
@@ -156,6 +152,24 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         self::assertCount(1, $options, 'Default language must not be offered');
         self::assertSame('1', $options[0]['value']);
         self::assertSame('Dansk', $options[0]['label']);
+    }
+
+    /**
+     * The content element tab spreads its options over one field per wizard
+     * group, so value-level assertions need them back in one list.
+     *
+     * @param array{fields: list<array<string, mixed>>} $configuration
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function flattenOptions(array $configuration): array
+    {
+        $options = [];
+        foreach ($configuration['fields'] as $field) {
+            array_push($options, ...($field['options'] ?? []));
+        }
+
+        return $options;
     }
 
     /**

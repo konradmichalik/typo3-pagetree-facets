@@ -71,25 +71,22 @@
     flex: 0 0 auto;
 }
 
-/* Syntax cheat sheet, collapsed by default. Styled as a Bootstrap alert, so
-   only the example list layout is ours. */
+/* Usage help, collapsed by default. Styled as a Bootstrap alert, so only the
+   list layout is ours. The header does not shrink, so an expanded panel is
+   capped and scrolls on its own rather than squeezing the tabs out of view. */
 .pagetree-facets__help {
     margin: 0;
+    max-height: 40vh;
+    overflow-y: auto;
 }
 
-.pagetree-facets__help-examples {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.2rem 1rem;
+.pagetree-facets__help-points {
     margin: 0.5rem 0;
+    padding-inline-start: 1.25rem;
 }
 
-.pagetree-facets__help-examples dt {
-    font-weight: 400;
-}
-
-.pagetree-facets__help-examples dd {
-    margin: 0;
+.pagetree-facets__help-points li + li {
+    margin-top: 0.25rem;
 }
 
 .pagetree-facets__site {
@@ -104,6 +101,30 @@
 
 .pagetree-facets__page-scope {
     margin: 0;
+}
+
+/* Page scope and the filter-wide actions share one row; the actions sit at the
+   trailing edge whether or not the scope checkbox is present. */
+.pagetree-facets__utility {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem;
+}
+
+.pagetree-facets__utility[hidden] {
+    display: none;
+}
+
+.pagetree-facets__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-inline-start: auto;
+}
+
+.pagetree-facets__actions[hidden] {
+    display: none;
 }
 
 .pagetree-facets__active {
@@ -177,14 +198,25 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
+    /* Not left to Bootstrap's .row: its flex-wrap: wrap sizes the flex line from
+       its content, so the columns never get a bounded height to scroll inside
+       and long option lists were clipped by the overflow: hidden above. The two
+       columns are col-3 + col-9, so they never needed to wrap anyway. */
+    display: flex;
+    flex-wrap: nowrap;
 }
 
+/* min-height: 0 on both columns is load-bearing: as flex items of the .row
+   body they default to min-height: auto, which refuses to shrink below the
+   content height, so overflow-y never engages and long option lists get
+   clipped by the body's overflow: hidden instead of scrolling. */
 .pagetree-facets__nav {
     border-inline-end: 1px solid var(--pl-border);
     padding-inline-end: 0;
     /* Room for the search input's focus ring, which would otherwise be clipped
        by this scroll container's top edge. */
     padding-block-start: 0.25rem;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -268,6 +300,7 @@
 
 .pagetree-facets__panels {
     padding-inline-start: 1.5rem;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -315,19 +348,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.15rem 1rem;
-}
-
-/* Sub-heading inside an options grid (e.g. the content-element wizard groups).
-   Styled as a form-label; only the grid span and spacing are ours, so the
-   options below always start on a fresh row. */
-.pagetree-facets__option-group {
-    grid-column: 1 / -1;
-    margin: 0.75rem 0 0;
-    padding-inline: 0.5rem;
-}
-
-.pagetree-facets__option-group:first-child {
-    margin-top: 0;
 }
 
 .pagetree-facets__panel .form-check,

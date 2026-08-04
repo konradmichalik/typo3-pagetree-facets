@@ -23,6 +23,8 @@ class FacetsModal {
   #onApply = null;
   #chips = null;
   #active = null;
+  #utility = null;
+  #actions = null;
   #resultsPanel = null;
   #root = null;
   #nextHelpId = 0;
@@ -104,23 +106,18 @@ class FacetsModal {
     search.append(this.#renderHelpToggle(help));
     header.append(search, help);
 
+    // Utility row: the page scope on the left, the filter-wide actions on the
+    // right. They share a row so the active-filter area below spends its height
+    // on chips only, instead of a full row on two links.
+    this.#utility = document.createElement('div');
+    this.#utility.className = 'pagetree-facets__utility';
+
     // No page open (e.g. a module without a page context) -> nothing to
     // scope to, so the control would be permanently unusable; skip it
     // entirely rather than show a checkbox that can never be checked.
     if (this.#currentPageId) {
-      header.append(this.#renderPageScope());
+      this.#utility.append(this.#renderPageScope());
     }
-
-    // Active-filter row: the removable chips plus a one-click reset and a
-    // "copy link" action. Hidden entirely while nothing is active - sharing
-    // or resetting an empty filter is meaningless.
-    this.#active = document.createElement('div');
-    this.#active.className = 'pagetree-facets__active';
-    this.#active.hidden = true;
-
-    this.#chips = document.createElement('div');
-    this.#chips.className = 'pagetree-facets__chips';
-    this.#active.append(this.#chips);
 
     const copyLink = document.createElement('button');
     copyLink.type = 'button';
@@ -130,7 +127,6 @@ class FacetsModal {
     copyLinkIcon.setAttribute('size', 'small');
     copyLink.append(copyLinkIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
     copyLink.addEventListener('click', () => this.#copyLink());
-    this.#active.append(copyLink);
 
     const reset = document.createElement('button');
     reset.type = 'button';
@@ -140,7 +136,24 @@ class FacetsModal {
     resetIcon.setAttribute('size', 'small');
     reset.append(resetIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
     reset.addEventListener('click', () => this.#resetAll());
-    this.#active.append(reset);
+
+    // Sharing or resetting an empty filter is meaningless, so the actions only
+    // appear once something is active (see #refreshActiveIndicators).
+    this.#actions = document.createElement('div');
+    this.#actions.className = 'pagetree-facets__actions';
+    this.#actions.hidden = true;
+    this.#actions.append(copyLink, reset);
+    this.#utility.append(this.#actions);
+    header.append(this.#utility);
+
+    // Active-filter row: the removable chips mirroring the current tab criteria.
+    this.#active = document.createElement('div');
+    this.#active.className = 'pagetree-facets__active';
+    this.#active.hidden = true;
+
+    this.#chips = document.createElement('div');
+    this.#chips.className = 'pagetree-facets__chips';
+    this.#active.append(this.#chips);
 
     header.append(this.#active);
     return header;
@@ -381,10 +394,10 @@ class FacetsModal {
     return item;
   }
 
-  // Syntax help. The token grammar is not discoverable from the controls alone
-  // (nothing on screen says whitespace means AND), so the modal carries the same
-  // cheat sheet as the README. Collapsed by default - reference material, not a
-  // step in the flow.
+  // Usage help, written for editors: how picking criteria behaves, not what the
+  // token grammar looks like. The token syntax is mentioned once at the end as
+  // an aside - editors work through these controls, not by typing tokens.
+  // Collapsed by default; reference material, not a step in the flow.
   #renderHelp() {
     const panel = document.createElement('div');
     panel.className = 'alert alert-info pagetree-facets__help';
@@ -393,35 +406,32 @@ class FacetsModal {
 
     const intro = document.createElement('p');
     intro.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.intro']
-      ?? 'Type filter tokens into the page tree search field, or build them here. Examples:';
+      ?? 'Pick one or more criteria to narrow the page tree down to the pages you are looking for.';
     panel.append(intro);
 
-    // Token strings are syntax, not prose - only their explanations are
-    // translated.
-    const examples = [
-      ['doktype:1 is:empty', 'emptyPages', 'Standard pages without content'],
-      ['table:tx_news_domain_model_news', 'records', 'Pages containing news records'],
-      ['ce:uploads updated:<30d', 'recentUploads', 'Pages with an uploads content element, changed in the last 30 days'],
-      ['seo:missing-description', 'seo', 'Indexable pages without a meta description'],
+    const points = [
+      ['combine', 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.'],
+      ['chips', 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset".'],
+      // Only worth explaining while the control it describes is on screen.
+      ...(this.#currentPageId
+        ? [['scope', '"Search from current page down" limits the result to the page you currently have open and its subpages.']]
+        : []),
+      ['share', '"Copy link" copies a link to your current selection, so you can hand it to a colleague.'],
     ];
-    const list = document.createElement('dl');
-    list.className = 'pagetree-facets__help-examples';
-    for (const [token, key, fallback] of examples) {
-      const term = document.createElement('dt');
-      const code = document.createElement('code');
-      code.textContent = token;
-      term.append(code);
-      const description = document.createElement('dd');
-      description.textContent = TYPO3.lang?.[`pagetreeFacets.modal.help.example.${key}`] ?? fallback;
-      list.append(term, description);
+    const list = document.createElement('ul');
+    list.className = 'pagetree-facets__help-points';
+    for (const [key, fallback] of points) {
+      const item = document.createElement('li');
+      item.textContent = TYPO3.lang?.[`pagetreeFacets.modal.help.${key}`] ?? fallback;
+      list.append(item);
     }
     panel.append(list);
 
-    const grammar = document.createElement('p');
-    grammar.className = 'mb-0';
-    grammar.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.grammar']
-      ?? 'Whitespace combines criteria (AND), a comma offers alternatives within one criterion (doktype:1,4). Text without a "key:" prefix searches page titles and UIDs; unknown tokens are ignored.';
-    panel.append(grammar);
+    const advanced = document.createElement('p');
+    advanced.className = 'mb-0';
+    advanced.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.advanced']
+      ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly.';
+    panel.append(advanced);
 
     return panel;
   }
@@ -540,20 +550,7 @@ class FacetsModal {
       // inflating the gap under the heading well beyond any margin we set.
       const optionsWrap = document.createElement('div');
       optionsWrap.className = 'pagetree-facets__options';
-      // Options stay a flat list; when the tab supplies group labels they arrive
-      // pre-sorted and contiguous, so one heading per group change is enough.
-      // Keeping the list flat is what leaves the cross-tab search, #isTabEmpty
-      // and serialize()/hydrate() untouched.
-      let renderedGroup = null;
       for (const option of field.options ?? []) {
-        const groupLabel = field.groups?.[option.group];
-        if (groupLabel && option.group !== renderedGroup) {
-          const heading = document.createElement('span');
-          heading.className = 'form-label pagetree-facets__option-group';
-          heading.textContent = groupLabel;
-          optionsWrap.append(heading);
-          renderedGroup = option.group;
-        }
         const label = document.createElement('label');
         // Checkboxes render as TYPO3's own toggle-switch style (form-switch,
         // the same classes core uses for boolean settings) instead of plain
@@ -927,6 +924,10 @@ class FacetsModal {
     const criteria = this.#collectActiveCriteria();
     this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
     this.#active.hidden = criteria.length === 0;
+    this.#actions.hidden = criteria.length === 0;
+    // Without a page scope checkbox the utility row would be an empty flex item
+    // that still costs the header's row gap, so collapse it with the actions.
+    this.#utility.hidden = this.#actions.hidden && !this.#currentPageId;
 
     const counts = new Map();
     for (const criterion of criteria) {

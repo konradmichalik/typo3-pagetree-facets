@@ -92,8 +92,8 @@ final class ContentElementTab extends AbstractPagesQueryTab
                 continue;
             }
             // An item without a group lands in "default" rather than in the
-            // core wizard's unlabeled bucket - every option carrying a real
-            // group is what keeps the modal's headings contiguous.
+            // core wizard's unlabeled bucket - an unlabeled fieldset would have
+            // no legend at all.
             $group = (string) ($item['group'] ?? '');
             if ('' === $group) {
                 $group = 'default';
@@ -102,33 +102,29 @@ final class ContentElementTab extends AbstractPagesQueryTab
                 'value' => $value,
                 'label' => (string) ($item['label'] ?? $value),
                 'icon' => (string) ($item['icon'] ?? ''),
-                'group' => $group,
             ];
         }
 
-        // Groups keep the itemGroups order; a group used by an item but missing
-        // from itemGroups falls back to its own identifier as the heading, same
-        // as the core wizard does.
-        $options = [];
-        $groups = [];
+        // One field per group, each labelled with its group - the same shape the
+        // Activity tab uses for its two presets, so the generic renderer turns
+        // the labels into fieldset legends. All fields share the "ce" name, which
+        // is what keeps this a single criterion for serialize()/hydrate() and for
+        // the modal's value collection. Fields keep the itemGroups order; a group
+        // used by an item but missing from itemGroups falls back to its own
+        // identifier as the label, same as the core wizard does.
+        $fields = [];
         foreach ($buckets as $group => $groupOptions) {
             if ([] === $groupOptions) {
                 continue;
             }
-            $groups[$group] = $itemGroups[$group] ?? $group;
-            array_push($options, ...$groupOptions);
+            $fields[] = [
+                'type' => 'checkbox-group',
+                'name' => 'ce',
+                'label' => $itemGroups[$group] ?? $group,
+                'options' => $groupOptions,
+            ];
         }
 
-        return [
-            'fields' => [
-                [
-                    'type' => 'checkbox-group',
-                    'name' => 'ce',
-                    'label' => $this->getLabel(),
-                    'options' => $options,
-                    'groups' => $groups,
-                ],
-            ],
-        ];
+        return ['fields' => $fields];
     }
 }
