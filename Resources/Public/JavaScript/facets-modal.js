@@ -987,7 +987,7 @@ class FacetsModal {
   #collectActiveCriteria() {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
-      for (const field of tab.configuration.fields ?? []) {
+      for (const field of this.#distinctFields(tab)) {
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
@@ -1014,6 +1014,21 @@ class FacetsModal {
       }
     }
     return criteria;
+  }
+
+  // Controls are looked up by name, and a tab may spread one criterion over
+  // several fields that share that name - the content element tab does, one
+  // field per wizard group. Both collectors must therefore walk distinct names,
+  // not fields: per field, the document-wide name lookup returns every matching
+  // control, so six same-named fields reported one ticked box six times.
+  #distinctFields(tab) {
+    const byName = new Map();
+    for (const field of tab.configuration.fields ?? []) {
+      if (!byName.has(field.name)) {
+        byName.set(field.name, field);
+      }
+    }
+    return [...byName.values()];
   }
 
   // For dataset.picker controls (currently: user-picker), the visible .value is
@@ -1057,7 +1072,7 @@ class FacetsModal {
     const states = {};
     for (const tab of this.#configuration.tabs) {
       const state = {};
-      for (const field of tab.configuration.fields ?? []) {
+      for (const field of this.#distinctFields(tab)) {
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         const values = [];
         for (const input of inputs) {
