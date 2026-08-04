@@ -2,7 +2,7 @@
 
 ![Extension icon](Resources/Public/Icons/Extension.png)
 
-# TYPO3 extension `pagetree_facets`
+# TYPO3 extension `typo3_pagetree_facets`
 
 ![TYPO3](https://img.shields.io/badge/TYPO3-14.3-orange.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.3%20%7C%208.4%20%7C%208.5-blue.svg)
@@ -13,18 +13,12 @@
 
 </div>
 
-Type filter tokens into the backend page tree's search field, or press
-`Ctrl/Cmd+Shift+L` for a modal, to narrow the tree to matching pages:
-
-```
-doktype:1 is:empty                # standard pages without content
-table:tx_news_domain_model_news   # pages containing news records
-ce:uploads updated:<30d           # pages with an uploads CE, touched last 30 days
-seo:missing-description           # indexable pages without meta description
-```
-
-Whitespace = AND, comma = OR within one criterion (`doktype:1,4`). Freetext
-(no `key:`) behaves like the core title/UID search; unknown tokens are ignored.
+This extension turns the TYPO3 backend page tree into a faceted filter. Instead
+of scrolling through a large tree, you narrow it down to exactly the pages you
+care about: by content type, page state, records, activity, translations or SEO.
+Filters are compact tokens that you can type into the tree's existing search
+field or assemble in a guided modal, and the whole feature is extensible through
+a public filter tab API.
 
 > [!WARNING]
 > This package is in early development stage and may change significantly in
@@ -47,7 +41,7 @@ Whitespace = AND, comma = OR within one criterion (`doktype:1,4`). Freetext
 - **Built-in filter tabs**: Content elements (`ce:`), Records (`table:` `record:` `text:`), Activity (`updated:` `created:` `by:` `createdby:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:` `translated:`), SEO (`seo:`, requires EXT:seo)
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
 - **Extensible tab API**: register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`; built-in tabs use the exact same path
-- **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_pagetreefacets.disableTabs` / `.disable`)
+- **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_typo3pagetreefacets.disableTabs` / `.disable`)
 
 ## 🔥 Installation
 
@@ -65,12 +59,30 @@ composer require konradmichalik/typo3-pagetree-facets
 > [!NOTE]
 > Not yet released to Packagist or TER; install from a VCS repository until the first tagged release.
 
+## 🚀 Quick start
+
+Type filter tokens into the backend page tree's search field, or press
+`Ctrl/Cmd+Shift+L` to open the modal, to narrow the tree to matching pages:
+
+```
+doktype:1 is:empty                # standard pages without content
+table:tx_news_domain_model_news   # pages containing news records
+ce:uploads updated:<30d           # pages with an uploads CE, touched last 30 days
+seo:missing-description           # indexable pages without meta description
+```
+
+Whitespace means AND, a comma means OR within one criterion (`doktype:1,4`).
+Freetext without a `key:` prefix behaves like the core title/UID search, and
+unknown tokens are ignored. The modal mirrors the same tokens: pick criteria by
+clicking, see them as removable chips with a per-tab count, and it writes the
+phrase back into the search field.
+
 ## ⚙️ Configuration
 
 ### Extension settings
 
 You can find the extension settings in the TYPO3 backend under
-`Admin Tools > Settings > Extension Configuration > pagetree_facets`.
+`Admin Tools > Settings > Extension Configuration > typo3_pagetree_facets`.
 
 | Setting | Default | Description |
 |---|---|---|
@@ -90,11 +102,26 @@ Both restrictions can also be applied per backend user or group:
 
 ``` typoscript
 # Disable the extension entirely for this user/group
-tx_pagetreefacets.disable = 1
+tx_typo3pagetreefacets.disable = 1
 
 # Disable individual tabs (merged with the disabledTabs extension setting)
-tx_pagetreefacets.disableTabs = seo, translations
+tx_typo3pagetreefacets.disableTabs = seo, translations
 ```
+
+## ⚠️ Known limitations & assumptions
+
+- **Scopes are applied as a post-filter.** `site:<identifier>` and `under:<uid>`
+  do not restrict the query up front; they filter the already-matched UID set by
+  resolving each page's rootline. This is intentional — it avoids materializing a
+  whole site/subtree — and is cheap for the narrow result sets a token filter
+  normally produces. A very broad single criterion combined only with a scope
+  (e.g. `is:empty site:main` on an installation with thousands of empty pages)
+  resolves one rootline per matched page; pair it with a narrower criterion if it
+  ever feels slow.
+- **Page permissions are enforced by the core, not this extension.** Tabs resolve
+  page UIDs installation-wide; the core page tree then intersects that set with
+  the backend user's `PAGE_SHOW` permission clause and mount points, so the tree
+  never reveals pages the user may not see.
 
 ## 🔌 Extending
 
@@ -103,7 +130,7 @@ Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
 token keys, resolves them to page UIDs, and describes its modal UI declaratively.
 
 A complete, working example lives in this repository:
-[`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab) — a minimal
+[`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab) is a minimal
 extension adding an `abstract:set` / `abstract:empty` filter, with the interface
 contract explained method by method. It is a development fixture (not part of the
 released package), so copy it rather than depending on it.
