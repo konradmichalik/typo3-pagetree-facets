@@ -25,6 +25,8 @@ class FacetsModal {
   #active = null;
   #utility = null;
   #actions = null;
+  #applyButton = null;
+  #baselineState = null;
   #resultsPanel = null;
   #root = null;
   #nextHelpId = 0;
@@ -56,6 +58,9 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
           btnClass: 'btn-primary',
+          // Rendered as the button's name attribute, which is how we find it
+          // again to enable/disable it (see #refreshApplyState).
+          name: 'pagetree-facets-apply',
           trigger: () => { this.#serializeAndApply(); },
         },
       ],
@@ -74,6 +79,14 @@ class FacetsModal {
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
       this.#refreshActiveIndicators();
+
+      // Baseline for the Apply button: the state as hydrated from the phrase
+      // already applied to the tree. Applying an unchanged filter is a no-op, so
+      // the button stays disabled until something actually differs - which also
+      // makes it obvious that picking a criterion is not applying it.
+      this.#applyButton = this.#modal.querySelector('button[name="pagetree-facets-apply"]');
+      this.#baselineState = JSON.stringify(this.#collectFormState());
+      this.#refreshApplyState();
     });
   }
 
@@ -81,6 +94,11 @@ class FacetsModal {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
     wrap.append(this.#renderHeader(), this.#renderBody(), this.#renderFooter());
+    // One listener for the whole content: the body-level ones never see the
+    // header controls (freetext, site scope, page scope), which change the
+    // filter just as much.
+    wrap.addEventListener('change', () => this.#refreshApplyState());
+    wrap.addEventListener('input', () => this.#refreshApplyState());
     // Kept for reparenting the user-picker dropdown out of the scrolling panel
     // (see #showUserResults). Modal.advanced() renders `content` into its own
     // Lit-managed custom element - appending directly to that element is
@@ -967,6 +985,9 @@ class FacetsModal {
     // Without a page scope checkbox the utility row would be an empty flex item
     // that still costs the header's row gap, so collapse it with the actions.
     this.#utility.hidden = this.#actions.hidden && !this.#currentPageId;
+    // Covers the programmatic paths (reset, chip removal, search-result proxies)
+    // that change controls without firing events on the wrapper.
+    this.#refreshApplyState();
 
     const counts = new Map();
     for (const criterion of criteria) {
@@ -1055,6 +1076,13 @@ class FacetsModal {
     return criteria;
   }
 
+  #refreshApplyState() {
+    if (!this.#applyButton || null === this.#baselineState) {
+      return;
+    }
+    this.#applyButton.disabled = JSON.stringify(this.#collectFormState()) === this.#baselineState;
+  }
+
   // Controls are looked up by name, and a tab may spread one criterion over
   // several fields that share that name - the content element tab does, one
   // field per wizard group. Both collectors must therefore walk distinct names,
@@ -1108,6 +1136,17 @@ class FacetsModal {
   // both need the canonical phrase for whatever is currently configured in
   // the modal, not just what has already been applied to the tree.
   async #computePhrase() {
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_serialize)
+      .post(this.#collectFormState());
+    const { phrase } = await response.resolve();
+    return phrase;
+  }
+
+  // Everything the serialize endpoint needs, read straight off the live
+  // controls. Kept separate from #computePhrase() because the Apply button's
+  // enabled state compares this on every keystroke - that has to stay a local
+  // DOM read, with no round trip.
+  #collectFormState() {
     const states = {};
     for (const tab of this.#configuration.tabs) {
       const state = {};
@@ -1140,10 +1179,8 @@ class FacetsModal {
     // same mental model as ticking it fresh.
     const pageScopeCheckbox = this.#modal.querySelector('[data-role="page-scope"]');
     const pageScope = pageScopeCheckbox?.checked ? this.#currentPageId : 0;
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.pagetree_facets_serialize)
-      .post({ states, site, pageScope, freetext });
-    const { phrase } = await response.resolve();
-    return phrase;
+
+    return { states, site, pageScope, freetext };
   }
 
   // Copies the current URL (module, page id, ...) with the filter phrase
