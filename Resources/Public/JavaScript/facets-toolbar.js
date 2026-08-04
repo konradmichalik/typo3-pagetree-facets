@@ -130,7 +130,73 @@ class FacetsToolbar {
     }
     filterInput.addEventListener('input', () => this.#updateBadge());
     this.#updateBadge();
+    this.#watchForEmptyResult(filterInput);
     return button;
+  }
+
+  // "Filter matched nothing" is a dead end otherwise: the tree just goes blank,
+  // and the only ways out are hand-editing the search field or opening the modal
+  // to hit Reset. So offer the reset right where the emptiness is visible.
+  //
+  // Driven by the core's own typo3:tree:nodes-prepared event rather than by
+  // watching the DOM - it carries the prepared node list, so "no results" is a
+  // data check instead of a guess about markup. The event does not bubble, hence
+  // the listener sits on the tree component itself.
+  #watchForEmptyResult(filterInput) {
+    const tree = document.querySelector(this.#treeSelector)?.querySelector('typo3-backend-tree, [role="tree"]')
+      ?? document.querySelector(this.#treeSelector);
+    if (!tree) {
+      return;
+    }
+    tree.addEventListener('typo3:tree:nodes-prepared', (event) => {
+      const nodes = event.detail?.nodes ?? [];
+      this.#toggleEmptyNotice(filterInput, '' !== filterInput.value.trim() && 0 === nodes.length);
+    });
+  }
+
+  #toggleEmptyNotice(filterInput, show) {
+    const container = filterInput.closest('.tree-toolbar')?.parentElement
+      ?? document.querySelector(this.#treeSelector);
+    if (!container) {
+      return;
+    }
+    const existing = container.querySelector('.pagetree-facets-empty');
+    if (!show) {
+      existing?.remove();
+      return;
+    }
+    if (existing) {
+      return;
+    }
+
+    // Appended to the tree's container, never into the tree component's own
+    // render tree: nodes it did not create are outside its Lit template and get
+    // discarded on the next render.
+    const notice = document.createElement('div');
+    notice.className = 'pagetree-facets-empty';
+    notice.setAttribute('role', 'status');
+
+    const text = document.createElement('p');
+    text.className = 'pagetree-facets-empty__text';
+    text.textContent = TYPO3.lang?.['pagetreeFacets.empty.text'] ?? 'No pages match the current filter.';
+    notice.append(text);
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'btn btn-sm btn-default';
+    reset.textContent = TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter';
+    reset.addEventListener('click', () => {
+      filterInput.value = '';
+      // The tree listens for input on its own search field, so this is what makes
+      // it reload unfiltered - same path as clearing the field by hand.
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+      filterInput.dispatchEvent(new Event('change', { bubbles: true }));
+      this.#toggleEmptyNotice(filterInput, false);
+      this.#updateBadge();
+    });
+    notice.append(reset);
+
+    container.append(notice);
   }
 
   #findFilterInput() {

@@ -591,3 +591,23 @@
     font-size: 0.625rem;
     line-height: 1.4;
 }
+
+/* Empty-result notice inside the tree panel, offering the way out of a filter
+ * that matched nothing (see #toggleEmptyNotice). Also outside the modal scope,
+ * so backend --bs-* vars with fallbacks. */
+.pagetree-facets-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.75rem;
+    padding: 0.75rem;
+    border: 1px dashed var(--bs-border-color, rgba(0, 0, 0, 0.15));
+    border-radius: 6px;
+}
+
+.pagetree-facets-empty__text {
+    margin: 0;
+    color: var(--bs-secondary-color, #8a8a8a);
+    font-size: 0.875rem;
+}
