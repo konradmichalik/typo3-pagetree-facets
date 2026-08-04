@@ -1,5 +1,7 @@
 <div align="center">
 
+![Extension icon](Resources/Public/Icons/Extension.png)
+
 # TYPO3 extension `pagetree_facets`
 
 ![TYPO3](https://img.shields.io/badge/TYPO3-14.3-orange.svg)
