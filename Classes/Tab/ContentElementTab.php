@@ -75,13 +75,20 @@ final class ContentElementTab extends AbstractPagesQueryTab
         // element" wizard set) - custom CTypes appear automatically. Options are
         // bucketed by their TCA "group", the same source NewContentElementController
         // groups the wizard by, so both stay in sync by construction.
+        // CType carries authMode "explicitAllow" in the core TCA, so a non-admin
+        // only ever sees the element types their groups grant - offering a facet
+        // for a type the user cannot work with is noise. The guard mirrors the
+        // core's AbstractItemProvider::removeItemsByUserAuthMode() for
+        // installations that drop the authMode.
+        $checkAuthMode = is_string($config['authMode'] ?? null);
+
         $buckets = array_fill_keys(array_keys($itemGroups), []);
         foreach ($config['items'] ?? [] as $item) {
             $value = (string) ($item['value'] ?? '');
             if ('' === $value || str_starts_with($value, '--')) {
                 continue;
             }
-            if (!$this->isCTypeAllowed($value, $context)) {
+            if ($checkAuthMode && !$context->backendUser->checkAuthMode('tt_content', 'CType', $value)) {
                 continue;
             }
             // An item without a group lands in "default" rather than in the
@@ -123,21 +130,5 @@ final class ContentElementTab extends AbstractPagesQueryTab
                 ],
             ],
         ];
-    }
-
-    /**
-     * CType carries authMode "explicitAllow" in the core TCA, so a non-admin
-     * only ever sees the element types their groups grant - offering a facet for
-     * a type the user cannot work with is noise. Mirrors the core's own
-     * AbstractItemProvider::removeItemsByUserAuthMode(), including its guard
-     * clause for installations that drop the authMode.
-     */
-    private function isCTypeAllowed(string $value, FilterContext $context): bool
-    {
-        if (!is_string($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['authMode'] ?? null)) {
-            return true;
-        }
-
-        return $context->backendUser->checkAuthMode('tt_content', 'CType', $value);
     }
 }
