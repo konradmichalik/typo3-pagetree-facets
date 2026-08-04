@@ -17,6 +17,7 @@ use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\DataHandling\History\RecordHistoryStore;
 
 /**
  * ActivityTab.
@@ -50,7 +51,7 @@ final class ActivityTab extends AbstractPagesQueryTab
 
     public function getTokenKeys(): array
     {
-        return ['updated', 'created', 'by'];
+        return ['updated', 'created', 'by', 'createdby'];
     }
 
     public function resolvePageUids(Token $token, FilterContext $context): array
@@ -58,7 +59,8 @@ final class ActivityTab extends AbstractPagesQueryTab
         return match ($token->key) {
             'updated' => $this->resolveUpdated($token->firstValue(), $context),
             'created' => $this->resolveTimestampField('crdate', $token->firstValue(), $context),
-            'by' => $this->resolveBy($token->firstValue(), $context),
+            'by' => $this->resolveBy($token->firstValue(), $context, RecordHistoryStore::ACTION_MODIFY),
+            'createdby' => $this->resolveBy($token->firstValue(), $context, RecordHistoryStore::ACTION_ADD),
             default => [],
         };
     }
@@ -74,6 +76,11 @@ final class ActivityTab extends AbstractPagesQueryTab
             self::PRESETS,
         );
 
+        $currentUser = [
+            'uid' => (int) ($context->backendUser->user['uid'] ?? 0),
+            'username' => (string) ($context->backendUser->user['username'] ?? ''),
+        ];
+
         return [
             'fields' => [
                 ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions],
@@ -85,7 +92,14 @@ final class ActivityTab extends AbstractPagesQueryTab
                     'options' => [],
                     // Lets the modal pin "Me" as a suggestion without a round
                     // trip - the current user's own record is already loaded.
-                    'currentUser' => ['uid' => (int) ($context->backendUser->user['uid'] ?? 0), 'username' => (string) ($context->backendUser->user['username'] ?? '')],
+                    'currentUser' => $currentUser,
+                ],
+                [
+                    'type' => 'user-picker',
+                    'name' => 'createdby',
+                    'label' => $lll.'createdby',
+                    'options' => [],
+                    'currentUser' => $currentUser,
                 ],
             ],
         ];
@@ -153,7 +167,7 @@ final class ActivityTab extends AbstractPagesQueryTab
      *
      * @return list<int>
      */
-    private function resolveBy(string $value, FilterContext $context): array
+    private function resolveBy(string $value, FilterContext $context, int $actionType): array
     {
         $userId = 'me' === $value ? (int) ($context->backendUser->user['uid'] ?? 0) : (int) $value;
         if ($userId <= 0) {
@@ -169,6 +183,10 @@ final class ActivityTab extends AbstractPagesQueryTab
             ->where(
                 $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter('pages')),
                 $queryBuilder->expr()->eq('userid', $queryBuilder->createNamedParameter($userId, Connection::PARAM_INT)),
+                // Without this the two keys would be indistinguishable and "edited
+                // by" would also claim pages the user only ever created (and moves,
+                // deletes and stage changes on top).
+                $queryBuilder->expr()->eq('actiontype', $queryBuilder->createNamedParameter($actionType, Connection::PARAM_INT)),
             );
 
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());

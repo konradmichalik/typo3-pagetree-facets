@@ -129,7 +129,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $configuration = $this->get(PageStateTab::class)->getModalConfiguration($this->createContext());
 
         self::assertSame(
-            ['empty', 'restricted', 'hidden', 'timed', 'editlocked'],
+            ['empty', 'restricted', 'hidden', 'hidden-in-menu', 'timed', 'editlocked'],
             array_column($configuration['fields'][0]['options'], 'value'),
         );
     }

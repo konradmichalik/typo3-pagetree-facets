@@ -44,6 +44,7 @@
 			<trans-unit id="activity.updated"><source>Last updated</source></trans-unit>
 			<trans-unit id="activity.created"><source>Created</source></trans-unit>
 			<trans-unit id="activity.by"><source>Edited by</source></trans-unit>
+			<trans-unit id="activity.createdby"><source>Created by</source></trans-unit>
 			<trans-unit id="activity.preset.7d.&lt;"><source>Within the last 7 days</source></trans-unit>
 			<trans-unit id="activity.preset.30d.&lt;"><source>Within the last 30 days</source></trans-unit>
 			<trans-unit id="activity.preset.6m.&lt;"><source>Within the last 6 months</source></trans-unit>
@@ -55,6 +56,8 @@
 			<trans-unit id="state.restricted"><source>Access restricted</source></trans-unit>
 			<trans-unit id="state.restricted.description"><source>Direct access restriction (frontend user group) set on this page itself - restrictions inherited from a parent page are not detected.</source></trans-unit>
 			<trans-unit id="state.hidden"><source>Hidden</source></trans-unit>
+			<trans-unit id="state.hiddenInMenu"><source>Hidden in menu</source></trans-unit>
+			<trans-unit id="state.hiddenInMenu.description"><source>The page is visible, but left out of navigation menus.</source></trans-unit>
 			<trans-unit id="state.timed"><source>Time-controlled (start/stop)</source></trans-unit>
 			<trans-unit id="state.timed.description"><source>Has a publish start and/or end date/time set, regardless of whether that window is currently active.</source></trans-unit>
 			<trans-unit id="state.editlocked"><source>Edit-locked</source></trans-unit>

@@ -57,6 +57,21 @@ final class ActivityTabTest extends AbstractTabTestCase
     #[Test]
     public function byResolvesPageEditsThroughSysHistory(): void
     {
+        // User 1 modified uid 4 and created uid 3 - "edited by" must only report
+        // the modification, or the label promises something it does not deliver.
         self::assertSame([4], $this->resolve($this->get(ActivityTab::class), 'by:1'));
+    }
+
+    #[Test]
+    public function createdByResolvesTheHistoryInsertAction(): void
+    {
+        self::assertSame([3], $this->resolve($this->get(ActivityTab::class), 'createdby:1'));
+    }
+
+    #[Test]
+    public function editedAndCreatedByAreScopedToTheGivenUser(): void
+    {
+        self::assertSame([2], $this->resolve($this->get(ActivityTab::class), 'by:2'));
+        self::assertSame([], $this->resolve($this->get(ActivityTab::class), 'createdby:2'));
     }
 }

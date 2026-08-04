@@ -39,6 +39,22 @@ final class PageStateTabTest extends AbstractTabTestCase
     }
 
     #[Test]
+    public function emptyIgnoresPagesShowingContentFromElsewhere(): void
+    {
+        // uid 12 owns no tt_content but renders another page's content, so it is
+        // not a page anybody needs to go and fill.
+        self::assertNotContains(12, $this->resolve($this->get(PageStateTab::class), 'is:empty'));
+    }
+
+    #[Test]
+    public function hiddenInMenuIsItsOwnStateSeparateFromHidden(): void
+    {
+        self::assertSame([11], $this->resolve($this->get(PageStateTab::class), 'is:hidden-in-menu'));
+        // uid 11 is visible, just not in menus - is:hidden must not claim it.
+        self::assertSame([8], $this->resolve($this->get(PageStateTab::class), 'is:hidden'));
+    }
+
+    #[Test]
     public function restrictedMatchesFeGroupAndExtendToSubpages(): void
     {
         self::assertSame([6, 7], $this->resolve($this->get(PageStateTab::class), 'is:restricted'));

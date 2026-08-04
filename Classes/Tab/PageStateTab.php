@@ -53,6 +53,7 @@ final class PageStateTab extends AbstractPagesQueryTab
                 'empty' => $this->resolveEmpty($context),
                 'restricted' => $this->resolveRestricted($context),
                 'hidden' => $this->resolveFlag($context, 'hidden'),
+                'hidden-in-menu' => $this->resolveFlag($context, 'nav_hide'),
                 'timed' => $this->resolveTimed($context),
                 'editlocked' => $this->resolveFlag($context, 'editlock'),
                 default => null, // unknown state value -> ignored
@@ -87,6 +88,7 @@ final class PageStateTab extends AbstractPagesQueryTab
                         ['value' => 'empty', 'label' => $lll.'empty', 'icon' => 'actions-file', 'description' => $lll.'empty.description'],
                         ['value' => 'restricted', 'label' => $lll.'restricted', 'icon' => 'overlay-locked', 'description' => $lll.'restricted.description'],
                         ['value' => 'hidden', 'label' => $lll.'hidden', 'icon' => 'overlay-hidden'],
+                        ['value' => 'hidden-in-menu', 'label' => $lll.'hiddenInMenu', 'icon' => 'actions-list', 'description' => $lll.'hiddenInMenu.description'],
                         ['value' => 'timed', 'label' => $lll.'timed', 'icon' => 'actions-clock', 'description' => $lll.'timed.description'],
                         ['value' => 'editlocked', 'label' => $lll.'editlocked', 'icon' => 'actions-lock', 'description' => $lll.'editlocked.description'],
                     ],
@@ -100,6 +102,10 @@ final class PageStateTab extends AbstractPagesQueryTab
      * content - a page with five disabled elements is not empty). Restricted
      * to content-bearing doktypes so shortcuts/folders do not flood results.
      *
+     * Pages with content_from_pid are excluded: they own no records but render
+     * another page's content, so reporting them would be a false positive for
+     * the question this filter answers - "where is content still missing?".
+     *
      * @return list<int>
      */
     private function resolveEmpty(FilterContext $context): array
@@ -108,6 +114,12 @@ final class PageStateTab extends AbstractPagesQueryTab
 
         $candidates = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
             $this->excludeNonContentDoktypes($queryBuilder);
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->or(
+                    $queryBuilder->expr()->isNull('content_from_pid'),
+                    $queryBuilder->expr()->eq('content_from_pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+                ),
+            );
         });
 
         return array_values(array_filter($candidates, static fn (int $uid): bool => !isset($nonEmpty[$uid])));
