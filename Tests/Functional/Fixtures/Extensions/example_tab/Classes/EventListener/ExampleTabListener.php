@@ -24,10 +24,17 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
  * third-party extension would use - no private shortcut, matching how the
  * main extension's own built-in tabs register themselves.
  *
- * Priority 110 - deliberately above Records' 100 (the highest built-in) so
- * this tab, and its own "custom" group, render first. Demonstrates that
- * third-party tabs are not stuck at the default priority 0 / bottom of the
- * list; see RegisterFilterTabsEvent's docblock for the priority convention.
+ * This is the whole registration: one #[AsEventListener] whose identifier only
+ * has to be unique, and one addTab() call. There is nothing to add to
+ * ext_localconf.php - the attribute is picked up automatically, as long as the
+ * class is autowired in your Configuration/Services.yaml.
+ *
+ * Priority 110 - deliberately above Content elements' 100 (the highest
+ * built-in) so this tab, and its own "custom" group, render first. Tabs sort by
+ * priority descending, registration order breaking ties; omitting the argument
+ * defaults to 0, which places a tab after every built-in. Nothing stops a
+ * third party from positioning itself deliberately, as here. See
+ * RegisterFilterTabsEvent's docblock for the priority convention.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */

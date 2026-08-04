@@ -102,6 +102,12 @@ Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
 (`#[AsEventListener]`); the built-in tabs use the exact same path. A tab owns
 token keys, resolves them to page UIDs, and describes its modal UI declaratively.
 
+A complete, working example lives in this repository:
+[`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab) — a minimal
+extension adding an `abstract:set` / `abstract:empty` filter, with the interface
+contract explained method by method. It is a development fixture (not part of the
+released package), so copy it rather than depending on it.
+
 ## 🙏 Acknowledgments
 
 This project is inspired by the great [pagetreefilter](https://github.com/christophlehmann/pagetreefilter) extension.
