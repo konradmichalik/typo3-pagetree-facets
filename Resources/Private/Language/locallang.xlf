@@ -9,6 +9,7 @@
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.clear"><source>Clear</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help"><source>How filtering works</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.intro"><source>Pick one or more criteria to narrow the page tree down to the pages you are looking for.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.combine"><source>Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.</source></trans-unit>
@@ -39,6 +40,7 @@
 			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
 			<trans-unit id="records.table"><source>Pages containing records of table</source></trans-unit>
 			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>
+			<trans-unit id="records.text.placeholder"><source>e.g. a headline or body text</source></trans-unit>
 			<trans-unit id="activity.updated"><source>Last updated</source></trans-unit>
 			<trans-unit id="activity.created"><source>Created</source></trans-unit>
 			<trans-unit id="activity.by"><source>Edited by</source></trans-unit>

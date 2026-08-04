@@ -71,6 +71,62 @@
     flex: 0 0 auto;
 }
 
+/* Clear button for text-ish inputs, only present while the field has a value.
+   min-width: 0 on both keeps a long value from stretching the flex row. */
+.pagetree-facets__clearable {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pagetree-facets__clearable > input {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Room for the button, so a long value does not run underneath it. */
+    padding-inline-end: 1.9rem;
+}
+
+/* Ours replaces the browser's native one, which only some engines render at all
+   and which cannot be styled to match. */
+.pagetree-facets__clearable > input[type="search"]::-webkit-search-cancel-button {
+    display: none;
+}
+
+.pagetree-facets__clear {
+    position: absolute;
+    inset-inline-end: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--pl-muted);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.pagetree-facets__clear[hidden] {
+    display: none;
+}
+
+.pagetree-facets__clear:hover {
+    background: var(--pl-hover);
+    color: var(--pl-text);
+}
+
+.pagetree-facets__clear:focus-visible {
+    outline: 2px solid var(--pl-accent);
+    outline-offset: 1px;
+}
+
 /* Usage help, collapsed by default. Styled as a Bootstrap alert, so only the
    list layout is ours. The header does not shrink, so an expanded panel is
    capped and scrolls on its own rather than squeezing the tabs out of view. */
@@ -119,7 +175,7 @@
 .pagetree-facets__actions {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 1rem;
     margin-inline-start: auto;
 }
 

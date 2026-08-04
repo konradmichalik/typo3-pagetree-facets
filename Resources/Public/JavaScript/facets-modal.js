@@ -273,7 +273,7 @@ class FacetsModal {
     input.placeholder = label;
     input.setAttribute('aria-label', label);
     input.addEventListener('input', () => this.#applyFilterSearch(input.value));
-    wrap.append(input);
+    wrap.append(this.#clearable(input));
     return wrap;
   }
 
@@ -457,6 +457,40 @@ class FacetsModal {
     return button;
   }
 
+  // Wraps a text-ish input so it carries a clear button while it has a value.
+  // Clearing dispatches the same input/change events typing would, so chips,
+  // per-tab counts, the cross-tab search and the user-picker's own listener all
+  // react through their existing wiring rather than being special-cased here.
+  #clearable(input) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pagetree-facets__clearable';
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'pagetree-facets__clear';
+    clear.textContent = '×';
+    const label = TYPO3.lang?.['pagetreeFacets.modal.clear'] ?? 'Clear';
+    clear.title = label;
+    clear.setAttribute('aria-label', label);
+    clear.hidden = '' === input.value;
+
+    clear.addEventListener('click', () => {
+      input.value = '';
+      // Picker controls keep the wire value out of band (see #effectiveValue),
+      // so clearing the visible text alone would leave the criterion active.
+      delete input.dataset.value;
+      delete input.dataset.label;
+      clear.hidden = true;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      input.focus();
+    });
+    input.addEventListener('input', () => { clear.hidden = '' === input.value; });
+
+    wrap.append(input, clear);
+    return wrap;
+  }
+
   #renderFreetext() {
     // Freetext must survive the modal round trip - it is a first-class
     // criterion (intersected engine-side), not decoration.
@@ -470,7 +504,7 @@ class FacetsModal {
     input.placeholder = freetextLabel;
     input.setAttribute('aria-label', freetextLabel);
     input.value = this.#configuration.freetext ?? '';
-    row.append(input);
+    row.append(this.#clearable(input));
     return row;
   }
 
@@ -604,7 +638,12 @@ class FacetsModal {
     input.type = 'text';
     input.name = `${tab.identifier}[${field.name}]`;
     input.value = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
-    group.append(input);
+    if (field.placeholder) {
+      // Purely a hint: the fieldset legend stays the accessible name, so this
+      // never becomes a placeholder-as-label.
+      input.placeholder = field.placeholder;
+    }
+    group.append(this.#clearable(input));
     return group;
   }
 
@@ -824,7 +863,7 @@ class FacetsModal {
       window.setTimeout(() => this.#hideUserResults(input, results), 150);
     });
 
-    wrap.append(input, results);
+    wrap.append(this.#clearable(input), results);
     return wrap;
   }
 
