@@ -91,6 +91,13 @@ Whitespace means AND, a comma means OR within one criterion (`doktype:1,4`).
 Freetext without a `key:` prefix behaves like the core title/UID search, and
 unknown tokens are ignored.
 
+> [!NOTE]
+> This is not the global backend search (the toolbar magnifier / `Cmd/Ctrl+K`).
+> That one finds individual records, pages and modules and jumps you to them; this
+> extension narrows the **page tree** to the pages matching structured criteria.
+> Two different jobs — use the toolbar search to locate one thing, this to reshape
+> the tree.
+
 ## ⚙️ Configuration
 
 ### Extension settings
