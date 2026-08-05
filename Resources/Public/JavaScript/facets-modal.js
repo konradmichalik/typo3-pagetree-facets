@@ -1174,9 +1174,12 @@ class FacetsModal {
     // phrase, so they follow whether anything is savable - freetext or a scope
     // alone counts, not just tab-criteria chips.
     this.#actions.hidden = !this.#hasSavableFilter();
-    // Without a page scope checkbox the utility row would be an empty flex item
-    // that still costs the header's row gap, so collapse it with the actions.
-    this.#utility.hidden = this.#actions.hidden && !this.#currentPageId;
+    // The utility row always stays present, reserving its min-height. At the
+    // root node there is no page-scope checkbox, so collapsing it here left the
+    // header shorter than on a normal page - the whole modal sat higher and
+    // then jumped down as soon as a filter activated and the actions appeared.
+    // Keeping the empty row costs one row gap but keeps the layout stable.
+    this.#utility.hidden = false;
     // Covers the programmatic paths (reset, chip removal, search-result proxies)
     // that change controls without firing events on the wrapper.
     this.#refreshApplyState();
