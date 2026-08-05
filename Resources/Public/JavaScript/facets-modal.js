@@ -28,6 +28,19 @@ class FacetsModal {
   #actions = null;
   #applyButton = null;
   #baselineState = null;
+  // Token view: the raw phrase becomes editable in the top bar and stays in
+  // two-way sync with the (still editable) form. #currentPhrase is the phrase
+  // already applied to the tree - the Apply baseline this mode diffs against,
+  // since the form-state baseline no longer describes what is authoritative.
+  #tokenMode = false;
+  #tokenField = null;
+  #tokenToggle = null;
+  #searchControls = null;
+  #panels = null;
+  #currentPhrase = '';
+  #reflectSeq = 0;
+  #reflectTimer = null;
+  #syncTimer = null;
   #resultsPanel = null;
   #root = null;
   #nextHelpId = 0;
@@ -43,6 +56,7 @@ class FacetsModal {
   async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
     this.#currentPageId = currentPageId;
+    this.#currentPhrase = currentPhrase ?? '';
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
@@ -123,12 +137,21 @@ class FacetsModal {
 
     const search = document.createElement('div');
     search.className = 'pagetree-facets__search';
-    search.append(this.#renderFreetext());
+    // Freetext (and the optional site scope) share the top slot with the token
+    // editor; kept as a group so token view can hide both at once.
+    const freetextRow = this.#renderFreetext();
+    search.append(freetextRow);
+    this.#searchControls = [freetextRow];
     if ((this.#configuration.sites ?? []).length > 1) {
-      search.append(this.#renderSiteScope());
+      const siteRow = this.#renderSiteScope();
+      search.append(siteRow);
+      this.#searchControls.push(siteRow);
     }
+    this.#tokenField = this.#renderTokenField();
+    search.append(this.#tokenField);
     const help = this.#renderHelp();
-    search.append(this.#renderHelpToggle(help));
+    this.#tokenToggle = this.#renderTokenToggle();
+    search.append(this.#tokenToggle, this.#renderHelpToggle(help));
     header.append(search, help);
 
     // Utility row: the page scope on the left, the filter-wide actions on the
@@ -257,11 +280,17 @@ class FacetsModal {
     const body = document.createElement('div');
     body.className = 'pagetree-facets__body row';
     body.append(this.#renderNavigation(), this.#renderPanels());
-    // Keep chips and per-tab counts in sync with the live controls.
-    body.addEventListener('change', () => this.#refreshActiveIndicators());
+    // Keep chips and per-tab counts in sync with the live controls. In token
+    // view the form is the other editable half, so a form edit also mirrors
+    // back into the phrase field (#scheduleTokenFieldSync is a no-op otherwise).
+    body.addEventListener('change', () => {
+      this.#refreshActiveIndicators();
+      this.#scheduleTokenFieldSync();
+    });
     body.addEventListener('input', (event) => {
       if (event.target.matches('input[type="text"]')) {
         this.#refreshActiveIndicators();
+        this.#scheduleTokenFieldSync();
       }
     });
     return body;
@@ -344,17 +373,24 @@ class FacetsModal {
   }
 
   #renderPanels() {
-    const panels = document.createElement('div');
-    panels.className = 'col-9 pagetree-facets__panels';
-    panels.append(this.#renderFavoritesPanel());
+    this.#panels = document.createElement('div');
+    this.#panels.className = 'col-9 pagetree-facets__panels';
+    this.#populatePanels();
+    return this.#panels;
+  }
+
+  // (Re)fill the panels container from the current configuration. Run on first
+  // render and on every token-view reflect, where a freshly hydrated config has
+  // replaced the tab states and the panels must be rebuilt to match.
+  #populatePanels() {
+    this.#panels.replaceChildren(this.#renderFavoritesPanel());
     for (const tab of this.#configuration.tabs) {
-      panels.append(this.#renderPanel(tab));
+      this.#panels.append(this.#renderPanel(tab));
     }
     this.#resultsPanel = document.createElement('div');
     this.#resultsPanel.className = 'pagetree-facets__search-results';
     this.#resultsPanel.hidden = true;
-    panels.append(this.#resultsPanel);
-    return panels;
+    this.#panels.append(this.#resultsPanel);
   }
 
   // Cross-tab search: matches field/option labels already present in the
@@ -553,6 +589,45 @@ class FacetsModal {
       panel.hidden = !expand;
       button.setAttribute('aria-expanded', String(expand));
     });
+    return button;
+  }
+
+  // Single-line editor for the whole token phrase, hidden until token view is
+  // on. Editing is debounced into #reflectTokenQuery so the form re-hydrates
+  // without a round trip per keystroke.
+  #renderTokenField() {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control pagetree-facets__token-field';
+    input.dataset.role = 'token-query';
+    input.hidden = true;
+    input.spellcheck = false;
+    input.autocapitalize = 'off';
+    input.autocomplete = 'off';
+    input.setAttribute('autocorrect', 'off');
+    const aria = TYPO3.lang?.['pagetreeFacets.modal.tokenView.ariaLabel'] ?? 'Filter tokens';
+    input.setAttribute('aria-label', aria);
+    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.tokenView.placeholder'] ?? '';
+    input.addEventListener('input', () => {
+      this.#cancelTokenTimers();
+      this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
+    });
+    return input;
+  }
+
+  #renderTokenToggle() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__token-toggle';
+    const label = TYPO3.lang?.['pagetreeFacets.modal.tokenView'] ?? 'Token view';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', 'false');
+    const icon = document.createElement('typo3-backend-icon');
+    icon.setAttribute('identifier', 'actions-code');
+    icon.setAttribute('size', 'small');
+    button.append(icon);
+    button.addEventListener('click', () => this.#toggleTokenMode());
     return button;
   }
 
@@ -1241,8 +1316,11 @@ class FacetsModal {
     this.#hint.hidden = hasCriteria;
     // The actions (Copy link / Save current filter / Reset) act on the whole
     // phrase, so they follow whether anything is savable - freetext or a scope
-    // alone counts, not just tab-criteria chips.
-    this.#actions.hidden = !this.#hasSavableFilter();
+    // alone counts, not just tab-criteria chips. In token view the phrase can
+    // hold tokens the form cannot mirror, so the typed field decides instead.
+    this.#actions.hidden = this.#tokenMode
+      ? '' === this.#tokenField.value.trim()
+      : !this.#hasSavableFilter();
     // The utility row always stays present, reserving its min-height. At the
     // root node there is no page-scope checkbox, so collapsing it here left the
     // header shorter than on a normal page - the whole modal sat higher and
@@ -1291,6 +1369,12 @@ class FacetsModal {
     const pageScope = this.#modal.querySelector('[data-role="page-scope"]');
     if (pageScope) {
       pageScope.checked = false;
+    }
+    // Reset clears everything, so the token field (the other editable view) has
+    // to go empty too - otherwise it would re-seed the just-cleared form.
+    if (this.#tokenMode) {
+      this.#cancelTokenTimers();
+      this.#tokenField.value = '';
     }
     this.#refreshActiveIndicators();
   }
@@ -1362,6 +1446,12 @@ class FacetsModal {
     if (!this.#applyButton || null === this.#baselineState) {
       return;
     }
+    if (this.#tokenMode) {
+      // The form-state baseline no longer describes what is authoritative, so
+      // diff the typed phrase against the one already applied to the tree.
+      this.#applyButton.disabled = this.#tokenField.value.trim() === this.#currentPhrase.trim();
+      return;
+    }
     this.#applyButton.disabled = JSON.stringify(this.#collectFormState()) === this.#baselineState;
   }
 
@@ -1422,6 +1512,112 @@ class FacetsModal {
     return chip;
   }
 
+  // Enter token view: reveal the editable phrase field seeded from the current
+  // form (serialized *before* the flag flips). The form stays fully editable
+  // and becomes the other half of a two-way sync - not a read-only mirror.
+  async #toggleTokenMode() {
+    if (this.#tokenMode) {
+      this.#exitTokenMode();
+      return;
+    }
+    const phrase = await this.#computePhrase();
+    this.#tokenMode = true;
+    this.#tokenToggle.setAttribute('aria-pressed', 'true');
+    this.#tokenField.value = phrase;
+    for (const control of this.#searchControls) {
+      control.hidden = true;
+    }
+    this.#tokenField.hidden = false;
+    this.#tokenField.focus();
+    this.#refreshActiveIndicators();
+    this.#refreshApplyState();
+  }
+
+  #exitTokenMode() {
+    this.#cancelTokenTimers();
+    this.#tokenMode = false;
+    this.#tokenToggle.setAttribute('aria-pressed', 'false');
+    this.#tokenField.hidden = true;
+    for (const control of this.#searchControls) {
+      control.hidden = false;
+    }
+    // The form already mirrors the last reflected phrase, so there is nothing
+    // to sync back - just restore the indicators/Apply state for form editing.
+    this.#refreshActiveIndicators();
+    this.#refreshApplyState();
+  }
+
+  // Token field -> form: re-hydrate the whole form from the typed phrase so
+  // chips, counts and controls show what it resolves to. The field itself is
+  // never rebuilt, so the caret stays put; a sequence guard drops out-of-order
+  // responses from fast typing. Rebuilding fires no input events, so this never
+  // triggers the reverse (form -> field) sync.
+  async #reflectTokenQuery() {
+    const seq = ++this.#reflectSeq;
+    const phrase = this.#tokenField.value;
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
+      .withQueryArguments({ phrase })
+      .get();
+    const configuration = await response.resolve();
+    // A newer keystroke won, or token view was left while the request was in
+    // flight - either way this response is stale.
+    if (seq !== this.#reflectSeq || !this.#tokenMode) {
+      return;
+    }
+    this.#configuration = configuration;
+    this.#populatePanels();
+    this.#syncHeaderControlsFromConfig();
+    this.#refreshActiveIndicators();
+    this.#refreshApplyState();
+  }
+
+  // Form -> token field: mirror a structured edit back into the phrase. Only
+  // active in token view; debounced like the reverse direction. Writing the
+  // field value programmatically fires no input event, so it does not loop back
+  // into #reflectTokenQuery. Trade-off: re-serializing from the form canonicalises
+  // the phrase and drops tokens the form cannot represent (unknown / disabled).
+  #scheduleTokenFieldSync() {
+    if (!this.#tokenMode) {
+      return;
+    }
+    this.#cancelTokenTimers();
+    this.#syncTimer = window.setTimeout(() => this.#syncTokenFieldFromForm(), 250);
+  }
+
+  async #syncTokenFieldFromForm() {
+    const phrase = await this.#serializeForm();
+    if (!this.#tokenMode) {
+      return; // token view was left while the request was in flight
+    }
+    this.#tokenField.value = phrase;
+    this.#refreshApplyState();
+  }
+
+  // Drop any pending propagation in either direction. Called whenever a surface
+  // is touched (so the last-touched one wins) or token view is left/reset.
+  #cancelTokenTimers() {
+    window.clearTimeout(this.#reflectTimer);
+    window.clearTimeout(this.#syncTimer);
+  }
+
+  // Freetext, site scope and page scope live outside the panels, so
+  // #populatePanels leaves them untouched; keep them in step with a freshly
+  // hydrated config so exiting token view reveals a correct form.
+  #syncHeaderControlsFromConfig() {
+    const freetext = this.#modal.querySelector('[data-role="freetext"]');
+    if (freetext) {
+      freetext.value = this.#configuration.freetext ?? '';
+    }
+    const site = this.#modal.querySelector('[data-role="site-scope"]');
+    if (site) {
+      site.value = this.#configuration.activeSite ?? '';
+    }
+    const pageScope = this.#modal.querySelector('[data-role="page-scope"]');
+    if (pageScope) {
+      pageScope.checked = null !== this.#configuration.pageScope;
+    }
+  }
+
   async #serializeAndApply() {
     this.#apply(await this.#computePhrase());
   }
@@ -1430,6 +1626,16 @@ class FacetsModal {
   // both need the canonical phrase for whatever is currently configured in
   // the modal, not just what has already been applied to the tree.
   async #computePhrase() {
+    if (this.#tokenMode) {
+      // The field is authoritative in token view; return it verbatim so unknown
+      // or otherwise unrepresentable tokens survive Apply / Copy link / Save
+      // (unless a form edit has already re-serialized it - see #syncTokenField).
+      return this.#tokenField.value.trim();
+    }
+    return this.#serializeForm();
+  }
+
+  async #serializeForm() {
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_serialize)
       .post(this.#collectFormState());
     const { phrase } = await response.resolve();

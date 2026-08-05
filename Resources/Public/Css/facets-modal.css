@@ -83,6 +83,12 @@
     gap: 0.5rem;
 }
 
+/* Guarantee the attribute hides any direct child whatever its display class,
+   so swapping the freetext/site controls for the token field stays clean. */
+.pagetree-facets__search > [hidden] {
+    display: none;
+}
+
 .pagetree-facets__freetext {
     flex: 1 1 auto;
     margin: 0;
@@ -90,6 +96,30 @@
 
 .pagetree-facets__help-toggle {
     flex: 0 0 auto;
+}
+
+.pagetree-facets__token-toggle {
+    flex: 0 0 auto;
+}
+
+/* Pressed state mirrors the tab-nav "active" tint, so the toggle reads as a
+   sticky mode switch rather than a one-shot action. */
+.pagetree-facets__token-toggle[aria-pressed="true"] {
+    background: var(--pl-active);
+    color: var(--pl-text);
+}
+
+/* Single-line editor for the whole token phrase. Monospace echoes the tree
+   filter field and the favorite phrases, marking it as raw query text. */
+.pagetree-facets__token-field {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
+}
+
+.pagetree-facets__token-field[hidden] {
+    display: none;
 }
 
 /* Clear button for text-ish inputs, only present while the field has a value.
