@@ -16,10 +16,11 @@ namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
 use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
 use KonradMichalik\PagetreeFacets\EventListener\BuiltInTabsListener;
-use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
 use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -97,14 +98,19 @@ final class BuiltInTabsListenerTest extends TestCase
             );
         }
 
+        // The registry is unused here (only getIdentifier() is called), but the
+        // vocabulary tabs now require one - a real instance with a no-op
+        // dispatcher avoids mocking the final OptionRegistry.
+        $optionRegistry = new OptionRegistry(self::createStub(EventDispatcherInterface::class), $extensionConfiguration);
+
         $listener = new BuiltInTabsListener(
             new ContentElementTab($queryHelper),
             new RecordsTab($queryHelper, $packageManager),
             new ActivityTab($queryHelper),
             new DoktypeTab($queryHelper),
-            new PageStateTab($queryHelper),
+            new PageStateTab($queryHelper, $optionRegistry),
             new TranslationsTab($queryHelper, self::createStub(SiteFinder::class)),
-            new SeoTab($queryHelper),
+            new SeoTab($queryHelper, $optionRegistry),
             new RawQueryTab($queryHelper),
             $extensionConfiguration,
         );

@@ -14,22 +14,32 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tab;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
 use KonradMichalik\PagetreeFacets\Token\Token;
-use TYPO3\CMS\Core\Database\Connection;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
  * SeoTab.
  *
- * SEO checks on fields provided by EXT:seo. This tab is only registered when
- * EXT:seo is installed (see BuiltInTabsListener) - a built-in demonstration
- * of conditional registration through the public tab API. Restricted to
- * content-bearing doktypes so folders/shortcuts do not flood the results.
+ * Container for the "seo:" vocabulary (SEO checks on EXT:seo fields). Like
+ * PageStateTab, every value is a registered FilterOption resolved through the
+ * OptionRegistry - the built-in noindex/nofollow/missing-description values
+ * register in BuiltInOptionsListener, guarded by the same EXT:seo check that
+ * gates this tab. Only registered when EXT:seo is installed (see
+ * BuiltInTabsListener) - a built-in demonstration of conditional registration.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final class SeoTab extends AbstractPagesQueryTab
 {
+    use SupportsFilterOptions;
+
+    public function __construct(
+        ContentQueryHelper $queryHelper,
+        private readonly OptionRegistry $optionRegistry,
+    ) {
+        parent::__construct($queryHelper);
+    }
+
     public function getIdentifier(): string
     {
         return 'seo';
@@ -52,18 +62,7 @@ final class SeoTab extends AbstractPagesQueryTab
 
     public function resolvePageUids(Token $token, FilterContext $context): array
     {
-        $sets = [];
-        foreach ($token->values as $check) {
-            $sets[] = match ($check) {
-                'noindex' => $this->resolveFlag('no_index', $context),
-                'nofollow' => $this->resolveFlag('no_follow', $context),
-                'missing-description' => $this->resolveMissingDescription($context),
-                default => null,
-            };
-        }
-        $sets = array_values(array_filter($sets, static fn (?array $set): bool => null !== $set));
-
-        return [] === $sets ? [] : array_values(array_unique(array_merge(...$sets)));
+        return $this->resolveViaOptions($token, $context);
     }
 
     /**
@@ -71,51 +70,20 @@ final class SeoTab extends AbstractPagesQueryTab
      */
     public function getModalConfiguration(FilterContext $context): array
     {
-        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:seo.';
-
-        return [
+        return $this->appendOptions([
             'fields' => [
                 [
                     'type' => 'checkbox-group',
                     'name' => 'seo',
                     'label' => $this->getLabel(),
-                    'options' => [
-                        ['value' => 'noindex', 'label' => $lll.'noindex', 'icon' => 'overlay-hidden'],
-                        ['value' => 'nofollow', 'label' => $lll.'nofollow', 'icon' => 'actions-unlink'],
-                        ['value' => 'missing-description', 'label' => $lll.'missingDescription', 'icon' => 'actions-exclamation-triangle'],
-                    ],
+                    'options' => [],
                 ],
             ],
-        ];
+        ], 'seo', $context);
     }
 
-    /**
-     * @return list<int>
-     */
-    private function resolveFlag(string $field, FilterContext $context): array
+    protected function optionRegistry(): OptionRegistry
     {
-        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder) use ($field): void {
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(1, Connection::PARAM_INT)),
-            );
-            $this->excludeNonContentDoktypes($queryBuilder);
-        });
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function resolveMissingDescription(FilterContext $context): array
-    {
-        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->or(
-                    $queryBuilder->expr()->isNull('description'),
-                    $queryBuilder->expr()->eq('description', $queryBuilder->createNamedParameter('')),
-                ),
-                $queryBuilder->expr()->eq('no_index', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            );
-            $this->excludeNonContentDoktypes($queryBuilder);
-        });
+        return $this->optionRegistry;
     }
 }
