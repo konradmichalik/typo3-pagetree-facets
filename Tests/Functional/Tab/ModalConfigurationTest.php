@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
 
 use function count;
+use function in_array;
 
 /**
  * ModalConfigurationTest.
@@ -117,7 +118,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     public function recordsTableOptionsRespectHideTable(): void
     {
         $configuration = $this->get(RecordsTab::class)->getModalConfiguration($this->createContext());
-        $tables = array_column($configuration['fields'][0]['options'], 'value');
+        $tables = array_column($this->flattenOptions($configuration), 'value');
 
         self::assertContains('tt_content', $tables);
         self::assertContains('pages', $tables);
@@ -125,6 +126,24 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         // hides from record listings must not show up as a facet either.
         self::assertNotContains('sys_file_reference', $tables);
         self::assertNotContains('sys_file_metadata', $tables);
+    }
+
+    #[Test]
+    public function recordsTableOptionsAreGroupedWithCoreTablesTogether(): void
+    {
+        $configuration = $this->get(RecordsTab::class)->getModalConfiguration($this->createContext());
+        $tableFields = array_values(array_filter($configuration['fields'], static fn (array $field): bool => 'table' === $field['name']));
+
+        $coreField = null;
+        foreach ($tableFields as $field) {
+            if (in_array('pages', array_column($field['options'], 'value'), true)) {
+                $coreField = $field;
+            }
+        }
+
+        self::assertNotNull($coreField, 'Expected one table field to contain "pages"');
+        self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:records.group.core', $coreField['label']);
+        self::assertContains('tt_content', array_column($coreField['options'], 'value'), 'pages and tt_content must share the same core bucket');
     }
 
     #[Test]
