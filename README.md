@@ -147,6 +147,15 @@ tx_typo3pagetreefacets.disableTabs = seo, translations
   page UIDs installation-wide; the core page tree then intersects that set with
   the backend user's `PAGE_SHOW` permission clause and mount points, so the tree
   never reveals pages the user may not see.
+- **Freetext combined with a token is resolved by this extension, not the core.**
+  Pure freetext (no `key:` prefix) is handed to the core unchanged, so it keeps the
+  full core behaviour — title/`nav_title`, translated titles and frontend-URI
+  resolution. Once a freetext word shares the phrase with a keyed token (e.g.
+  `doktype:1 home`), the extension resolves it itself so it can intersect it with
+  the other criteria: a `LIKE` across all searchable `pages` fields plus a numeric
+  UID match. That set is broader than the core's title/`nav_title` search but does
+  **not** cover translated titles or `http(s)://` frontend URIs — search for those
+  on their own, without a token.
 
 ## 🔌 Extending
 
