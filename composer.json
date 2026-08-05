@@ -24,6 +24,7 @@
 	"require-dev": {
 		"eliashaeussler/version-bumper": "^4.0.3",
 		"konradmichalik/ttt": "^0.4.0",
+		"phpunit/phpcov": "^11.0",
 		"phpunit/phpunit": "^11.0 || ^12.0 || ^13.0",
 		"typo3/cms-base-distribution": "^14.0",
 		"typo3/cms-seo": "^14.0",
@@ -72,8 +73,15 @@
 		],
 		"cgl": "@composer -d Tests/CGL --",
 		"test": "@test:unit",
-		"test:coverage": "phpunit -c phpunit.xml",
-		"test:functional": "phpunit -c phpunit.functional.xml",
+		"test:coverage": [
+			"@test:coverage:unit",
+			"@test:coverage:functional",
+			"@test:coverage:merge"
+		],
+		"test:coverage:functional": "phpunit -c phpunit.functional.xml",
+		"test:coverage:merge": "phpcov merge --clover .Build/coverage/clover.xml --html .Build/coverage/html --text php://stdout .Build/coverage/raw",
+		"test:coverage:unit": "phpunit -c phpunit.xml",
+		"test:functional": "phpunit -c phpunit.functional.xml --no-coverage",
 		"test:unit": "phpunit -c phpunit.xml --no-coverage"
 	}
 }

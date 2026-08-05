@@ -20,7 +20,7 @@
 	</extensions>
 	<coverage>
 		<report>
-			<clover outputFile=".Build/coverage/clover.xml"/>
+			<php outputFile=".Build/coverage/raw/unit.cov"/>
 		</report>
 	</coverage>
 	<source>
