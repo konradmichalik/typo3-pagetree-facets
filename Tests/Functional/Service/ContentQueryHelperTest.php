@@ -13,11 +13,11 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Service;
 
-use Doctrine\DBAL\ArrayParameterType;
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -80,7 +80,10 @@ final class ContentQueryHelperTest extends FunctionalTestCase
             $this->context,
             'CType IN (:ctypes)',
             ['ctypes' => ['text']],
-            ['ctypes' => ArrayParameterType::STRING],
+            // Connection::PARAM_STR_ARRAY *is* ArrayParameterType::STRING - going
+            // through TYPO3's constant keeps the test on the same path every
+            // production caller uses, and off doctrine/dbal's API directly.
+            ['ctypes' => Connection::PARAM_STR_ARRAY],
         );
         sort($uids);
 
