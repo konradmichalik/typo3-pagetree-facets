@@ -60,6 +60,11 @@ class FacetsToolbar {
     this.#pendingSharedFilter = this.#extractSharedFilter();
     this.#persistEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.persistFilter ?? '');
     this.#pendingPersistedFilter = this.#persistEnabled ? (TYPO3.settings?.PagetreeFacets?.persistedFilter ?? '') : '';
+    // Opt-out setting (emptyResultNotice, on by default): when off, no listeners
+    // are registered at all rather than being registered and doing nothing.
+    if ('1' === (TYPO3.settings?.PagetreeFacets?.emptyResultNotice ?? '')) {
+      this.#watchForEmptyResult();
+    }
     // The tree web component renders asynchronously - a single injection
     // attempt at DOMContentLoaded races it and silently loses. Retry with a
     // capped backoff instead of observing the whole document.
@@ -153,7 +158,6 @@ class FacetsToolbar {
       this.#schedulePersist(filterInput.value);
     });
     this.#updateBadge();
-    this.#watchForEmptyResult(filterInput);
     return button;
   }
 
@@ -174,36 +178,59 @@ class FacetsToolbar {
   // and the only ways out are hand-editing the search field or opening the modal
   // to hit Reset. So offer the reset right where the emptiness is visible.
   //
-  // Driven by the core's own typo3:tree:nodes-prepared event rather than by
-  // watching the DOM - it carries the prepared node list, so "no results" is a
-  // data check instead of a guess about markup. The event does not bubble, hence
-  // the listener sits on the tree component itself, which renders asynchronously
-  // and is therefore retried the same way the toolbar button is.
-  #watchForEmptyResult(filterInput, attemptsLeft = 20) {
-    const tree = document.querySelector(this.#treeSelector)?.querySelector(this.#treeNodesSelector);
-    if (!tree) {
-      if (attemptsLeft > 0) {
-        window.setTimeout(() => this.#watchForEmptyResult(filterInput, attemptsLeft - 1), 250);
-      }
-      return;
-    }
-    if (tree.dataset.pagetreeFacetsWatched) {
-      return;
-    }
-    tree.dataset.pagetreeFacetsWatched = '1';
-    tree.addEventListener('typo3:tree:nodes-prepared', (event) => {
-      const nodes = event.detail?.nodes ?? [];
-      this.#toggleEmptyNotice(filterInput, tree, '' !== filterInput.value.trim() && 0 === nodes.length);
+  // Driven by the core's own filter lifecycle events, which both bubble and are
+  // composed - hence document is a safe listening point, and no waiting for the
+  // asynchronously rendered tree is needed.
+  //
+  // NOTE: deliberately NOT typo3:tree:nodes-prepared. That one is dispatched
+  // only from the tree's loadData()/loadChildren(); the filter path calls
+  // enhanceNodes() directly, so it never fires for a filter at all.
+  #watchForEmptyResult() {
+    // Fires for every non-empty search phrase, ours or the core's own title/UID
+    // search - an empty tree is the same dead end either way.
+    document.addEventListener('typo3:tree:filter-applied', (event) => {
+      this.#toggleEmptyNotice(this.#isEmptyResult(event.detail?.resultCount ?? -1));
     });
+    // Dispatched instead of filter-applied once the phrase is empty again.
+    document.addEventListener('typo3:tree:filter-reset', () => this.#toggleEmptyNotice(false));
   }
 
-  #toggleEmptyNotice(filterInput, tree, show) {
+  // resultCount cannot be compared against 0: filterDataAction always returns
+  // the entry point node(s) - the virtual root for admins, the web mounts
+  // otherwise - so a filter matching nothing still reports one item per entry
+  // point, never zero. Instead ask whether anything came back *below* the entry
+  // points, which self-calibrates to however many there are.
+  //
+  // Reading tree.nodes is safe here: the filter assigns the new nodeMap before
+  // dispatching filter-applied. It only skips that assignment when the response
+  // is completely empty, which resultCount 0 covers separately.
+  //
+  // Known edge case: if an entry point page matches the filter and nothing else
+  // does, this still reports "empty", because an entry point is returned either
+  // way and carries no "matched" marker. The tree does look empty then, so the
+  // reset is still the useful offer - only the wording is slightly off.
+  #isEmptyResult(resultCount) {
+    if (0 === resultCount) {
+      return true;
+    }
+    const tree = document.querySelector(this.#treeSelector)?.querySelector(this.#treeNodesSelector);
+    const nodes = tree?.nodes ?? [];
+
+    return nodes.length > 0 && !nodes.some((node) => node.depth > 0);
+  }
+
+  #toggleEmptyNotice(show) {
     const existing = document.querySelector('.pagetree-facets-empty');
     if (!show) {
       existing?.remove();
       return;
     }
     if (existing) {
+      return;
+    }
+    const tree = document.querySelector(this.#treeSelector)?.querySelector(this.#treeNodesSelector);
+    const filterInput = this.#findFilterInput();
+    if (!tree || !filterInput) {
       return;
     }
 
@@ -219,20 +246,35 @@ class FacetsToolbar {
     text.textContent = TYPO3.lang?.['pagetreeFacets.empty.text'] ?? 'No pages match the current filter.';
     notice.append(text);
 
+    const actions = document.createElement('div');
+    actions.className = 'pagetree-facets-empty__actions';
+
+    const adjust = document.createElement('button');
+    adjust.type = 'button';
+    adjust.className = 'btn btn-sm btn-default';
+    adjust.textContent = TYPO3.lang?.['pagetreeFacets.empty.adjust'] ?? 'Adjust filter';
+    // Narrowing the criteria is usually the better way out than starting over,
+    // so it comes first - the modal opens on the phrase that just failed.
+    adjust.addEventListener('click', () => this.#openModal());
+    actions.append(adjust);
+
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'btn btn-sm btn-default';
     reset.textContent = TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter';
     reset.addEventListener('click', () => {
       filterInput.value = '';
-      // The tree listens for input on its own search field, so this is what makes
-      // it reload unfiltered - same path as clearing the field by hand.
+      // The core's toolbar binds a debounced "input" listener to this field and
+      // calls tree.filter(value) from it, so this is what makes the tree reload
+      // unfiltered - the same path as clearing the field by hand.
       filterInput.dispatchEvent(new Event('input', { bubbles: true }));
-      filterInput.dispatchEvent(new Event('change', { bubbles: true }));
-      this.#toggleEmptyNotice(filterInput, tree, false);
+      // filter-reset would clear the notice too, but only after the debounce and
+      // the request; drop it right away so the click feels immediate.
+      this.#toggleEmptyNotice(false);
       this.#updateBadge();
     });
-    notice.append(reset);
+    actions.append(reset);
+    notice.append(actions);
 
     tree.after(notice);
   }

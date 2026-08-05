@@ -6,3 +6,6 @@ disabledTabs =
 
 # cat=basic; type=boolean; label=Persist filter for the session: Remember each backend user's current page tree filter for the duration of their session, so it survives a reload or module switch (cleared on logout).
 persistFilter = 0
+
+# cat=basic; type=boolean; label=Notice on empty results: Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it.
+emptyResultNotice = 1

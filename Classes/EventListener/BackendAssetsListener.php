@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Service\{SessionFilterService, TabRegistry};
+use Throwable;
 use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 /**
@@ -38,6 +40,7 @@ final readonly class BackendAssetsListener
         private PageRenderer $pageRenderer,
         private TabRegistry $tabRegistry,
         private SessionFilterService $sessionFilterService,
+        private ExtensionConfiguration $extensionConfiguration,
     ) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
@@ -60,6 +63,22 @@ final readonly class BackendAssetsListener
         if ($this->sessionFilterService->isEnabled()) {
             $this->pageRenderer->addInlineSetting('PagetreeFacets', 'persistFilter', '1');
             $this->pageRenderer->addInlineSetting('PagetreeFacets', 'persistedFilter', $this->sessionFilterService->get($backendUser));
+        }
+
+        if ($this->isEmptyResultNoticeEnabled()) {
+            $this->pageRenderer->addInlineSetting('PagetreeFacets', 'emptyResultNotice', '1');
+        }
+    }
+
+    private function isEmptyResultNoticeEnabled(): bool
+    {
+        try {
+            return (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'emptyResultNotice');
+        } catch (Throwable) {
+            // Defaults to ON, unlike the other settings: a missing key means the
+            // value was never written - a fresh install, or an upgrade from
+            // before this setting existed - which must not read as "disabled".
+            return true;
         }
     }
 }

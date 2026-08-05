@@ -21,6 +21,7 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
@@ -49,10 +50,12 @@ final class BackendAssetsListenerTest extends TestCase
             ->with('EXT:typo3_pagetree_facets/Resources/Public/Css/facets-modal.css');
         $pageRenderer->expects(self::once())->method('addInlineLanguageLabelFile')
             ->with('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
-        // Session persistence is off by default - no inline settings emitted.
-        $pageRenderer->expects(self::never())->method('addInlineSetting');
+        // Session persistence is off by default, the empty-result notice is on -
+        // so that flag is the only inline setting emitted.
+        $pageRenderer->expects(self::once())->method('addInlineSetting')
+            ->with('PagetreeFacets', 'emptyResultNotice', '1');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
+        ($this->createListener($pageRenderer))($this->createEvent());
     }
 
     #[Test]
@@ -68,10 +71,47 @@ final class BackendAssetsListenerTest extends TestCase
             },
         );
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService('1')))($this->createEvent());
+        ($this->createListener($pageRenderer, persistFilter: '1'))($this->createEvent());
 
         self::assertSame('1', $inlineSettings['persistFilter'] ?? null);
         self::assertSame('doktype:1', $inlineSettings['persistedFilter'] ?? null);
+    }
+
+    #[Test]
+    public function announcesTheEmptyResultNoticeUnlessItIsTurnedOff(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser();
+
+        $pageRenderer = self::createMock(PageRenderer::class);
+        $pageRenderer->expects(self::never())->method('addInlineSetting');
+
+        ($this->createListener($pageRenderer, emptyResultNotice: '0'))($this->createEvent());
+    }
+
+    /**
+     * Guards the deliberately inverted default: unlike the other settings, a
+     * missing key must read as "on", so an upgrade from a version without the
+     * setting does not silently lose the notice.
+     */
+    #[Test]
+    public function keepsTheEmptyResultNoticeOnWhenTheSettingWasNeverWritten(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser();
+
+        $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
+        $extensionConfiguration->method('get')
+            ->willThrowException(new ExtensionConfigurationPathDoesNotExistException());
+
+        $pageRenderer = self::createMock(PageRenderer::class);
+        $pageRenderer->expects(self::once())->method('addInlineSetting')
+            ->with('PagetreeFacets', 'emptyResultNotice', '1');
+
+        (new BackendAssetsListener(
+            $pageRenderer,
+            $this->createTabRegistry(),
+            $this->createSessionFilterService(),
+            $extensionConfiguration,
+        ))($this->createEvent());
     }
 
     #[Test]
@@ -84,7 +124,7 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer->expects(self::never())->method('addCssFile');
         $pageRenderer->expects(self::never())->method('addInlineLanguageLabelFile');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
+        ($this->createListener($pageRenderer))($this->createEvent());
     }
 
     #[Test]
@@ -93,7 +133,23 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer = self::createMock(PageRenderer::class);
         $pageRenderer->expects(self::never())->method('loadJavaScriptModule');
 
-        (new BackendAssetsListener($pageRenderer, $this->createTabRegistry(), $this->createSessionFilterService()))($this->createEvent());
+        ($this->createListener($pageRenderer))($this->createEvent());
+    }
+
+    private function createListener(
+        PageRenderer $pageRenderer,
+        string $persistFilter = '0',
+        string $emptyResultNotice = '1',
+    ): BackendAssetsListener {
+        $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
+        $extensionConfiguration->method('get')->willReturn($emptyResultNotice);
+
+        return new BackendAssetsListener(
+            $pageRenderer,
+            $this->createTabRegistry(),
+            $this->createSessionFilterService($persistFilter),
+            $extensionConfiguration,
+        );
     }
 
     private function createEvent(): AfterBackendPageRenderEvent
