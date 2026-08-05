@@ -41,6 +41,8 @@ interface FilterTabInterface
     /**
      * Optional group for the vertical modal navigation ("content", "state",
      * "quality", or an own section label for third parties). Null = ungrouped.
+     * Resolved through the same LLL lookup as getLabel(), so an LLL: reference
+     * works here too.
      */
     public function getGroup(): ?string;
 

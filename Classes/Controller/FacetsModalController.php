@@ -211,7 +211,7 @@ final readonly class FacetsModalController
             $tabs[] = [
                 'identifier' => $tab->getIdentifier(),
                 'label' => $this->translate($languageService, $tab->getLabel()),
-                'group' => $tab->getGroup(),
+                'group' => null !== $tab->getGroup() ? $this->translate($languageService, $tab->getGroup()) : null,
                 'configuration' => $this->translateConfiguration($tab->getModalConfiguration($context)),
                 'state' => $tab->hydrate($tokens),
             ];

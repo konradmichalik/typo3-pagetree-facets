@@ -219,6 +219,17 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function tabGroupLabelIsResolvedNotLeftAsAnLllReference(): void
+    {
+        $this->enableRawQueryTab();
+
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+
+        $byIdentifier = array_column($payload['tabs'], null, 'identifier');
+        self::assertSame('Advanced', $byIdentifier['raw']['group']);
+    }
+
+    #[Test]
     public function rawFieldStateRoundTripsThroughSerialize(): void
     {
         $this->enableRawQueryTab();
