@@ -710,22 +710,56 @@
 }
 
 /* Empty-result notice inside the tree panel, offering the way out of a filter
- * that matched nothing (see #toggleEmptyNotice). Also outside the modal scope,
- * so backend --bs-* vars with fallbacks. */
+ * that matched nothing (see #toggleEmptyNotice). This sits OUTSIDE the modal
+ * scope, in the page-tree navigation frame, where the backend --bs-* custom
+ * properties resolve to their LIGHT-theme values even in dark mode (the same
+ * trap documented on .pagetree-facets-toggle above, which left the dashed
+ * border, text and buttons barely visible in dark mode). So it carries its own
+ * theme-aware --pl-* palette, applied via the same two signals as the modal:
+ * @media (prefers-color-scheme) for "auto" and [data-color-scheme] when a theme
+ * is picked explicitly. */
 .pagetree-facets-empty {
+    --pl-text: #1e1e1e;
+    --pl-muted: #737373;
+    --pl-border: rgba(0, 0, 0, 0.15);
+    --pl-hover: rgba(0, 0, 0, 0.05);
+
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
     margin: 0.75rem;
     padding: 0.75rem;
-    border: 1px dashed var(--bs-border-color, rgba(0, 0, 0, 0.15));
+    border: 1px dashed var(--pl-border);
     border-radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pagetree-facets-empty {
+        --pl-text: #e0e0e0;
+        --pl-muted: #9b9b9b;
+        --pl-border: rgba(255, 255, 255, 0.20);
+        --pl-hover: rgba(255, 255, 255, 0.07);
+    }
+}
+
+[data-color-scheme="light"] .pagetree-facets-empty {
+    --pl-text: #1e1e1e;
+    --pl-muted: #737373;
+    --pl-border: rgba(0, 0, 0, 0.15);
+    --pl-hover: rgba(0, 0, 0, 0.05);
+}
+
+[data-color-scheme="dark"] .pagetree-facets-empty {
+    --pl-text: #e0e0e0;
+    --pl-muted: #9b9b9b;
+    --pl-border: rgba(255, 255, 255, 0.20);
+    --pl-hover: rgba(255, 255, 255, 0.07);
 }
 
 .pagetree-facets-empty__text {
     margin: 0;
-    color: var(--bs-secondary-color, #8a8a8a);
+    color: var(--pl-muted);
     font-size: 0.8125rem;
     text-align: center;
 }
@@ -736,4 +770,18 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
+}
+
+/* Style the actions from the --pl-* palette rather than trusting .btn-default,
+ * whose themed colours resolve light here just like the --bs-* vars do. */
+.pagetree-facets-empty__actions .btn {
+    border: 1px solid var(--pl-border);
+    background: transparent;
+    color: var(--pl-text);
+}
+
+.pagetree-facets-empty__actions .btn:hover,
+.pagetree-facets-empty__actions .btn:focus {
+    background: var(--pl-hover);
+    color: var(--pl-text);
 }
