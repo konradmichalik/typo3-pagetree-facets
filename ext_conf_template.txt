@@ -4,6 +4,9 @@ adminOnly = 0
 # cat=basic; type=string; label=Disabled tabs: Comma-separated list of built-in tab identifiers to disable installation-wide (records, ce, activity, doktype, state, translations, seo).
 disabledTabs =
 
+# cat=basic; type=string; label=Disabled options: Comma-separated list of individual option identifiers ("tokenKey:value") to disable installation-wide, e.g. "is:editlocked, seo:nofollow". Disables a single value inside a tab without disabling the whole tab.
+disabledOptions =
+
 # cat=basic; type=boolean; label=Persist filter for the session: Remember each backend user's current page tree filter for the duration of their session, so it survives a reload or module switch (cleared on logout).
 persistFilter = 0
 
