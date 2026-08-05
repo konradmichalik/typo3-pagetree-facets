@@ -4,6 +4,7 @@
 
 # TYPO3 extension `typo3_pagetree_facets`
 
+[![Latest Stable Version](https://typo3-badges.dev/badge/typo3_pagetree_facets/version/shields.svg)](https://extensions.typo3.org/extension/typo3_pagetree_facets)
 ![TYPO3](https://img.shields.io/badge/TYPO3-14.3-orange.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.3%20%7C%208.4%20%7C%208.5-blue.svg)
 [![CGL](https://img.shields.io/github/actions/workflow/status/konradmichalik/typo3-pagetree-facets/cgl.yml?label=cgl&logo=github)](https://github.com/konradmichalik/typo3-pagetree-facets/actions/workflows/cgl.yml)
@@ -27,19 +28,16 @@ a public filter tab API.
 
 <div align="center">
 
-![Filter modal](.github/assets/filter-modal.jpg)
+![Filter modal](.github/assets/filter-modal.png)
 
 </div>
-
-| Type a token, or open the modal from the toolbar | The phrase lands back in the search field |
-|---|---|
-| ![Toolbar search](.github/assets/toolbar-search.jpg) | ![Toolbar with an applied filter](.github/assets/toolbar-filter-applied.jpg) |
 
 ## ✨ Features
 
 - **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (`Ctrl/Cmd+Shift+L`) for a guided UI with active-filter chips and per-tab counts
 - **Built-in filter tabs**: Content elements (`ce:`), Records (`table:` `record:` `text:`), Activity (`updated:` `created:` `by:` `createdby:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:` `translated:`), SEO (`seo:`, requires EXT:seo)
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
+- **Sharable links, session persistence and favorites**: copy the current filter as a link, have it survive a reload for the session, or save it as a named favorite for later
 - **Extensible tab API**: register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`; built-in tabs use the exact same path
 - **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_typo3pagetreefacets.disableTabs` / `.disable`)
 - **Raw query escape hatch** (`raw:`, opt-in, off by default): power-user token matching arbitrary `field=value` conditions against any TCA table the current backend user has table-select access to — see the Configuration section below for the syntax and security tradeoffs before enabling it
@@ -53,17 +51,34 @@ a public filter tab API.
 
 ### Composer
 
+[![Packagist](https://img.shields.io/packagist/v/konradmichalik/typo3-pagetree-facets?label=version&logo=packagist)](https://packagist.org/packages/konradmichalik/typo3-pagetree-facets)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/konradmichalik/typo3-pagetree-facets?color=brightgreen)](https://packagist.org/packages/konradmichalik/typo3-pagetree-facets)
+
 ``` bash
 composer require konradmichalik/typo3-pagetree-facets
 ```
 
+### TER
+
+[![TER version](https://typo3-badges.dev/badge/typo3_pagetree_facets/version/shields.svg)](https://extensions.typo3.org/extension/typo3_pagetree_facets)
+[![TER downloads](https://typo3-badges.dev/badge/typo3_pagetree_facets/downloads/shields.svg)](https://extensions.typo3.org/extension/typo3_pagetree_facets)
+
+Download the zip file from [TYPO3 extension repository (TER)](https://extensions.typo3.org/extension/typo3_pagetree_facets).
+
 > [!NOTE]
 > Not yet released to Packagist or TER; install from a VCS repository until the first tagged release.
 
-## 🚀 Quick start
+## 📖 How it works
 
-Type filter tokens into the backend page tree's search field, or press
-`Ctrl/Cmd+Shift+L` to open the modal, to narrow the tree to matching pages:
+Press `Ctrl/Cmd+Shift+L` (or use the toolbar button next to the tree's search
+field) to open the filter modal. Pick criteria by clicking through the tabs on
+the left; each selection appears as a removable chip above the tree, with a
+per-tab count of matching pages, and narrows the tree live as you go.
+
+![How the filter modal works](.github/assets/screencast.gif)
+
+Under the hood, every filter is a compact token that lands in the tree's
+existing search field, so you can also skip the modal and type directly:
 
 ```
 doktype:1 is:empty                # standard pages without content
@@ -74,9 +89,7 @@ seo:missing-description           # indexable pages without meta description
 
 Whitespace means AND, a comma means OR within one criterion (`doktype:1,4`).
 Freetext without a `key:` prefix behaves like the core title/UID search, and
-unknown tokens are ignored. The modal mirrors the same tokens: pick criteria by
-clicking, see them as removable chips with a per-tab count, and it writes the
-phrase back into the search field.
+unknown tokens are ignored.
 
 ## ⚙️ Configuration
 
@@ -103,28 +116,10 @@ Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
 #### The `raw:` power-user token
 
 Syntax: `raw:<table>|<field>=<value>|<field2>=<value2>...`, e.g.
-`raw:tt_content|CType=image|hidden=0`. A value with a leading and/or trailing
-`*` is LIKE-matched (`raw:tt_content|header=Solar*`); everything else is an
-exact match. Multiple `raw:` tokens (space-separated) AND together like any
-other token, including across different tables.
-
-This is the one arbitrary-field-matching case the built-in `table:`/`record:`/
-`text:` tokens deliberately do not cover. It is off by default and meant for
-integrators who understand the tradeoff:
-
-- The table must exist in TCA, and the current backend user needs
-  `tables_select` access to it — the same permission that already governs
-  whether they can see that table's records in the list module. Enabling
-  `raw:` makes that permission additionally gate per-field value probing on
-  every page, which is a meaningfully bigger exposure than "can list records".
-  Review your backend groups' table permissions before turning this on.
-- Field names are whitelisted against the table's TCA `columns` — unknown
-  fields are silently dropped, they are never interpolated into SQL. Values
-  are always passed as bound query parameters.
-- There is no modal picker for table/field names by design (no JS field-name
-  autocomplete against TCA) - it is meant to be typed by users who already
-  know the schema. A single free-text modal field exists so a typed `raw:`
-  token survives round-tripping through the filter modal.
+`raw:tt_content|CType=image|hidden=0` (`*` for LIKE matching). Off by default —
+it matches arbitrary fields on any table the current backend user can already
+select records from, so review your backend groups' table permissions before
+enabling it.
 
 ### User TSconfig
 
