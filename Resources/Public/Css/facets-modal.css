@@ -253,6 +253,25 @@
     opacity: 0.85;
 }
 
+.pagetree-facets__hint code {
+    padding-inline: 0.3em;
+    border-radius: 3px;
+    background: var(--pl-active);
+    color: var(--pl-text);
+    font-size: 0.95em;
+}
+
+.pagetree-facets__hint kbd {
+    padding-inline: 0.35em;
+    padding-block: 0.05em;
+    border: 1px solid var(--pl-border);
+    border-radius: 3px;
+    background: var(--pl-hover);
+    color: var(--pl-text);
+    font-size: 0.85em;
+    line-height: 1;
+}
+
 .pagetree-facets__copy-link,
 .pagetree-facets__reset {
     flex: 0 0 auto;

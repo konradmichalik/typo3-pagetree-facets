@@ -207,11 +207,11 @@ class FacetsModal {
       'pagetreeFacets.modal.hint.scope',
     ];
     const fallbacks = {
-      'pagetreeFacets.modal.hint.tokens': 'Prefer typing? Enter tokens like doktype:1 is:empty straight into the tree\'s search field.',
-      'pagetreeFacets.modal.hint.combine': 'Whitespace means AND, a comma means OR within one criterion — try doktype:1,4.',
+      'pagetreeFacets.modal.hint.tokens': 'Prefer typing? Enter tokens like `doktype:1 is:empty` straight into the tree\'s search field.',
+      'pagetreeFacets.modal.hint.combine': 'Whitespace means AND, a comma means OR within one criterion — try `doktype:1,4`.',
       'pagetreeFacets.modal.hint.favorites': 'Save a filter you use often as a favorite and reopen it in one click.',
       'pagetreeFacets.modal.hint.copyLink': 'Copy a filter as a link and hand it to a colleague — it reopens exactly as you left it.',
-      'pagetreeFacets.modal.hint.liveSearch': 'Looking for a single record instead? The global backend search opens with Ctrl/Cmd+K.',
+      'pagetreeFacets.modal.hint.liveSearch': 'Looking for a single record instead? The global backend search opens with [[Ctrl]]/[[Cmd]]+[[K]].',
       'pagetreeFacets.modal.hint.scope': 'Narrow results to one site or the current subtree with the scope controls above.',
     };
     const key = keys[Math.floor(Math.random() * keys.length)];
@@ -224,10 +224,33 @@ class FacetsModal {
     icon.setAttribute('size', 'small');
 
     const text = document.createElement('span');
-    text.textContent = TYPO3.lang?.[key] ?? fallbacks[key];
+    this.#appendRichText(text, TYPO3.lang?.[key] ?? fallbacks[key]);
 
     hint.append(icon, text);
     return hint;
+  }
+
+  // Render a hint string, turning `code` spans into <code> and [[key]] markers
+  // into <kbd>. Both delimiters are developer-authored in the label file; we
+  // build real DOM nodes and never assign innerHTML, so no markup in the string
+  // is ever parsed as HTML - safe even once translations are added.
+  #appendRichText(container, text) {
+    const pattern = /`([^`]+)`|\[\[([^\]]+)\]\]/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        container.append(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const [, code, key] = match;
+      const element = document.createElement(code !== undefined ? 'code' : 'kbd');
+      element.textContent = code ?? key;
+      container.append(element);
+      lastIndex = pattern.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      container.append(document.createTextNode(text.slice(lastIndex)));
+    }
   }
 
   #renderBody() {
