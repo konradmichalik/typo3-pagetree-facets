@@ -1244,12 +1244,20 @@ class FacetsModal {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
       const fields = this.#distinctFields(tab);
-      // Prefix the chip with the field label only when a tab exposes several
-      // fields (e.g. Activity: "Last updated" vs "Created"), otherwise the tab
-      // label reads cleaner and a single field would just repeat itself.
-      const multi = fields.length > 1;
+      const nameCounts = this.#fieldNameCounts(tab);
+      // A name that occurs more than once in the raw (non-deduplicated) field
+      // list is bucketed (e.g. RecordsTab's `table` split into TYPO3 Core/News/
+      // Other, ContentElementTab's `ce` split per wizard group) - each field's
+      // `label` there is a section heading, not a criterion name, so those
+      // always fall back to the tab label. Only among the remaining,
+      // non-bucketed names does it make sense to prefix with the field label,
+      // and only when there is more than one of them (e.g. Activity: "Last
+      // updated" vs "Created") - otherwise the tab label reads cleaner and a
+      // single field would just repeat itself.
+      const nonBucketedCount = fields.filter((field) => 1 === nameCounts.get(field.name)).length;
       for (const field of fields) {
-        const prefix = multi ? field.label : tab.label;
+        const bucketed = (nameCounts.get(field.name) ?? 0) > 1;
+        const prefix = bucketed ? tab.label : (nonBucketedCount > 1 ? field.label : tab.label);
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
@@ -1298,6 +1306,18 @@ class FacetsModal {
       }
     }
     return [...byName.values()];
+  }
+
+  // Raw (non-deduplicated) occurrence count per field name - used by
+  // #collectActiveCriteria() to tell a bucketed criterion (one name split
+  // across several field objects) from one that maps to exactly one field
+  // object, which #distinctFields() alone can't distinguish once collapsed.
+  #fieldNameCounts(tab) {
+    const counts = new Map();
+    for (const field of tab.configuration.fields ?? []) {
+      counts.set(field.name, (counts.get(field.name) ?? 0) + 1);
+    }
+    return counts;
   }
 
   // For dataset.picker controls (currently: user-picker), the visible .value is
