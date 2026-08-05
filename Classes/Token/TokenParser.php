@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Token;
 
+use function in_array;
+
 /**
  * TokenParser.
  *
@@ -23,6 +25,10 @@ namespace KonradMichalik\PagetreeFacets\Token;
  *   token    := key ":" value | freetext
  *   value    := bare | quoted              # quoted for values containing spaces
  *   bare     := [^" \t]+                   # comma = OR within one criterion
+ *
+ * Exceptions: "text:" and "raw:" keep their value verbatim (no comma-split) -
+ * "text:" for phrase search, "raw:" for its own "table|field=value|..."
+ * mini-syntax.
  *
  * Unknown token keys are NOT an error at parse time - resolution decides.
  * Freetext (no "key:" prefix) is collected under Token::FREETEXT and passed
@@ -89,9 +95,11 @@ final class TokenParser
             return null;
         }
         $value = ($match['quoted'] ?? '') !== '' ? $match['quoted'] : ($match['bare'] ?? '');
-        // "text:" keeps its value verbatim (phrase search); every other key
-        // splits comma-separated values into OR-combined alternatives.
-        $values = 'text' === $key
+        // "text:" keeps its value verbatim (phrase search); "raw:" keeps its
+        // value verbatim too (its own "table|field=value|..." mini-syntax);
+        // every other key splits comma-separated values into OR-combined
+        // alternatives.
+        $values = in_array($key, ['text', 'raw'], true)
             ? [$value]
             : array_values(array_filter(
                 array_map(trim(...), explode(',', $value)),

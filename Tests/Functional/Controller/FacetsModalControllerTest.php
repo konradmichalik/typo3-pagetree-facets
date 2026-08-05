@@ -199,6 +199,39 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function rawQueryTabIsAbsentByDefault(): void
+    {
+        $identifiers = array_column($this->decode($this->subject->configuration(new ServerRequest()))['tabs'], 'identifier');
+
+        self::assertNotContains('raw', $identifiers);
+    }
+
+    #[Test]
+    public function rawQueryTabIsPresentWhenExplicitlyEnabled(): void
+    {
+        // Must be enabled before the first configuration() call on this subject -
+        // TabRegistry resolves and caches the tab list per instance.
+        $this->enableRawQueryTab();
+
+        $identifiers = array_column($this->decode($this->subject->configuration(new ServerRequest()))['tabs'], 'identifier');
+
+        self::assertContains('raw', $identifiers);
+    }
+
+    #[Test]
+    public function rawFieldStateRoundTripsThroughSerialize(): void
+    {
+        $this->enableRawQueryTab();
+        $request = (new ServerRequest())->withParsedBody([
+            'states' => ['raw' => ['raw' => 'tt_content|CType=uploads']],
+        ]);
+
+        $payload = $this->decode($this->subject->serialize($request));
+
+        self::assertSame('raw:tt_content|CType=uploads', $payload['phrase']);
+    }
+
+    #[Test]
     public function favoriteEndpointsRoundTrip(): void
     {
         $addRequest = (new ServerRequest())->withParsedBody([
@@ -212,6 +245,11 @@ final class FacetsModalControllerTest extends FunctionalTestCase
         $removeRequest = (new ServerRequest())->withParsedBody(['index' => 0]);
         $payload = $this->decode($this->subject->removeFavorite($removeRequest));
         self::assertSame([], $payload['favorites']);
+    }
+
+    private function enableRawQueryTab(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['enableRawQueryTab'] = '1';
     }
 
     /**

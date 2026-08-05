@@ -96,6 +96,43 @@ class ContentQueryHelper
     }
 
     /**
+     * Page UIDs of records in $table matching ALL given field=value conditions
+     * (AND). A value with a leading and/or trailing '*' is LIKE-matched (the
+     * wildcard becomes SQL '%'), everything else is an exact match. Field
+     * names are taken as raw SQL identifiers - whitelisting them against the
+     * table's TCA columns is the caller's responsibility, not this method's.
+     *
+     * @param array<string, string> $conditions field => value, ANDed
+     *
+     * @return list<int>
+     */
+    public function getPageUidsWithFieldMatch(string $table, array $conditions, FilterContext $context): array
+    {
+        if ([] === $conditions) {
+            return $this->getPageUidsWithRecords($table, $context);
+        }
+
+        $queryBuilder = $this->createQueryBuilder($table, $context);
+        $expressions = [];
+        $parameters = [];
+        $index = 0;
+        foreach ($conditions as $field => $value) {
+            $placeholder = 'facetsRawValue'.$index++;
+            $expressions[] = $this->isWildcardValue($value)
+                ? $queryBuilder->expr()->like($field, ':'.$placeholder)
+                : $queryBuilder->expr()->eq($field, ':'.$placeholder);
+            $parameters[$placeholder] = $this->wildcardValue($queryBuilder, $value);
+        }
+
+        return $this->getPageUidsWithRecords(
+            $table,
+            $context,
+            (string) $queryBuilder->expr()->and(...$expressions),
+            $parameters,
+        );
+    }
+
+    /**
      * LIKE search across the table's searchable schema fields (the same set
      * the core live search uses via SearchableSchemaFieldsCollector; in v14
      * the former ctrl.searchFields TCA option no longer exists). Deliberate
@@ -156,6 +193,26 @@ class ContentQueryHelper
             ->where($queryBuilder->expr()->or(...$conditions));
 
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
+    }
+
+    private function isWildcardValue(string $value): bool
+    {
+        return str_starts_with($value, '*') || str_ends_with($value, '*');
+    }
+
+    /**
+     * Strips the leading/trailing '*' and escapes literal '%'/'_' in what
+     * remains, so those characters in the user's value cannot act as SQL
+     * wildcards themselves.
+     */
+    private function wildcardValue(QueryBuilder $queryBuilder, string $value): string
+    {
+        if (!$this->isWildcardValue($value)) {
+            return $value;
+        }
+        $literal = $queryBuilder->escapeLikeWildcards(trim($value, '*'));
+
+        return (str_starts_with($value, '*') ? '%' : '').$literal.(str_ends_with($value, '*') ? '%' : '');
     }
 
     /**

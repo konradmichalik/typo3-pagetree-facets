@@ -9,3 +9,6 @@ persistFilter = 0
 
 # cat=basic; type=boolean; label=Notice on empty results: Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it.
 emptyResultNotice = 1
+
+# cat=advanced; type=boolean; label=Enable raw query tab (power users): Adds a "raw:<table>|<field>=<value>|..." token that matches arbitrary field values on any TCA table the current backend user has table-select access to. Off by default - review the security implications in the README before enabling.
+enableRawQueryTab = 0

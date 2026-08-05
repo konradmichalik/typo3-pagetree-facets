@@ -76,6 +76,10 @@
 			<trans-unit id="seo.noindex"><source>Excluded from indexing (no_index)</source></trans-unit>
 			<trans-unit id="seo.nofollow"><source>Links not followed (no_follow)</source></trans-unit>
 			<trans-unit id="seo.missingDescription"><source>Missing meta description</source></trans-unit>
+			<trans-unit id="group.advanced"><source>Advanced</source></trans-unit>
+			<trans-unit id="tab.raw"><source>Raw query (Pro)</source></trans-unit>
+			<trans-unit id="raw.expression"><source>Table and field=value conditions</source></trans-unit>
+			<trans-unit id="raw.expression.placeholder"><source>table|field=value|field2=value2</source></trans-unit>
 		</body>
 	</file>
 </xliff>

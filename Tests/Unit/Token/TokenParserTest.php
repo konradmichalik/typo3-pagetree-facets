@@ -77,6 +77,14 @@ final class TokenParserTest extends TestCase
     }
 
     #[Test]
+    public function rawValueKeepsCommaLiteral(): void
+    {
+        $tokens = $this->subject->parse('raw:tt_content|CType=image,video');
+        self::assertSame('raw', $tokens[0]->key);
+        self::assertSame(['tt_content|CType=image,video'], $tokens[0]->values);
+    }
+
+    #[Test]
     public function emptyPhraseYieldsNoTokens(): void
     {
         self::assertSame([], $this->subject->parse('   '));

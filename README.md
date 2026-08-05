@@ -42,6 +42,7 @@ a public filter tab API.
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
 - **Extensible tab API**: register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`; built-in tabs use the exact same path
 - **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_typo3pagetreefacets.disableTabs` / `.disable`)
+- **Raw query escape hatch** (`raw:`, opt-in, off by default): power-user token matching arbitrary `field=value` conditions against any TCA table the current backend user has table-select access to — see the Configuration section below for the syntax and security tradeoffs before enabling it
 
 ## 🔥 Installation
 
@@ -90,13 +91,40 @@ You can find the extension settings in the TYPO3 backend under
 | `disabledTabs` | *(empty)* | Comma-separated list of built-in tab identifiers to disable installation-wide. |
 | `persistFilter` | `0` | Remember each backend user's current page tree filter for their session, so it survives a reload or module switch (cleared on logout). |
 | `emptyResultNotice` | `1` | Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it. |
+| `enableRawQueryTab` | `0` | Enable the `raw:` power-user token (see below). Off by default. |
 
 Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
-`translations`, `seo`.
+`translations`, `seo`, `raw` (only registered at all when `enableRawQueryTab` is on).
 
 > [!NOTE]
 > Disabling a tab also makes its token keys unknown to the filter engine, so the
 > restriction cannot be bypassed by typing the token into the search field manually.
+
+#### The `raw:` power-user token
+
+Syntax: `raw:<table>|<field>=<value>|<field2>=<value2>...`, e.g.
+`raw:tt_content|CType=image|hidden=0`. A value with a leading and/or trailing
+`*` is LIKE-matched (`raw:tt_content|header=Solar*`); everything else is an
+exact match. Multiple `raw:` tokens (space-separated) AND together like any
+other token, including across different tables.
+
+This is the one arbitrary-field-matching case the built-in `table:`/`record:`/
+`text:` tokens deliberately do not cover. It is off by default and meant for
+integrators who understand the tradeoff:
+
+- The table must exist in TCA, and the current backend user needs
+  `tables_select` access to it — the same permission that already governs
+  whether they can see that table's records in the list module. Enabling
+  `raw:` makes that permission additionally gate per-field value probing on
+  every page, which is a meaningfully bigger exposure than "can list records".
+  Review your backend groups' table permissions before turning this on.
+- Field names are whitelisted against the table's TCA `columns` — unknown
+  fields are silently dropped, they are never interpolated into SQL. Values
+  are always passed as bound query parameters.
+- There is no modal picker for table/field names by design (no JS field-name
+  autocomplete against TCA) - it is meant to be typed by users who already
+  know the schema. A single free-text modal field exists so a typed `raw:`
+  token survives round-tripping through the filter modal.
 
 ### User TSconfig
 

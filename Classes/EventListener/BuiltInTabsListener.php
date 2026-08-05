@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use Throwable;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
@@ -38,6 +40,8 @@ final readonly class BuiltInTabsListener
         private PageStateTab $pageStateTab,
         private TranslationsTab $translationsTab,
         private SeoTab $seoTab,
+        private RawQueryTab $rawQueryTab,
+        private ExtensionConfiguration $extensionConfiguration,
     ) {}
 
     public function __invoke(RegisterFilterTabsEvent $event): void
@@ -51,6 +55,22 @@ final readonly class BuiltInTabsListener
         // Conditional registration: seo fields only exist with EXT:seo.
         if (ExtensionManagementUtility::isLoaded('seo')) {
             $event->addTab($this->seoTab, 40);
+        }
+        // Conditional registration: the raw:-token escape hatch is opt-in
+        // and off by default - arbitrary field=value matching against any
+        // TCA table is a deliberate power-user/security tradeoff, see the
+        // extension setting's description.
+        if ($this->isRawQueryTabEnabled()) {
+            $event->addTab($this->rawQueryTab, 10);
+        }
+    }
+
+    private function isRawQueryTabEnabled(): bool
+    {
+        try {
+            return (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'enableRawQueryTab');
+        } catch (Throwable) {
+            return false;
         }
     }
 }
