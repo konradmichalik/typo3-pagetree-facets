@@ -342,7 +342,7 @@ final readonly class FacetsModalController
     {
         $backendUser = $this->getBackendUser();
         if ($this->tabRegistry->isDisabledForUser($backendUser)) {
-            throw new PropagateResponseException($this->forbidden());
+            throw new PropagateResponseException($this->forbidden(), 1785888000);
         }
 
         return $backendUser;
