@@ -28,6 +28,12 @@
 			<trans-unit id="pagetreeFacets.modal.help.scope"><source>"Search from current page down" limits the result to the page you currently have open and its subpages.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.share"><source>"Copy link" copies a link to your current selection, so you can hand it to a colleague.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.advanced"><source>Your selection also shows up as text in the page tree's search field. If you prefer typing, you can edit it there directly.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.tokens"><source>Prefer typing? Enter tokens like doktype:1 is:empty straight into the tree's search field.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.combine"><source>Whitespace means AND, a comma means OR within one criterion — try doktype:1,4.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.favorites"><source>Save a filter you use often as a favorite and reopen it in one click.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.copyLink"><source>Copy a filter as a link and hand it to a colleague — it reopens exactly as you left it.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.liveSearch"><source>Looking for a single record instead? The global backend search opens with Ctrl/Cmd+K.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.hint.scope"><source>Narrow results to one site or the current subtree with the scope controls above.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tabEmpty"><source>No options available</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.search"><source>Search filters</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source></trans-unit>

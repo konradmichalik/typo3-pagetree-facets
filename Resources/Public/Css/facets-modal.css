@@ -219,10 +219,10 @@
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-}
-
-.pagetree-facets__active[hidden] {
-    display: none;
+    /* Reserve the height of a single chip/hint row so the header keeps its size
+       whether it currently holds the hint or the first chips - no layout shift
+       when a filter activates. */
+    min-height: 1.6rem;
 }
 
 .pagetree-facets__chips {
@@ -230,6 +230,27 @@
     flex: 1 1 auto;
     flex-wrap: wrap;
     gap: 0.375rem;
+}
+
+/* Both the chips and the hint carry a flex display, which overrides the [hidden]
+   attribute's default display:none - restore it so exactly one shows at a time. */
+.pagetree-facets__chips[hidden],
+.pagetree-facets__hint[hidden] {
+    display: none;
+}
+
+.pagetree-facets__hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--pl-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.pagetree-facets__hint typo3-backend-icon {
+    flex: 0 0 auto;
+    opacity: 0.85;
 }
 
 .pagetree-facets__copy-link,

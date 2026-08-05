@@ -22,6 +22,7 @@ class FacetsModal {
   #activeTab = null;
   #onApply = null;
   #chips = null;
+  #hint = null;
   #active = null;
   #utility = null;
   #actions = null;
@@ -176,16 +177,57 @@ class FacetsModal {
     header.append(this.#utility, saveForm);
 
     // Active-filter row: the removable chips mirroring the current tab criteria.
+    // It stays present at all times - with no filters it holds a random usage
+    // hint instead of chips, so the header keeps its height and nothing below
+    // jumps as the first filter activates.
     this.#active = document.createElement('div');
     this.#active.className = 'pagetree-facets__active';
-    this.#active.hidden = true;
 
     this.#chips = document.createElement('div');
     this.#chips.className = 'pagetree-facets__chips';
-    this.#active.append(this.#chips);
+
+    this.#hint = this.#renderHint();
+
+    this.#active.append(this.#hint, this.#chips);
 
     header.append(this.#active);
     return header;
+  }
+
+  // A lightbulb usage tip shown while no filter is active. One is picked at
+  // random per modal open (not per refresh) so it stays put while the user
+  // toggles filters on and off.
+  #renderHint() {
+    const keys = [
+      'pagetreeFacets.modal.hint.tokens',
+      'pagetreeFacets.modal.hint.combine',
+      'pagetreeFacets.modal.hint.favorites',
+      'pagetreeFacets.modal.hint.copyLink',
+      'pagetreeFacets.modal.hint.liveSearch',
+      'pagetreeFacets.modal.hint.scope',
+    ];
+    const fallbacks = {
+      'pagetreeFacets.modal.hint.tokens': 'Prefer typing? Enter tokens like doktype:1 is:empty straight into the tree\'s search field.',
+      'pagetreeFacets.modal.hint.combine': 'Whitespace means AND, a comma means OR within one criterion — try doktype:1,4.',
+      'pagetreeFacets.modal.hint.favorites': 'Save a filter you use often as a favorite and reopen it in one click.',
+      'pagetreeFacets.modal.hint.copyLink': 'Copy a filter as a link and hand it to a colleague — it reopens exactly as you left it.',
+      'pagetreeFacets.modal.hint.liveSearch': 'Looking for a single record instead? The global backend search opens with Ctrl/Cmd+K.',
+      'pagetreeFacets.modal.hint.scope': 'Narrow results to one site or the current subtree with the scope controls above.',
+    };
+    const key = keys[Math.floor(Math.random() * keys.length)];
+
+    const hint = document.createElement('div');
+    hint.className = 'pagetree-facets__hint';
+
+    const icon = document.createElement('typo3-backend-icon');
+    icon.setAttribute('identifier', 'actions-lightbulb-on');
+    icon.setAttribute('size', 'small');
+
+    const text = document.createElement('span');
+    text.textContent = TYPO3.lang?.[key] ?? fallbacks[key];
+
+    hint.append(icon, text);
+    return hint;
   }
 
   #renderBody() {
@@ -1169,7 +1211,11 @@ class FacetsModal {
     }
     const criteria = this.#collectActiveCriteria();
     this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
-    this.#active.hidden = criteria.length === 0;
+    // The active row is always present; it shows either the chips or, with no
+    // criteria, the usage hint - swapping the two keeps the height constant.
+    const hasCriteria = criteria.length > 0;
+    this.#chips.hidden = !hasCriteria;
+    this.#hint.hidden = hasCriteria;
     // The actions (Copy link / Save current filter / Reset) act on the whole
     // phrase, so they follow whether anything is savable - freetext or a scope
     // alone counts, not just tab-criteria chips.
