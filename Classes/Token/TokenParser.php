@@ -46,7 +46,12 @@ final class TokenParser
     public function parse(string $phrase): array
     {
         if (false === preg_match_all(self::PATTERN, trim($phrase), $matches, \PREG_SET_ORDER)) {
+            // @codeCoverageIgnoreStart
+            // Defensive: only reachable on a PCRE engine failure (e.g. a
+            // backtrack limit), never through a valid phrase - not something a
+            // real test can trigger.
             return [];
+            // @codeCoverageIgnoreEnd
         }
 
         $tokens = [];
@@ -92,7 +97,12 @@ final class TokenParser
     {
         $key = strtolower($match['key']);
         if ('' === $key) {
+            // @codeCoverageIgnoreStart
+            // Defensive: PATTERN's key group requires at least one character
+            // ([a-z][a-z0-9_-]*), so $key can never be empty here - this
+            // guards against the type only.
             return null;
+            // @codeCoverageIgnoreEnd
         }
         $value = ($match['quoted'] ?? '') !== '' ? $match['quoted'] : ($match['bare'] ?? '');
         // "text:" keeps its value verbatim (phrase search); "raw:" keeps its
