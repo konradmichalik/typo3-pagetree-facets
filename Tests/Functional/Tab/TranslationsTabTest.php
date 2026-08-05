@@ -68,4 +68,10 @@ final class TranslationsTabTest extends AbstractTabTestCase
         self::assertNotContains(5, $this->resolve($this->get(TranslationsTab::class), 'untranslated:1'));
         self::assertNotContains(5, $this->resolve($this->get(TranslationsTab::class), 'translated:1'));
     }
+
+    #[Test]
+    public function nonPositiveLanguageIdsResolveToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(TranslationsTab::class), 'untranslated:0'));
+    }
 }

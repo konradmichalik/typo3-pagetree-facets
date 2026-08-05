@@ -47,4 +47,10 @@ final class DoktypeTabTest extends AbstractTabTestCase
         // uid 5 is a deleted sysfolder - must not appear.
         self::assertSame([3], $this->resolve($this->get(DoktypeTab::class), 'doktype:254'));
     }
+
+    #[Test]
+    public function nonNumericDoktypeValuesResolveToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(DoktypeTab::class), 'doktype:abc'));
+    }
 }

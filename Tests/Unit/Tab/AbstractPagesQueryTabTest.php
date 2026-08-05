@@ -66,6 +66,12 @@ final class AbstractPagesQueryTabTest extends TestCase
         self::assertSame([], $state);
     }
 
+    #[Test]
+    public function getGroupDefaultsToNull(): void
+    {
+        self::assertNull($this->createTab()->getGroup());
+    }
+
     private function createTab(): AbstractPagesQueryTab
     {
         $queryHelper = new ContentQueryHelper(

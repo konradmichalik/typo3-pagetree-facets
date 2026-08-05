@@ -16,7 +16,9 @@ namespace KonradMichalik\PagetreeFacets\Tests\Unit\Tab;
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeFacets\Tab\RecordsTab;
+use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -127,6 +129,26 @@ final class RecordsTabTest extends TestCase
         );
     }
 
+    #[Test]
+    public function resolveRecordReturnsNoUidsWithoutAColon(): void
+    {
+        $tab = new RecordsTab($this->queryHelperThatMustNotBeCalled(), self::createStub(PackageManager::class));
+
+        $uids = $tab->resolvePageUids(new Token('record', ['noColonAtAll'], 'record:noColonAtAll'), $this->context());
+
+        self::assertSame([], $uids);
+    }
+
+    #[Test]
+    public function resolveRecordReturnsNoUidsForANonPositiveUid(): void
+    {
+        $tab = new RecordsTab($this->queryHelperThatMustNotBeCalled(), self::createStub(PackageManager::class));
+
+        $uids = $tab->resolvePageUids(new Token('record', ['pages:0'], 'record:pages:0'), $this->context());
+
+        self::assertSame([], $uids);
+    }
+
     /**
      * @param list<PackageInterface> $activePackages
      */
@@ -140,6 +162,20 @@ final class RecordsTabTest extends TestCase
         $packageManager->method('getActivePackages')->willReturn($activePackages);
 
         return new RecordsTab($queryHelper, $packageManager);
+    }
+
+    private function queryHelperThatMustNotBeCalled(): ContentQueryHelper&MockObject
+    {
+        $queryHelper = $this->createMock(ContentQueryHelper::class);
+        $queryHelper->expects(self::never())->method('getPageUidsWithRecords');
+        $queryHelper->expects(self::never())->method('createQueryBuilder');
+
+        return $queryHelper;
+    }
+
+    private function context(): FilterContext
+    {
+        return new FilterContext(self::createStub(BackendUserAuthentication::class), 0);
     }
 
     private function fakePackage(string $key, ?string $title): PackageInterface

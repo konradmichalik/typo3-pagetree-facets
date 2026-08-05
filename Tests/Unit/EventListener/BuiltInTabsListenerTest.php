@@ -20,6 +20,7 @@ use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Package\PackageManager;
@@ -57,10 +58,29 @@ final class BuiltInTabsListenerTest extends TestCase
         self::assertContains('raw', $this->registeredIdentifiers(enableRawQueryTab: true));
     }
 
+    #[Test]
+    public function rawQueryTabIsNotRegisteredWhenExtensionConfigurationThrows(): void
+    {
+        $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
+        $extensionConfiguration->method('get')->willThrowException(new RuntimeException('broken configuration'));
+
+        self::assertNotContains('raw', $this->registeredIdentifiers(enableRawQueryTab: false, extensionConfiguration: $extensionConfiguration));
+    }
+
+    #[Test]
+    public function seoTabIsRegisteredWhenExtSeoIsLoaded(): void
+    {
+        $packageManager = self::createStub(PackageManager::class);
+        $packageManager->method('isPackageActive')->willReturnCallback(static fn (string $key): bool => 'seo' === $key);
+        ExtensionManagementUtility::setPackageManager($packageManager);
+
+        self::assertContains('seo', $this->registeredIdentifiers(enableRawQueryTab: false));
+    }
+
     /**
      * @return list<string>
      */
-    private function registeredIdentifiers(bool $enableRawQueryTab): array
+    private function registeredIdentifiers(bool $enableRawQueryTab, ?ExtensionConfiguration $extensionConfiguration = null): array
     {
         $queryHelper = new ContentQueryHelper(
             self::createStub(ConnectionPool::class),
@@ -70,10 +90,12 @@ final class BuiltInTabsListenerTest extends TestCase
         $packageManager = self::createStub(PackageManager::class);
         $packageManager->method('getActivePackages')->willReturn([]);
 
-        $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
-        $extensionConfiguration->method('get')->willReturnCallback(
-            static fn (string $extension, string $path = ''): string => 'enableRawQueryTab' === $path ? ($enableRawQueryTab ? '1' : '0') : '',
-        );
+        if (null === $extensionConfiguration) {
+            $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
+            $extensionConfiguration->method('get')->willReturnCallback(
+                static fn (string $extension, string $path = ''): string => 'enableRawQueryTab' === $path ? ($enableRawQueryTab ? '1' : '0') : '',
+            );
+        }
 
         $listener = new BuiltInTabsListener(
             new ContentElementTab($queryHelper),

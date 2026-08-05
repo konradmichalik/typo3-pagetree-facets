@@ -17,7 +17,9 @@ use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
+use TYPO3\CMS\Core\Schema\Field\FieldCollection;
+use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -95,5 +97,36 @@ final class ContentQueryHelperTest extends FunctionalTestCase
     public function pageUidsWithRecordsWithoutMatchingRowsIsEmpty(): void
     {
         self::assertSame([], $this->subject->getPageUidsWithRecords('tt_content', $this->context, 'CType = \'nonexistent\''));
+    }
+
+    #[Test]
+    public function textMatchReturnsNothingForAnEmptyNeedle(): void
+    {
+        self::assertSame([], $this->subject->getPageUidsWithTextMatch('pages', '', $this->context));
+        self::assertSame([], $this->subject->getPageUidsWithTextMatch('pages', '   ', $this->context));
+    }
+
+    #[Test]
+    public function textMatchReturnsNothingWhenTheTableHasNoSearchableFields(): void
+    {
+        $subject = new ContentQueryHelper($this->get(ConnectionPool::class), $this->noSearchableFields());
+
+        self::assertSame([], $subject->getPageUidsWithTextMatch('pages', 'Solar', $this->context));
+    }
+
+    #[Test]
+    public function matchingPageUidsReturnsNothingForANonNumericNeedleWithoutSearchableFields(): void
+    {
+        $subject = new ContentQueryHelper($this->get(ConnectionPool::class), $this->noSearchableFields());
+
+        self::assertSame([], $subject->getMatchingPageUids('nonexistent-and-non-numeric', $this->context));
+    }
+
+    private function noSearchableFields(): SearchableSchemaFieldsCollector
+    {
+        $fieldsCollector = self::createStub(SearchableSchemaFieldsCollector::class);
+        $fieldsCollector->method('getFields')->willReturn(new FieldCollection());
+
+        return $fieldsCollector;
     }
 }

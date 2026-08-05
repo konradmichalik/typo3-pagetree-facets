@@ -74,4 +74,12 @@ final class RawQueryTabTest extends AbstractTabTestCase
     {
         self::assertSame([], $this->resolve($this->get(RawQueryTab::class), 'raw:unknown_table_xyz|foo=bar'));
     }
+
+    #[Test]
+    public function segmentsWithoutAnyValidFieldValuePairResolveToNoMatches(): void
+    {
+        // "noEqualsSign" has no '=' at all - must not silently widen to "any
+        // record of table" the way a bare table (no segments) intentionally does.
+        self::assertSame([], $this->resolve($this->get(RawQueryTab::class), 'raw:tt_content|noEqualsSign'));
+    }
 }

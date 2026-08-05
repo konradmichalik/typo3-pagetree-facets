@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Controller;
 
 use KonradMichalik\PagetreeFacets\Controller\FacetsModalController;
+use KonradMichalik\PagetreeFacets\Service\SessionFilterService;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
 use TYPO3\CMS\Core\Http\{PropagateResponseException, ServerRequest};
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -33,13 +35,14 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     ];
 
     private FacetsModalController $subject;
+    private BackendUserAuthentication $backendUser;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__.'/../Fixtures/be_users.csv');
-        $backendUser = $this->setUpBackendUser(1);
-        $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($backendUser);
+        $this->backendUser = $this->setUpBackendUser(1);
+        $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($this->backendUser);
         $this->subject = $this->get(FacetsModalController::class);
     }
 
@@ -256,6 +259,29 @@ final class FacetsModalControllerTest extends FunctionalTestCase
         $removeRequest = (new ServerRequest())->withParsedBody(['index' => 0]);
         $payload = $this->decode($this->subject->removeFavorite($removeRequest));
         self::assertSame([], $payload['favorites']);
+    }
+
+    #[Test]
+    public function persistIsANoOpWhenTheSettingIsOff(): void
+    {
+        $request = (new ServerRequest())->withParsedBody(['phrase' => 'doktype:1']);
+
+        $payload = $this->decode($this->subject->persist($request));
+
+        self::assertSame(['ok' => true], $payload);
+        self::assertSame('', $this->get(SessionFilterService::class)->get($this->backendUser));
+    }
+
+    #[Test]
+    public function persistStoresThePhraseInTheSessionWhenEnabled(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['persistFilter'] = '1';
+        $request = (new ServerRequest())->withParsedBody(['phrase' => ' doktype:1 is:empty ']);
+
+        $payload = $this->decode($this->subject->persist($request));
+
+        self::assertSame(['ok' => true], $payload);
+        self::assertSame('doktype:1 is:empty', $this->get(SessionFilterService::class)->get($this->backendUser));
     }
 
     private function enableRawQueryTab(): void

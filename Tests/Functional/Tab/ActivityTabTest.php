@@ -74,4 +74,25 @@ final class ActivityTabTest extends AbstractTabTestCase
         self::assertSame([2], $this->resolve($this->get(ActivityTab::class), 'by:2'));
         self::assertSame([], $this->resolve($this->get(ActivityTab::class), 'createdby:2'));
     }
+
+    #[Test]
+    public function anInvalidPresetFormatResolvesToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(ActivityTab::class), 'updated:bogus'));
+        self::assertSame([], $this->resolve($this->get(ActivityTab::class), 'created:bogus'));
+    }
+
+    #[Test]
+    public function byIgnoresANonPositiveUserId(): void
+    {
+        self::assertSame([], $this->resolve($this->get(ActivityTab::class), 'by:0'));
+    }
+
+    #[Test]
+    public function monthPresetUnitCalculatesTheThreshold(): void
+    {
+        // Same fresh/stale fixture semantics as the day-based preset above -
+        // only the unit conversion ('m' => 86400 * 30) differs.
+        self::assertSame([2], $this->resolve($this->get(ActivityTab::class), 'created:<1m'));
+    }
 }

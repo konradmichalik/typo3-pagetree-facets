@@ -73,4 +73,10 @@ final class PageStateTabTest extends AbstractTabTestCase
     {
         self::assertSame([2, 8], $this->resolve($this->get(PageStateTab::class), 'is:empty,hidden'));
     }
+
+    #[Test]
+    public function anUnknownStateValueResolvesToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(PageStateTab::class), 'is:bogus'));
+    }
 }
