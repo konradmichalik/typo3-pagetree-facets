@@ -720,6 +720,11 @@
     margin-top: 0.5rem;
 }
 
+/* The explicit display wins over the UA's [hidden] rule, so restate it. */
+.pagetree-facets__favorite-form[hidden] {
+    display: none;
+}
+
 .pagetree-facets__favorite-form input {
     max-width: 16rem;
 }
