@@ -121,6 +121,10 @@ final class ModalConfigurationTest extends AbstractTabTestCase
 
         self::assertContains('tt_content', $tables);
         self::assertContains('pages', $tables);
+        // sys_file* carry ctrl.hideTable in the core TCA - tables the backend
+        // hides from record listings must not show up as a facet either.
+        self::assertNotContains('sys_file_reference', $tables);
+        self::assertNotContains('sys_file_metadata', $tables);
     }
 
     #[Test]

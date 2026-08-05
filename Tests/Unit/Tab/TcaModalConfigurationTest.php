@@ -15,7 +15,7 @@ namespace KonradMichalik\PagetreeFacets\Tests\Unit\Tab;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
-use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab};
+use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab, RecordsTab};
 use KonradMichalik\Ttt\Attribute\WithTca;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -31,7 +31,8 @@ use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
  * Tab\ModalConfigurationTest, which proves the tabs read the *real* TCA - here
  * we pin down the branches that a real TCA cannot produce: a declared but empty
  * item group, an item group missing from itemGroups, an item without a group,
- * and a CType TCA that drops authMode.
+ * a CType TCA that drops authMode, the icon/label fallback chains, and a table
+ * the current user may not select.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -137,6 +138,39 @@ final class TcaModalConfigurationTest extends TestCase
         self::assertSame('', $configuration['fields'][0]['options'][0]['icon']);
     }
 
+    #[Test]
+    #[WithTca('tt_content', ['ctrl' => ['title' => 'Content', 'typeicon_classes' => ['default' => 'icon-content']]])]
+    #[WithTca('tx_example_hidden', ['ctrl' => ['title' => 'Hidden', 'hideTable' => true]])]
+    #[WithTca('tx_example_bare', ['ctrl' => []])]
+    public function recordsTableOptionsSkipHiddenTablesAndFallBackForTitleAndIcon(): void
+    {
+        $configuration = $this->recordsTab()->getModalConfiguration($this->context());
+        $options = array_column($configuration['fields'][0]['options'], null, 'value');
+
+        self::assertArrayNotHasKey('tx_example_hidden', $options, 'ctrl.hideTable excludes a table');
+        self::assertSame('Content', $options['tt_content']['label']);
+        self::assertSame('icon-content', $options['tt_content']['icon']);
+        // No ctrl.title and no typeicon_classes: the table name is the label and
+        // the icon stays empty rather than becoming "0" or null.
+        self::assertSame('tx_example_bare', $options['tx_example_bare']['label']);
+        self::assertSame('', $options['tx_example_bare']['icon']);
+    }
+
+    #[Test]
+    #[WithTca('tt_content', ['ctrl' => ['title' => 'Content']])]
+    #[WithTca('tx_example_denied', ['ctrl' => ['title' => 'Denied']])]
+    public function recordsTableOptionsAreRestrictedByTablesSelect(): void
+    {
+        $backendUser = self::createStub(BackendUserAuthentication::class);
+        $backendUser->method('check')->willReturnCallback(
+            static fn (string $permission, string $table): bool => 'tt_content' === $table,
+        );
+
+        $configuration = $this->recordsTab()->getModalConfiguration(new FilterContext($backendUser, 0));
+
+        self::assertSame(['tt_content'], array_column($configuration['fields'][0]['options'], 'value'));
+    }
+
     private function contentElementTab(): ContentElementTab
     {
         return new ContentElementTab($this->queryHelper());
@@ -145,6 +179,11 @@ final class TcaModalConfigurationTest extends TestCase
     private function doktypeTab(): DoktypeTab
     {
         return new DoktypeTab($this->queryHelper());
+    }
+
+    private function recordsTab(): RecordsTab
+    {
+        return new RecordsTab($this->queryHelper());
     }
 
     /**
