@@ -75,6 +75,14 @@ field) to open the filter modal. Pick criteria by clicking through the tabs on
 the left; each selection appears as a removable chip above the tree, with a
 per-tab count of matching pages, and narrows the tree live as you go.
 
+Prefer typing? The **Token view** toggle (top bar) swaps the freetext field for a
+single editable phrase, kept in two-way sync with the form: edit the tokens and the
+chips, counts and controls follow along — or keep clicking the form and watch the
+phrase update. Applying sends the phrase as-is, so it doubles as a scratchpad for the
+exact string you would type into the tree's own search field. (Editing the form
+re-serialises the phrase, so tokens the form can't represent survive only while you
+edit them in the field directly.)
+
 ![How the filter modal works](.github/assets/screencast.gif)
 
 Under the hood, every filter is a compact token that lands in the tree's
