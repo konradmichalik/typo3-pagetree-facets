@@ -11,6 +11,13 @@
 			<directory>Tests/Unit</directory>
 		</testsuite>
 	</testsuites>
+	<!-- ttt (TYPO3 Testing Terrarium): applies #[WithTca] and friends around each
+	     test and restores the globals afterwards, whether the test passes or errors.
+	     Unit config only - the functional suite runs on typo3/testing-framework,
+	     which bootstraps its own TCA. -->
+	<extensions>
+		<bootstrap class="KonradMichalik\Ttt\TttExtension"/>
+	</extensions>
 	<coverage>
 		<report>
 			<clover outputFile=".Build/coverage/clover.xml"/>
