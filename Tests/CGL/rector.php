@@ -12,7 +12,6 @@ declare(strict_types=1);
  */
 
 use Rector\Config\RectorConfig;
-use Rector\Php81\Rector\FuncCall\NullToStrictStringFuncCallArgRector;
 use Rector\PostRector\Rector\NameImportingPostRector;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector;
@@ -57,7 +56,6 @@ return RectorConfig::configure()
             'ext_tables.php',
             'ClassAliasMap.php',
         ],
-        NullToStrictStringFuncCallArgRector::class,
     ])
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)
