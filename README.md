@@ -34,7 +34,7 @@ a public filter tab API.
 
 ## ✨ Features
 
-- **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (`Ctrl/Cmd+Shift+L`) for a guided UI with active-filter chips and per-tab counts
+- **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>) for a guided UI with active-filter chips and per-tab counts
 - **Built-in filter tabs**: Content elements (`ce:`), Records (`table:` `record:` `text:`), Activity (`updated:` `created:` `by:` `createdby:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:` `translated:`), SEO (`seo:`, requires EXT:seo)
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
 - **Sharable links, session persistence and favorites**: copy the current filter as a link, have it survive a reload for the session, or save it as a named favorite for later
@@ -70,7 +70,7 @@ Download the zip file from [TYPO3 extension repository (TER)](https://extensions
 
 ## 📖 How it works
 
-Press `Ctrl/Cmd+Shift+L` (or use the toolbar button next to the tree's search
+Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> (or use the toolbar button next to the tree's search
 field) to open the filter modal. Pick criteria by clicking through the tabs on
 the left; each selection appears as a removable chip above the tree, with a
 per-tab count of matching pages, and narrows the tree live as you go.
@@ -92,7 +92,7 @@ Freetext without a `key:` prefix behaves like the core title/UID search, and
 unknown tokens are ignored.
 
 > [!NOTE]
-> This is not the global backend search (the toolbar magnifier / `Cmd/Ctrl+K`).
+> This is not the global backend search (the toolbar magnifier / <kbd>Cmd</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd>).
 > That one finds individual records, pages and modules and jumps you to them; this
 > extension narrows the **page tree** to the pages matching structured criteria.
 > Two different jobs — use the toolbar search to locate one thing, this to reshape
