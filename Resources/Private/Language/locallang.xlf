@@ -49,7 +49,8 @@
 			<trans-unit id="translations.untranslated"><source>Translation missing in</source></trans-unit>
 			<trans-unit id="translations.translated"><source>Translation exists in</source></trans-unit>
 			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
-			<trans-unit id="records.table"><source>Pages containing records of table</source></trans-unit>
+			<trans-unit id="records.group.core"><source>TYPO3 Core</source></trans-unit>
+			<trans-unit id="records.group.other"><source>Other</source></trans-unit>
 			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>
 			<trans-unit id="records.text.placeholder"><source>e.g. a headline or body text</source></trans-unit>
 			<trans-unit id="activity.updated"><source>Last updated</source></trans-unit>

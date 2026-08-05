@@ -67,6 +67,9 @@ final class BuiltInTabsListenerTest extends TestCase
             self::createStub(SearchableSchemaFieldsCollector::class),
         );
 
+        $packageManager = self::createStub(PackageManager::class);
+        $packageManager->method('getActivePackages')->willReturn([]);
+
         $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
         $extensionConfiguration->method('get')->willReturnCallback(
             static fn (string $extension, string $path = ''): string => 'enableRawQueryTab' === $path ? ($enableRawQueryTab ? '1' : '0') : '',
@@ -74,7 +77,7 @@ final class BuiltInTabsListenerTest extends TestCase
 
         $listener = new BuiltInTabsListener(
             new ContentElementTab($queryHelper),
-            new RecordsTab($queryHelper),
+            new RecordsTab($queryHelper, $packageManager),
             new ActivityTab($queryHelper),
             new DoktypeTab($queryHelper),
             new PageStateTab($queryHelper),

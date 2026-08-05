@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
 
 /**
@@ -145,15 +146,24 @@ final class TcaModalConfigurationTest extends TestCase
     public function recordsTableOptionsSkipHiddenTablesAndFallBackForTitleAndIcon(): void
     {
         $configuration = $this->recordsTab()->getModalConfiguration($this->context());
-        $options = array_column($configuration['fields'][0]['options'], null, 'value');
 
-        self::assertArrayNotHasKey('tx_example_hidden', $options, 'ctrl.hideTable excludes a table');
-        self::assertSame('Content', $options['tt_content']['label']);
-        self::assertSame('icon-content', $options['tt_content']['icon']);
+        // With bucketing, table options are spread across multiple fields.
+        // Gather all options from all table-named fields.
+        $allOptions = [];
+        foreach ($configuration['fields'] as $field) {
+            if ('table' === $field['name']) {
+                $tableOptions = array_column($field['options'], null, 'value');
+                $allOptions = array_merge($allOptions, $tableOptions);
+            }
+        }
+
+        self::assertArrayNotHasKey('tx_example_hidden', $allOptions, 'ctrl.hideTable excludes a table');
+        self::assertSame('Content', $allOptions['tt_content']['label']);
+        self::assertSame('icon-content', $allOptions['tt_content']['icon']);
         // No ctrl.title and no typeicon_classes: the table name is the label and
         // the icon stays empty rather than becoming "0" or null.
-        self::assertSame('tx_example_bare', $options['tx_example_bare']['label']);
-        self::assertSame('', $options['tx_example_bare']['icon']);
+        self::assertSame('tx_example_bare', $allOptions['tx_example_bare']['label']);
+        self::assertSame('', $allOptions['tx_example_bare']['icon']);
     }
 
     #[Test]
@@ -168,7 +178,15 @@ final class TcaModalConfigurationTest extends TestCase
 
         $configuration = $this->recordsTab()->getModalConfiguration(new FilterContext($backendUser, 0));
 
-        self::assertSame(['tt_content'], array_column($configuration['fields'][0]['options'], 'value'));
+        // With bucketing, gather all table values from all table-named fields.
+        $allTableValues = [];
+        foreach ($configuration['fields'] as $field) {
+            if ('table' === $field['name']) {
+                $allTableValues = array_merge($allTableValues, array_column($field['options'], 'value'));
+            }
+        }
+
+        self::assertSame(['tt_content'], $allTableValues);
     }
 
     private function contentElementTab(): ContentElementTab
@@ -183,7 +201,10 @@ final class TcaModalConfigurationTest extends TestCase
 
     private function recordsTab(): RecordsTab
     {
-        return new RecordsTab($this->queryHelper());
+        $packageManager = self::createStub(PackageManager::class);
+        $packageManager->method('getActivePackages')->willReturn([]);
+
+        return new RecordsTab($this->queryHelper(), $packageManager);
     }
 
     /**

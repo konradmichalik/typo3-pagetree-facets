@@ -14,7 +14,14 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tab;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeFacets\Token\Token;
+use TYPO3\CMS\Core\Package\{PackageInterface, PackageManager};
+
+use function in_array;
+use function sprintf;
+use function str_starts_with;
+use function strlen;
 
 /**
  * RecordsTab.
@@ -31,6 +38,16 @@ use KonradMichalik\PagetreeFacets\Token\Token;
  */
 final class RecordsTab extends AbstractPagesQueryTab
 {
+    private const array CORE_TABLES = ['pages', 'tt_content'];
+    private const array CORE_TABLE_PREFIXES = ['sys_', 'be_', 'fe_'];
+
+    public function __construct(
+        ContentQueryHelper $queryHelper,
+        private readonly PackageManager $packageManager,
+    ) {
+        parent::__construct($queryHelper);
+    }
+
     public function getIdentifier(): string
     {
         return 'records';
@@ -67,13 +84,20 @@ final class RecordsTab extends AbstractPagesQueryTab
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:records.';
-        $options = [];
+        $extensionBuckets = $this->extensionBuckets();
+
+        $buckets = [];
+        $bucketLabels = [];
         foreach (array_keys($GLOBALS['TCA'] ?? []) as $tableKey) {
             $table = (string) $tableKey;
             if (!$this->isAllowedTable($table, $context) || true === ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
                 continue;
             }
-            $options[] = [
+            $bucketKey = $this->bucketKeyForTable($table, $extensionBuckets);
+            if (!isset($bucketLabels[$bucketKey])) {
+                $bucketLabels[$bucketKey] = $this->bucketLabel($bucketKey, $extensionBuckets, $lll);
+            }
+            $buckets[$bucketKey][] = [
                 'value' => $table,
                 'label' => (string) ($GLOBALS['TCA'][$table]['ctrl']['title'] ?? $table),
                 // Table icons from TCA ctrl typeicon_classes.
@@ -81,12 +105,87 @@ final class RecordsTab extends AbstractPagesQueryTab
             ];
         }
 
+        $tableFields = [];
+        foreach ($buckets as $bucketKey => $options) {
+            $tableFields[] = [
+                'type' => 'checkbox-group',
+                'name' => 'table',
+                'label' => $bucketLabels[$bucketKey],
+                'options' => $options,
+            ];
+        }
+
         return [
             'fields' => [
-                ['type' => 'checkbox-group', 'name' => 'table', 'label' => $lll.'table', 'options' => $options],
+                ...$tableFields,
                 ['type' => 'text', 'name' => 'text', 'label' => $lll.'text', 'placeholder' => $lll.'text.placeholder', 'options' => []],
             ],
         ];
+    }
+
+    /**
+     * Active packages, pre-computed once per getModalConfiguration() call - not
+     * cached across calls (deliberately, see the design spec: negligible cost).
+     *
+     * @return array<string, array{prefix: string, package: PackageInterface}>
+     */
+    private function extensionBuckets(): array
+    {
+        $buckets = [];
+        foreach ($this->packageManager->getActivePackages() as $package) {
+            $extensionKey = $package->getPackageKey();
+            $buckets[$extensionKey] = [
+                'prefix' => 'tx_'.str_replace('_', '', $extensionKey).'_',
+                'package' => $package,
+            ];
+        }
+
+        return $buckets;
+    }
+
+    /**
+     * @param array<string, array{prefix: string, package: PackageInterface}> $extensionBuckets
+     */
+    private function bucketKeyForTable(string $table, array $extensionBuckets): string
+    {
+        if (in_array($table, self::CORE_TABLES, true)) {
+            return 'core';
+        }
+        foreach (self::CORE_TABLE_PREFIXES as $corePrefix) {
+            if (str_starts_with($table, $corePrefix)) {
+                return 'core';
+            }
+        }
+
+        $bestExtensionKey = null;
+        $bestPrefixLength = 0;
+        foreach ($extensionBuckets as $extensionKey => $bucket) {
+            if (str_starts_with($table, $bucket['prefix']) && strlen($bucket['prefix']) > $bestPrefixLength) {
+                $bestExtensionKey = $extensionKey;
+                $bestPrefixLength = strlen($bucket['prefix']);
+            }
+        }
+
+        return $bestExtensionKey ?? 'other';
+    }
+
+    /**
+     * @param array<string, array{prefix: string, package: PackageInterface}> $extensionBuckets
+     */
+    private function bucketLabel(string $bucketKey, array $extensionBuckets, string $lll): string
+    {
+        return match ($bucketKey) {
+            'core' => $lll.'group.core',
+            'other' => $lll.'group.other',
+            default => $this->extensionBucketLabel($bucketKey, $extensionBuckets[$bucketKey]['package'] ?? null),
+        };
+    }
+
+    private function extensionBucketLabel(string $extensionKey, ?PackageInterface $package): string
+    {
+        $title = $package?->getPackageMetaData()->getTitle();
+
+        return (null !== $title && '' !== $title) ? sprintf('%s (%s)', $title, $extensionKey) : $extensionKey;
     }
 
     /**
