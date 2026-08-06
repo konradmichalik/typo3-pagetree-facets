@@ -105,10 +105,16 @@ class FacetsToolbar {
   // (confirmed live: the param was still in location.href 12+ seconds after
   // load, with no further popstate/hashchange in between - the router's
   // replaceState is a same-document navigation that fires none of those).
-  // `typo3-module-loaded` is what the router dispatches (bubbling to
-  // document, per its own source) immediately after every one of its
-  // replaceState calls, in every code path that makes one - listening there
-  // lets us clean up right after the fact instead of guessing at a delay.
+  // The router's "typo3-iframe-load" handler also calls updateBrowserState
+  // and then dispatches "typo3-module-load" (no "-ed") - a separate event we
+  // deliberately don't listen for. We hook "typo3-module-loaded" instead,
+  // dispatched (bubbling to document) right after the "typo3-iframe-loaded"
+  // reconstruction, which is the one that lands last for a completed
+  // navigation - listening there lets us clean up right after the fact
+  // instead of guessing at a delay. If the iframe never reaches "loaded" (a
+  // navigation that starts but never completes), this re-scrub never fires
+  // either - a real but unlikely gap, since the tree/URL wouldn't have
+  // settled on anything worth scrubbing in that case anyway.
   #scrubShareParam() {
     const strip = () => {
       const url = new URL(window.location.href);
