@@ -419,6 +419,38 @@ class FacetsModal {
         list.append(this.#renderNavItem(tab));
       }
     }
+
+    // Roving tabindex (see #switchTab): only the active item is a tab stop, so a
+    // single Tab out of the navigation reaches the panel instead of walking past
+    // every remaining tab first. Arrows then move within the navigation.
+    //
+    // Deliberately NOT role="tablist": that role admits only tabs as children,
+    // and this navigation interleaves group headings, so claiming it would
+    // promise a structure we cannot honour. A list of buttons with a roving tab
+    // stop is the honest description, and arrow support is what makes it usable.
+    list.addEventListener('keydown', (event) => {
+      const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+      if (undefined === step && !['Home', 'End'].includes(event.key)) {
+        return;
+      }
+      // Empty tabs are disabled and the favorites item hides itself while there
+      // is nothing saved - neither may swallow an arrow press.
+      const items = [...this.#modal.querySelectorAll('.pagetree-facets__nav-item')]
+        .filter((item) => !item.disabled && true !== item.closest('li')?.hidden);
+      if (0 === items.length) {
+        return;
+      }
+      event.preventDefault();
+      const current = items.indexOf(event.target.closest('.pagetree-facets__nav-item'));
+      const next = 'Home' === event.key
+        ? 0
+        : ('End' === event.key ? items.length - 1 : (current + step + items.length) % items.length);
+      items[next].focus();
+      // Automatic activation: the panels are already in the DOM, so switching as
+      // the user arrows costs nothing and makes browsing them immediate.
+      this.#switchTab(items[next].dataset.tab);
+    });
+
     nav.append(list);
     return nav;
   }
@@ -433,6 +465,10 @@ class FacetsModal {
       + (empty ? ' is-empty' : '');
     button.dataset.tab = tab.identifier;
     button.disabled = empty;
+    if (tab.identifier === this.#activeTab) {
+      button.setAttribute('aria-current', 'true');
+    }
+    button.tabIndex = tab.identifier === this.#activeTab ? 0 : -1;
     if (empty) {
       button.title = TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available';
     }
@@ -442,7 +478,7 @@ class FacetsModal {
     text.textContent = tab.label;
     button.append(text);
     if (!empty) {
-      button.addEventListener('click', () => this.#switchTab(tab.identifier));
+      button.addEventListener('click', () => this.#switchTab(tab.identifier, true));
     }
     item.append(button);
     return item;
@@ -509,12 +545,22 @@ class FacetsModal {
         panel.hidden = panel.dataset.panel !== this.#activeTab;
       });
       this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
-        item.classList.toggle('active', item.dataset.tab === this.#activeTab);
+        const isActive = item.dataset.tab === this.#activeTab;
+        item.classList.toggle('active', isActive);
+        if (isActive) {
+          item.setAttribute('aria-current', 'true');
+        }
       });
       return;
     }
     this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => { panel.hidden = true; });
-    this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => item.classList.remove('active'));
+    // Search mode has no current tab, so aria-current has to go with the styling -
+    // otherwise it would keep announcing a tab that is no longer shown. The roving
+    // tab stop deliberately stays put: it remains the way back into the nav.
+    this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
+      item.classList.remove('active');
+      item.removeAttribute('aria-current');
+    });
     this.#renderSearchResults(this.#findFilterMatches(trimmed));
     this.#resultsPanel.hidden = false;
   }
@@ -1209,10 +1255,14 @@ class FacetsModal {
     button.className = 'pagetree-facets__nav-item'
       + (this.#favoritesTabId === this.#activeTab ? ' active' : '');
     button.dataset.tab = this.#favoritesTabId;
+    if (this.#favoritesTabId === this.#activeTab) {
+      button.setAttribute('aria-current', 'true');
+    }
+    button.tabIndex = this.#favoritesTabId === this.#activeTab ? 0 : -1;
     const text = document.createElement('span');
     text.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
     button.append(text);
-    button.addEventListener('click', () => this.#switchTab(this.#favoritesTabId));
+    button.addEventListener('click', () => this.#switchTab(this.#favoritesTabId, true));
     item.append(button);
     return item;
   }
@@ -1380,7 +1430,13 @@ class FacetsModal {
       || '' !== state.freetext.trim();
   }
 
-  #switchTab(identifier) {
+  /**
+   * @param {boolean} activated - true when the user picked this tab outright
+   *   (click, Enter, Space) rather than arrowing onto it. Only then does focus
+   *   move on into the panel: while arrow-browsing it has to stay in the
+   *   navigation, or the next arrow press would have nothing to move from.
+   */
+  #switchTab(identifier, activated = false) {
     this.#activeTab = identifier;
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
@@ -1390,11 +1446,40 @@ class FacetsModal {
     }
     this.#resultsPanel.hidden = true;
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
-      el.classList.toggle('active', el.dataset.tab === identifier);
+      const isActive = el.dataset.tab === identifier;
+      el.classList.toggle('active', isActive);
+      // The active item is the navigation's single tab stop, which is what makes
+      // one Tab press land in the panel (see the keydown handler in
+      // #renderNavigation). aria-current carries the same state for assistive
+      // technology, since without role="tab" there is no aria-selected to set.
+      el.tabIndex = isActive ? 0 : -1;
+      if (isActive) {
+        el.setAttribute('aria-current', 'true');
+      } else {
+        el.removeAttribute('aria-current');
+      }
     });
     this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((el) => {
       el.hidden = el.dataset.panel !== identifier;
     });
+
+    if (!activated) {
+      return;
+    }
+    // Runs after the panel was unhidden above - offsetParent is only meaningful
+    // once it is actually rendered, and controls behind a proxy (the visually
+    // hidden switch inputs) must not swallow the focus.
+    const panel = this.#modal.querySelector(`.pagetree-facets__panel[data-panel="${identifier}"]`);
+    const target = [...panel?.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [tabindex]:not([tabindex="-1"])') ?? []]
+      .find((el) => !el.disabled && null !== el.offsetParent);
+    if (target) {
+      target.focus();
+    } else if (panel) {
+      // An options-less panel (e.g. favorites before anything is saved) still has
+      // to receive focus, or activating it would leave focus behind in the nav.
+      panel.tabIndex = -1;
+      panel.focus();
+    }
   }
 
   // Coalesce per-keystroke refreshes: the full pass below walks every control
