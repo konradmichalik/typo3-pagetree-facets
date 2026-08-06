@@ -13,10 +13,11 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
+use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
 use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageAncestryService, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
-use KonradMichalik\PagetreeFacets\Token\TokenParser;
+use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -107,6 +108,64 @@ final class PageTreeFilterListenerTest extends TestCase
     }
 
     #[Test]
+    public function aLiterallyRepeatedTokenIsResolvedOnlyOnce(): void
+    {
+        $countingTab = new class implements FilterTabInterface {
+            public int $resolveCalls = 0;
+
+            public function getIdentifier(): string
+            {
+                return 'doktype';
+            }
+
+            public function getLabel(): string
+            {
+                return 'doktype';
+            }
+
+            public function getGroup(): ?string
+            {
+                return null;
+            }
+
+            public function getTokenKeys(): array
+            {
+                return ['doktype'];
+            }
+
+            public function resolvePageUids(Token $token, FilterContext $context): array
+            {
+                ++$this->resolveCalls;
+
+                return [10, 20, 30, 40];
+            }
+
+            public function getModalConfiguration(FilterContext $context): array
+            {
+                return ['fields' => []];
+            }
+
+            public function serialize(array $modalState): array
+            {
+                return [];
+            }
+
+            public function hydrate(array $tokens): array
+            {
+                return [];
+            }
+        };
+
+        $event = $this->createEvent('doktype:1 doktype:1');
+        $this->createListener(doktypeTab: $countingTab)($event);
+
+        // ANDing a set with itself is a no-op, so the duplicate must not
+        // trigger a second resolution (each one is a real query in production).
+        self::assertSame(1, $countingTab->resolveCalls);
+        self::assertSame([10, 20, 30, 40], $event->searchUids);
+    }
+
+    #[Test]
     public function unknownTokensAreIgnoredWhileKnownOnesApply(): void
     {
         $event = $this->createEvent('doktype:1 status:3');
@@ -190,9 +249,9 @@ final class PageTreeFilterListenerTest extends TestCase
      * @param array<string, string>    $extensionConfiguration
      * @param array<string, list<int>> $freetextUids
      */
-    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = []): PageTreeFilterListener
+    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = [], ?FilterTabInterface $doktypeTab = null): PageTreeFilterListener
     {
-        $doktypeTab = new StubFilterTab('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
+        $doktypeTab ??= new StubFilterTab('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
         $stateTab = new StubFilterTab('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
 
         $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);

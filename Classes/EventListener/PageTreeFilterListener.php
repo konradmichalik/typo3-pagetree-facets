@@ -83,10 +83,7 @@ final readonly class PageTreeFilterListener
             return; // only unknown/scope tokens -> behave like core
         }
 
-        $uids = array_shift($uidSets);
-        foreach ($uidSets as $set) {
-            $uids = array_values(array_intersect($uids, $set));
-        }
+        $uids = $this->intersect($uidSets);
 
         // Site scope: post-filter the (small) result set instead of
         // materializing the site subtree upfront.
@@ -103,6 +100,30 @@ final readonly class PageTreeFilterListener
         }
 
         $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
+    }
+
+    /**
+     * Hash-based AND intersection: array_intersect() sorts both sides
+     * (O(n log n) per pair), which adds up on the 10k+ UID sets broad criteria
+     * produce. An empty running result ends the loop - every further AND
+     * stays empty.
+     *
+     * @param non-empty-list<list<int>> $uidSets
+     *
+     * @return list<int>
+     */
+    private function intersect(array $uidSets): array
+    {
+        $uids = array_shift($uidSets);
+        foreach ($uidSets as $set) {
+            if ([] === $uids) {
+                break;
+            }
+            $lookup = array_flip($set);
+            $uids = array_values(array_filter($uids, static fn (int $uid): bool => isset($lookup[$uid])));
+        }
+
+        return $uids;
     }
 
     /**
@@ -129,7 +150,15 @@ final readonly class PageTreeFilterListener
         }
 
         $uidSets = [];
+        $seen = [];
         foreach ($tokens as $token) {
+            // A literally repeated token ("doktype:1 doktype:1") resolves to
+            // the same set, and ANDing a set with itself is a no-op - skip the
+            // duplicate query instead.
+            if (isset($seen[$token->raw])) {
+                continue;
+            }
+            $seen[$token->raw] = true;
             if ($token->isFreetext()) {
                 $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
                 continue;
