@@ -5,6 +5,7 @@
  */
 import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
+import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 
 /**
@@ -28,6 +29,13 @@ class FacetsModal {
   #actions = null;
   #applyButton = null;
   #baselineState = null;
+  // Shown while the selection differs from what the tree is actually filtered
+  // by. Injected into the modal's own footer, so it lives outside our content
+  // DOM - see the call site in open() for why that is safe.
+  #pendingNotice = null;
+  // One-shot escape hatch for the close guard: the apply paths close the modal
+  // themselves while the state still counts as dirty (see #apply).
+  #skipCloseGuard = false;
   // Token view: the raw phrase becomes editable in the top bar and stays in
   // two-way sync with the (still editable) form. #currentPhrase is the phrase
   // already applied to the tree - the Apply baseline this mode diffs against,
@@ -63,6 +71,14 @@ class FacetsModal {
     this.#onApply = onApply;
     this.#currentPageId = currentPageId;
     this.#currentPhrase = currentPhrase ?? '';
+    // This class is exported as a singleton, so every field outlives the modal
+    // it belonged to. The baseline is re-established on 'shown' below; until
+    // then a null baseline keeps #isDirty() false, so closing the modal again
+    // right away cannot be misread as a pending selection.
+    this.#baselineState = null;
+    this.#skipCloseGuard = false;
+    // Points into the previous modal's (now detached) footer until re-created.
+    this.#pendingNotice = null;
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
@@ -103,6 +119,17 @@ class FacetsModal {
           this.#serializeAndApply();
         }
       });
+      // The notice talks about the Apply button, so it belongs beside it, in the
+      // modal's own footer rather than in our content. That footer is Lit-
+      // rendered, but its children are a single array part for the buttons,
+      // bounded by marker comments - prepending lands outside that range, so a
+      // button re-render cannot displace the node. `t3js-` is core's own
+      // convention for "JavaScript may target this". Should the markup ever
+      // change, the optional chaining leaves #pendingNotice null and the notice
+      // simply stays absent; the close guard, which is the actual safety net,
+      // does not depend on it.
+      this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
+
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
       this.#refreshActiveIndicators();
@@ -115,6 +142,18 @@ class FacetsModal {
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
     });
+    // Core fires this cancelable (doHideModal() bails on defaultPrevented) and
+    // routes every close through it - Close button, ESC, the X and a backdrop
+    // click all end up in doHideModal() - so one listener covers them all.
+    this.#modal.addEventListener('typo3-modal-hide', (event) => {
+      if (this.#skipCloseGuard || !this.#isDirty()) {
+        return;
+      }
+      event.preventDefault();
+      this.#confirmPendingSelection();
+    });
+    // Only fired after an actual close, so an intercepted one keeps the modal's
+    // state (timers, open dropdowns) intact - which is what the guard needs.
     this.#modal.addEventListener('typo3-modal-hidden', () => this.#teardown());
   }
 
@@ -223,10 +262,11 @@ class FacetsModal {
     this.#utility.append(this.#actions);
     header.append(this.#utility, saveForm);
 
-    // Active-filter row: the removable chips mirroring the current tab criteria.
-    // It stays present at all times - with no filters it holds a random usage
-    // hint instead of chips, so the header keeps its height and nothing below
-    // jumps as the first filter activates.
+    // Selection row: the removable chips mirroring the currently *selected* tab
+    // criteria - selected, not necessarily applied, which is what the pending
+    // notice in the footer spells out. It stays present at all times - with no
+    // criteria it holds a random usage hint instead of chips, so the header keeps
+    // its height and nothing below jumps as the first filter activates.
     this.#active = document.createElement('div');
     this.#active.className = 'pagetree-facets__active';
 
@@ -572,7 +612,7 @@ class FacetsModal {
 
     const points = [
       ['combine', 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.'],
-      ['chips', 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset".'],
+      ['chips', 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset". Your selection only takes effect once you choose "Apply".'],
       // Only worth explaining while the control it describes is on screen.
       ...(this.#currentPageId
         ? [['scope', '"Search from current page down" limits the result to the page you currently have open and its subpages.']]
@@ -1480,17 +1520,100 @@ class FacetsModal {
     return criteria;
   }
 
-  #refreshApplyState() {
-    if (!this.#applyButton || null === this.#baselineState) {
-      return;
+  // Lives in the modal footer, left of the buttons (see the call site for why
+  // that injection is safe). role=status announces it politely - it reacts to the
+  // user's own action and must not interrupt - and it carries icon and text, so
+  // the state is never conveyed by colour alone.
+  #renderPendingNotice() {
+    this.#pendingNotice = document.createElement('p');
+    this.#pendingNotice.className = 'pagetree-facets__pending';
+    this.#pendingNotice.setAttribute('role', 'status');
+    this.#pendingNotice.hidden = true;
+    const icon = document.createElement('typo3-backend-icon');
+    icon.setAttribute('identifier', 'actions-info-circle');
+    icon.setAttribute('size', 'small');
+    this.#pendingNotice.append(
+      icon,
+      document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.pending']
+        ?? 'Not applied yet — choose "Apply" to filter the page tree.'),
+    );
+
+    return this.#pendingNotice;
+  }
+
+  // Does the current selection differ from the phrase the tree is actually
+  // filtered by? Three things depend on the answer - the Apply button, the
+  // pending notice and the close guard - so this stays the only place that
+  // decides, and they can never disagree.
+  #isDirty() {
+    if (null === this.#baselineState) {
+      return false;
     }
     if (this.#tokenMode) {
       // The form-state baseline no longer describes what is authoritative, so
       // diff the typed phrase against the one already applied to the tree.
-      this.#applyButton.disabled = this.#tokenField.value.trim() === this.#currentPhrase.trim();
+      return this.#tokenField.value.trim() !== this.#currentPhrase.trim();
+    }
+    return JSON.stringify(this.#collectFormState()) !== this.#baselineState;
+  }
+
+  #refreshApplyState() {
+    if (!this.#applyButton || null === this.#baselineState) {
       return;
     }
-    this.#applyButton.disabled = JSON.stringify(this.#collectFormState()) === this.#baselineState;
+    const dirty = this.#isDirty();
+    // Applying an unchanged filter is a no-op, so the button stays disabled
+    // until something actually differs - which also makes it obvious that
+    // picking a criterion is not applying it.
+    this.#applyButton.disabled = !dirty;
+    // Driven by the dirty state, not by whether anything is selected: removing
+    // the last chip empties the selection while the tree is still filtered, and
+    // that case needs the notice most of all.
+    if (this.#pendingNotice) {
+      this.#pendingNotice.hidden = !dirty;
+    }
+  }
+
+  // Closing with a selection that was never applied. Three options rather than a
+  // two-button warning: re-picking a filter is cheap, so a plain "are you sure"
+  // on every ESC would be friction - offering the likely intent as well turns the
+  // interception into a shortcut. Buttons with a `trigger` do not auto-dismiss in
+  // core, so each branch closes the confirmation itself.
+  #confirmPendingSelection() {
+    const confirmation = Modal.confirm(
+      TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.title'] ?? 'Selection not applied',
+      TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.message']
+        ?? 'You picked filter criteria but never applied them, so the page tree is unchanged.',
+      SeverityEnum.warning,
+      [
+        {
+          // ESC and the backdrop close only the confirmation, which lands on this
+          // same branch - the safe one - and leaves the filter modal open.
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.back'] ?? 'Back',
+          btnClass: 'btn-default',
+          trigger: () => { confirmation.hideModal(); },
+        },
+        {
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.discard'] ?? 'Discard',
+          btnClass: 'btn-warning',
+          trigger: () => {
+            confirmation.hideModal();
+            // Without this the guard would intercept the second attempt as well.
+            this.#skipCloseGuard = true;
+            this.#modal?.hideModal();
+          },
+        },
+        {
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply & close',
+          btnClass: 'btn-primary',
+          // #apply() closes the filter modal and sets the guard bypass itself.
+          trigger: () => {
+            confirmation.hideModal();
+            this.#serializeAndApply();
+          },
+        },
+      ],
+    );
   }
 
   // Controls are looked up by name, and a tab may spread one criterion over
@@ -1744,6 +1867,12 @@ class FacetsModal {
   }
 
   #apply(phrase) {
+    // hideModal() runs before #onApply(), and neither #baselineState nor
+    // #currentPhrase is refreshed afterwards - so the state still counts as
+    // dirty here and the close guard would pop its dialog on the apply path
+    // itself. Set in #apply rather than at the call sites so it covers both:
+    // the Apply button (via #serializeAndApply) and applying a favorite.
+    this.#skipCloseGuard = true;
     this.#modal?.hideModal();
     this.#onApply?.(phrase);
   }
