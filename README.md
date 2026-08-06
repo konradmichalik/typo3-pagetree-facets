@@ -242,6 +242,8 @@ The test suite has three layers: PHPUnit (unit + functional), Vitest (JavaScript
 jsdom), and Playwright (end-to-end, against a running ddev instance):
 
 ```bash
+ddev exec npm install                          # first time only
+ddev exec npx playwright install chromium      # first time only
 ddev exec npx playwright test                  # whole E2E suite
 ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
 ```
