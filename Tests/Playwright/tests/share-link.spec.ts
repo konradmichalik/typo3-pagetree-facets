@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { DEMO_PAGES } from '../support/fixtures.js';
+import { waitForTreeFilterApplied } from '../support/wait-for-tree-filter.js';
+import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 const SHARE_PARAM = 'pagetreeFacetsFilter';
 
@@ -12,15 +14,22 @@ test.beforeEach(async ({ context, page, baseURL }) => {
     origin: baseURL ?? '',
   });
   await new BackendPage(page).openModule('web/layout');
+  await waitForPageTreeReady(page);
 });
 
 test('copy link puts the current phrase on the clipboard as a URL parameter', async ({ page }) => {
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
-  await tree.search('doktype:3');
+  await waitForTreeFilterApplied(page, () => tree.search('doktype:3'));
   await modal.open();
   await modal.copyLinkButton().click();
+
+  // #copyLink() computes the phrase and writes to the clipboard through two
+  // awaited async steps; the click only dispatches the event and does not
+  // wait for that work to finish, so reading the clipboard once right after
+  // the click races it. Poll for the write actually landing instead.
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).not.toBe('');
 
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   const url = new URL(copied);

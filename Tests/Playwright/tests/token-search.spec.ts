@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { DEMO_PAGES } from '../support/fixtures.js';
+import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
+  await waitForPageTreeReady(page);
 });
 
 test('a keyed token typed into the tree search narrows the tree', async ({ page }) => {

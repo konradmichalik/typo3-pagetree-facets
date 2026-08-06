@@ -2,9 +2,11 @@ import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { DEMO_PAGES, NO_MATCH_TOKEN } from '../support/fixtures.js';
+import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
+  await waitForPageTreeReady(page);
 });
 
 test('a filter matching nothing shows the empty notice', async ({ page }) => {

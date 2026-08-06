@@ -1,16 +1,19 @@
 import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
+import { waitForTreeFilterApplied } from '../support/wait-for-tree-filter.js';
+import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
+  await waitForPageTreeReady(page);
 });
 
 test('an existing phrase hydrates the modal state', async ({ page }) => {
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
-  await tree.search('doktype:3');
+  await waitForTreeFilterApplied(page, () => tree.search('doktype:3'));
   await modal.open();
 
   await expect(modal.option('doktype', 'doktype', '3')).toBeChecked();
@@ -22,7 +25,7 @@ test('opening and closing the modal does not rewrite the phrase', async ({ page 
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
-  await tree.search('doktype:3');
+  await waitForTreeFilterApplied(page, () => tree.search('doktype:3'));
   await modal.open();
 
   // Apply is deliberately disabled while nothing has changed (see
@@ -40,7 +43,7 @@ test('hydrated state survives a modal edit, freetext included', async ({ page })
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
-  await tree.search('doktype:3 partner');
+  await waitForTreeFilterApplied(page, () => tree.search('doktype:3 partner'));
   await modal.open();
 
   await expect(modal.freetextField()).toHaveValue('partner');
