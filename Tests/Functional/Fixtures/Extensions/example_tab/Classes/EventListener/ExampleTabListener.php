@@ -29,11 +29,13 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
  * ext_localconf.php - the attribute is picked up automatically, as long as the
  * class is autowired in your Configuration/Services.yaml.
  *
- * Priority 110 - deliberately above Content elements' 100 (the highest
- * built-in) so this tab, and its own "custom" group, render first. Tabs sort by
- * priority descending, registration order breaking ties; omitting the argument
- * defaults to 0, which places a tab after every built-in. Nothing stops a
- * third party from positioning itself deliberately, as here. See
+ * No priority argument, so it defaults to 0 - which places the tab after every
+ * built-in (they occupy 100 down to 40, plus 10 for the opt-in raw tab), and with
+ * it the "custom" group heading at the bottom of the navigation. That is the
+ * polite default for a third party and what this example should show. Tabs sort by
+ * priority descending with registration order breaking ties, so passing a number
+ * above 100 would push the tab in front of the built-ins - possible, and
+ * occasionally right, but not something to demonstrate as the norm. See
  * RegisterFilterTabsEvent's docblock for the priority convention.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
@@ -47,6 +49,6 @@ final readonly class ExampleTabListener
 
     public function __invoke(RegisterFilterTabsEvent $event): void
     {
-        $event->addTab($this->exampleTab, 110);
+        $event->addTab($this->exampleTab);
     }
 }
