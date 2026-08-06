@@ -238,6 +238,14 @@ This project is inspired by the great [pagetreefilter](https://github.com/christ
 
 Please have a look at [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+The test suite has three layers: PHPUnit (unit + functional), Vitest (JavaScript unit tests,
+jsdom), and Playwright (end-to-end, against a running ddev instance):
+
+```bash
+ddev exec npx playwright test                  # whole E2E suite
+ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
+```
+
 ## ⭐ License
 
 This project is licensed under [GNU General Public License 2.0 (or later)](LICENSE.md).

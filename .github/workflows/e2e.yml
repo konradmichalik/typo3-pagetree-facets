@@ -1,0 +1,59 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Classes/**'
+      - 'Resources/**'
+      - 'Tests/Playwright/**'
+      - 'Tests/Functional/Fixtures/Extensions/**'
+      - '.ddev/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    paths:
+      - 'Classes/**'
+      - 'Resources/**'
+      - 'Tests/Playwright/**'
+      - 'Tests/Functional/Fixtures/Extensions/**'
+      - '.ddev/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install ddev
+        uses: ddev/github-action-setup-ddev@v1
+
+      - name: Install TYPO3 14
+        run: ddev install 14
+
+      # No `npm ci`: /package-lock.json is gitignored, the same way composer.lock is.
+      - name: Install npm dependencies
+        run: ddev exec npm install
+
+      - name: Install Playwright browsers
+        run: ddev exec npx playwright install --with-deps chromium
+
+      # Environment variables must be arguments to `ddev exec`, not a step-level
+      # `env:` - the latter only sets them on the host runner and never reaches
+      # the container, so CI-specific config (retries, html reporter) would never
+      # activate.
+      - name: Run Playwright tests
+        run: ddev exec env CI=true npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
