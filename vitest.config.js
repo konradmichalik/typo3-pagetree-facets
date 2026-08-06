@@ -26,6 +26,7 @@ export default defineConfig({
       // Stubs exist only where a module under test actually imports core. Each
       // one is a shape, not a simulation - see the stub's own docblock.
       '@typo3/core/ajax/ajax-request.js': path('./Tests/JavaScript/Stubs/typo3/core/ajax/ajax-request.js'),
+      '@typo3/backend/hotkeys.js': path('./Tests/JavaScript/Stubs/typo3/backend/hotkeys.js'),
     },
   },
   test: {
