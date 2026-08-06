@@ -302,10 +302,14 @@
     line-height: 1;
 }
 
+/* Zero padding keeps the action links inside the utility row's 1.5rem
+ * reservation - with .btn-sm's default vertical padding they are taller, so
+ * the row would grow (and shift everything below) when they appear. */
 .pagetree-facets__copy-link,
+.pagetree-facets__favorite-add,
 .pagetree-facets__reset {
     flex: 0 0 auto;
-    padding-inline: 0;
+    padding: 0;
     white-space: nowrap;
 }
 
