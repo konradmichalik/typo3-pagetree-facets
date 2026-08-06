@@ -5,6 +5,7 @@
  */
 import Hotkeys from '@typo3/backend/hotkeys.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
 
 /**
@@ -133,11 +134,12 @@ class FacetsToolbar {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-sm btn-icon btn-default btn-borderless pagetree-facets-toggle';
-    button.title = `${TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree'} (Ctrl/Cmd+Shift+L)`;
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'pagetree-facets');
-    icon.setAttribute('size', 'small');
-    button.append(icon);
+    const buttonLabel = `${TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree'} (Ctrl/Cmd+Shift+L)`;
+    button.title = buttonLabel;
+    // Icon-only, and the icon is hidden from assistive technology - so the name has
+    // to be explicit rather than left to `title`, the weakest source there is.
+    button.setAttribute('aria-label', buttonLabel);
+    button.append(decorativeIcon('pagetree-facets'));
     button.addEventListener('click', () => this.#openModal());
     const search = filterInput.closest('.tree-toolbar__search');
     if (search) {
@@ -254,12 +256,8 @@ class FacetsToolbar {
     adjust.className = 'btn btn-sm btn-default d-inline-flex align-items-center gap-1';
     // The same glyph the toolbar button carries, because it leads to the same
     // place - the filter modal. Decorative: the button's own text is the label.
-    const adjustIcon = document.createElement('typo3-backend-icon');
-    adjustIcon.setAttribute('identifier', 'pagetree-facets');
-    adjustIcon.setAttribute('size', 'small');
-    adjustIcon.setAttribute('aria-hidden', 'true');
     adjust.append(
-      adjustIcon,
+      decorativeIcon('pagetree-facets'),
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.adjust'] ?? 'Adjust filter'),
     );
     // Narrowing the criteria is usually the better way out than starting over,
@@ -271,12 +269,8 @@ class FacetsToolbar {
     reset.type = 'button';
     reset.className = 'btn btn-sm btn-default d-inline-flex align-items-center gap-1';
     // Matches the modal's own "Reset" action, which uses the same icon.
-    const resetIcon = document.createElement('typo3-backend-icon');
-    resetIcon.setAttribute('identifier', 'actions-refresh');
-    resetIcon.setAttribute('size', 'small');
-    resetIcon.setAttribute('aria-hidden', 'true');
     reset.append(
-      resetIcon,
+      decorativeIcon('actions-refresh'),
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter'),
     );
     reset.addEventListener('click', () => {

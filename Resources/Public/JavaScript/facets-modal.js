@@ -10,7 +10,7 @@ import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
-import { clearable } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
@@ -133,11 +133,8 @@ class FacetsModal {
       // header is justify-content:space-between, so a third child there would push
       // the title into the middle instead of leaving it beside the icon.
       // Purely decorative - the title carries the meaning - hence aria-hidden.
-      const brandIcon = document.createElement('typo3-backend-icon');
+      const brandIcon = decorativeIcon('pagetree-facets');
       brandIcon.className = 'pagetree-facets__brand';
-      brandIcon.setAttribute('identifier', 'pagetree-facets');
-      brandIcon.setAttribute('size', 'small');
-      brandIcon.setAttribute('aria-hidden', 'true');
       this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
 
       // The notice talks about the Apply button, so it belongs beside it, in the
@@ -255,21 +252,13 @@ class FacetsModal {
     const copyLink = document.createElement('button');
     copyLink.type = 'button';
     copyLink.className = 'pagetree-facets__copy-link btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-    const copyLinkIcon = document.createElement('typo3-backend-icon');
-    copyLinkIcon.setAttribute('identifier', 'actions-clipboard');
-    copyLinkIcon.setAttribute('size', 'small');
-    copyLinkIcon.setAttribute('aria-hidden', 'true');
-    copyLink.append(copyLinkIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
+    copyLink.append(decorativeIcon('actions-clipboard'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
     copyLink.addEventListener('click', () => this.#copyLink());
 
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'pagetree-facets__reset btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-    const resetIcon = document.createElement('typo3-backend-icon');
-    resetIcon.setAttribute('identifier', 'actions-refresh');
-    resetIcon.setAttribute('size', 'small');
-    resetIcon.setAttribute('aria-hidden', 'true');
-    reset.append(resetIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
+    reset.append(decorativeIcon('actions-refresh'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
     reset.addEventListener('click', () => this.#resetAll());
 
     // "Save current filter" sits alongside "Copy link" - both export the phrase
@@ -531,10 +520,7 @@ class FacetsModal {
     button.title = label;
     button.setAttribute('aria-label', label);
     button.setAttribute('aria-pressed', 'false');
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-code');
-    icon.setAttribute('size', 'small');
-    button.append(icon);
+    button.append(decorativeIcon('actions-code'));
     button.addEventListener('click', () => this.#toggleTokenMode());
     return button;
   }
@@ -927,12 +913,8 @@ class FacetsModal {
     this.#pendingNotice.className = 'pagetree-facets__pending';
     this.#pendingNotice.setAttribute('role', 'status');
     this.#pendingNotice.hidden = true;
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-info-circle');
-    icon.setAttribute('size', 'small');
-    icon.setAttribute('aria-hidden', 'true');
     this.#pendingNotice.append(
-      icon,
+      decorativeIcon('actions-info-circle'),
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.pending']
         ?? 'Not applied yet — choose "Apply" to filter the page tree.'),
     );

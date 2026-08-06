@@ -4,6 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * Personal favorites: saved filter phrases.
@@ -71,11 +72,7 @@ export function buildSaveFavoriteForm({ onSave }) {
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'pagetree-facets__favorite-add btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-  const icon = document.createElement('typo3-backend-icon');
-  icon.setAttribute('identifier', 'actions-star');
-  icon.setAttribute('size', 'small');
-  icon.setAttribute('aria-hidden', 'true');
-  toggle.append(icon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
+  toggle.append(decorativeIcon('actions-star'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
 
   const form = document.createElement('div');
   form.className = 'pagetree-facets__favorite-form';

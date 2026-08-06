@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 
-import { clearable, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The cross-tab filter search: its input, and the flat result list that replaces
@@ -77,11 +77,7 @@ function renderResultItem({ tab, field, option }, { findControl }) {
   label.append(proxy);
 
   if (option.icon) {
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', option.icon);
-    icon.setAttribute('size', 'small');
-    icon.setAttribute('aria-hidden', 'true');
-    label.append(icon);
+    label.append(decorativeIcon(option.icon));
   }
 
   const text = document.createElement('span');

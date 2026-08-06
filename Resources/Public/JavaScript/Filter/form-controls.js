@@ -27,6 +27,27 @@ export function uniqueId(prefix) {
 }
 
 /**
+ * A backend icon that adds nothing to the accessible name.
+ *
+ * Every icon this extension renders is decorative: it either sits beside its own
+ * text, or inside a button that carries an aria-label. Hiding them from assistive
+ * technology is therefore always right - having it in one place is what keeps that
+ * true, rather than remembering the attribute at thirteen call sites.
+ *
+ * @param {string} identifier - a registered icon identifier
+ * @param {string} [size]
+ * @returns {HTMLElement}
+ */
+export function decorativeIcon(identifier, size = 'small') {
+  const icon = document.createElement('typo3-backend-icon');
+  icon.setAttribute('identifier', identifier);
+  icon.setAttribute('size', size);
+  icon.setAttribute('aria-hidden', 'true');
+
+  return icon;
+}
+
+/**
  * Wraps an input with a × that empties it.
  *
  * @param {HTMLInputElement} input

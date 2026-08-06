@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { clearable, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -21,7 +21,7 @@ const dispatch = {
   'checkbox-group': renderChoiceField,
   'radio-presets': renderChoiceField,
   select: renderSelectField,
-  'user-picker': renderPickerField,
+  'user-picker': renderUserPicker,
 };
 
 /**
@@ -51,10 +51,6 @@ export function renderField(tab, field, deps) {
 
 function controlName(tab, field) {
   return `${tab.identifier}[${field.name}]`;
-}
-
-function renderPickerField(tab, field, state, deps) {
-  return renderUserPicker(tab, field, state, deps);
 }
 
 /**
@@ -96,11 +92,7 @@ function renderChoiceOption(tab, field, option, state, isRadio) {
   label.append(input);
 
   if (option.icon) {
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', option.icon);
-    icon.setAttribute('size', 'small');
-    icon.setAttribute('aria-hidden', 'true');
-    label.append(icon);
+    label.append(decorativeIcon(option.icon));
   }
 
   const optionLabel = document.createElement('span');

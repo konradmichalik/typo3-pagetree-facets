@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { appendRichText, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The two explanatory surfaces of the modal: a rotating one-line usage tip shown
@@ -45,15 +45,10 @@ export function renderHint() {
   const hint = document.createElement('div');
   hint.className = 'pagetree-facets__hint';
 
-  const icon = document.createElement('typo3-backend-icon');
-  icon.setAttribute('identifier', 'actions-lightbulb-on');
-  icon.setAttribute('size', 'small');
-  icon.setAttribute('aria-hidden', 'true');
-
   const text = document.createElement('span');
   appendRichText(text, TYPO3.lang?.[key] ?? HINTS[key]);
 
-  hint.append(icon, text);
+  hint.append(decorativeIcon('actions-lightbulb-on'), text);
 
   return hint;
 }
@@ -110,10 +105,7 @@ export function renderHelpToggle(panel) {
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', panel.id);
 
-  const icon = document.createElement('typo3-backend-icon');
-  icon.setAttribute('identifier', 'actions-info-circle');
-  icon.setAttribute('size', 'small');
-  button.append(icon);
+  button.append(decorativeIcon('actions-info-circle'));
 
   button.addEventListener('click', () => {
     const expand = panel.hidden;
