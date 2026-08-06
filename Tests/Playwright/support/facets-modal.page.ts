@@ -50,10 +50,6 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
-  panel(tab: string): Locator {
-    return this.page.locator(`${MODAL} [data-panel="${tab}"]`);
-  }
-
   /**
    * A checkbox-group / radio option.
    *
@@ -75,11 +71,6 @@ export class FacetsModalPage {
       .allTextContents();
 
     return labels.map((label) => label.trim());
-  }
-
-  /** The raw token phrase field, shown in the modal's token view. */
-  tokenQueryField(): Locator {
-    return this.page.locator(`${MODAL} [data-role="token-query"]`);
   }
 
   freetextField(): Locator {
