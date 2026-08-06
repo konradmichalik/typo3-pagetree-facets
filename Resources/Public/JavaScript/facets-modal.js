@@ -7,6 +7,7 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns, renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
@@ -269,9 +270,10 @@ class FacetsModal {
     reset.addEventListener('click', () => this.#resetAll());
 
     // "Save current filter" sits alongside "Copy link" - both export the phrase
-    // currently configured. The toggle reveals an inline name form (below), so
-    // the actions row itself stays a single tidy line of links.
-    const { toggle: saveToggle, form: saveForm } = this.#buildSaveFavorite();
+    // currently configured.
+    const { toggle: saveToggle, form: saveForm } = buildSaveFavoriteForm({
+      onSave: (label) => this.#saveFavorite(label),
+    });
 
     // Sharing, saving or resetting an empty filter is meaningless, so the actions
     // only appear once something is active (see #refreshActiveIndicators).
@@ -1002,34 +1004,9 @@ class FacetsModal {
   }
 
   #renderFavoriteChips() {
-    const removeLabel = TYPO3.lang?.['pagetreeFacets.modal.removeFavorite'] ?? 'Remove favorite';
-    this.#favoritesList.replaceChildren(...(this.#configuration.favorites ?? []).map((favorite, index) => {
-      const row = document.createElement('div');
-      row.className = 'pagetree-facets__favorite';
-
-      const apply = document.createElement('button');
-      apply.type = 'button';
-      apply.className = 'pagetree-facets__favorite-apply';
-      apply.title = favorite.tokenString;
-      const label = document.createElement('span');
-      label.className = 'pagetree-facets__favorite-label';
-      label.textContent = favorite.label;
-      const phrase = document.createElement('code');
-      phrase.className = 'pagetree-facets__favorite-phrase';
-      phrase.textContent = favorite.tokenString;
-      apply.append(label, phrase);
-      apply.addEventListener('click', () => this.#apply(favorite.tokenString));
-
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'pagetree-facets__favorite-remove';
-      remove.textContent = '×';
-      remove.title = removeLabel;
-      remove.setAttribute('aria-label', `${favorite.label} – ${removeLabel}`);
-      remove.addEventListener('click', () => this.#removeFavorite(index));
-
-      row.append(apply, remove);
-      return row;
+    this.#favoritesList.replaceChildren(...favoriteRows(this.#configuration.favorites ?? [], {
+      onApply: (tokenString) => this.#apply(tokenString),
+      onRemove: (index) => this.#removeFavorite(index),
     }));
   }
 
@@ -1049,83 +1026,12 @@ class FacetsModal {
     }
   }
 
-  // A toggle that reveals an inline "name + save" form rather than a native
-  // prompt(), matching the modal's own control style. Returns both parts: the
-  // toggle joins the header actions row, the form is a separate header line that
-  // only unfolds on demand. The label is optional - the server falls back to the
-  // phrase itself when it is left empty.
-  #buildSaveFavorite() {
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'pagetree-facets__favorite-add btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-star');
-    icon.setAttribute('size', 'small');
-    icon.setAttribute('aria-hidden', 'true');
-    toggle.append(icon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
-
-    const form = document.createElement('div');
-    form.className = 'pagetree-facets__favorite-form';
-    form.hidden = true;
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control form-control-sm';
-    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.placeholder'] ?? 'Name this filter';
-    input.setAttribute('aria-label', TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.placeholder'] ?? 'Name this filter');
-
-    const save = document.createElement('button');
-    save.type = 'button';
-    save.className = 'btn btn-sm btn-primary';
-    save.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.save'] ?? 'Save';
-
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'btn btn-sm btn-default';
-    cancel.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.cancel'] ?? 'Cancel';
-
-    const closeForm = () => {
-      form.hidden = true;
-      toggle.hidden = false;
-      input.value = '';
-    };
-    toggle.addEventListener('click', () => {
-      toggle.hidden = true;
-      form.hidden = false;
-      input.focus();
-    });
-    cancel.addEventListener('click', closeForm);
-    save.addEventListener('click', () => {
-      this.#saveFavorite(input.value);
-      closeForm();
-    });
-    input.addEventListener('keydown', (event) => {
-      if ('Enter' === event.key) {
-        // Stop the modal-wide "Enter applies and closes" handler from firing too.
-        event.preventDefault();
-        event.stopPropagation();
-        this.#saveFavorite(input.value);
-        closeForm();
-      } else if ('Escape' === event.key) {
-        event.preventDefault();
-        closeForm();
-      }
-    });
-
-    form.append(input, save, cancel);
-    return { toggle, form };
-  }
-
   async #saveFavorite(label) {
     const tokenString = await this.#computePhrase();
     if ('' === tokenString.trim()) {
       return; // nothing configured to save - the action is hidden in this case anyway
     }
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_favorite_add)
-      .post({ label: label.trim(), tokenString });
-    this.#configuration.favorites = (await response.resolve()).favorites;
-    this.#renderFavoriteChips();
-    this.#updateFavoritesVisibility();
+    this.#adoptFavorites(await addFavorite(label, tokenString));
     Notification.success(
       TYPO3.lang?.['pagetreeFacets.modal.favoriteSaved.title'] ?? 'Favorite saved',
       TYPO3.lang?.['pagetreeFacets.modal.favoriteSaved.message'] ?? 'The current filter was saved to your favorites.',
@@ -1133,9 +1039,14 @@ class FacetsModal {
   }
 
   async #removeFavorite(index) {
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_favorite_remove)
-      .post({ index });
-    this.#configuration.favorites = (await response.resolve()).favorites;
+    this.#adoptFavorites(await removeFavoriteAt(index));
+  }
+
+  // Both endpoints answer with the complete new list, so the in-memory copy is
+  // replaced rather than patched - and the list plus the tab's own visibility have
+  // to follow in lockstep, which is why neither caller does this by hand.
+  #adoptFavorites(favorites) {
+    this.#configuration.favorites = favorites;
     this.#renderFavoriteChips();
     this.#updateFavoritesVisibility();
   }
