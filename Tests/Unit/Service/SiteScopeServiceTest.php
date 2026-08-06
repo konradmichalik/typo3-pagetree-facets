@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Service;
 
-use KonradMichalik\PagetreeFacets\Service\SiteScopeService;
+use KonradMichalik\PagetreeFacets\Service\{PageAncestryService, SiteScopeService};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
@@ -30,11 +30,12 @@ final class SiteScopeServiceTest extends TestCase
     #[Test]
     public function keepsOnlyUidsBelongingToTheSite(): void
     {
-        $subject = new SiteScopeService($this->createSiteFinder(
-            ['main' => 1],
-            [20 => 1, 30 => 1, 40 => 2],
-        ));
+        $subject = new SiteScopeService(
+            $this->createSiteFinder(['main' => 1, 'other' => 2]),
+            $this->createAncestry([1 => 0, 2 => 0, 20 => 1, 30 => 1, 40 => 2]),
+        );
 
+        // uid 10 resolves to no known page at all -> dropped alongside 40 (other site).
         self::assertSame([20, 30], $subject->filterUidsBySite([10, 20, 30, 40], 'main'));
     }
 
@@ -43,7 +44,10 @@ final class SiteScopeServiceTest extends TestCase
     {
         // Favorite robustness: a favorite may reference a meanwhile-removed
         // site - the scope is ignored, never an error.
-        $subject = new SiteScopeService($this->createSiteFinder([], []));
+        $subject = new SiteScopeService(
+            $this->createSiteFinder([]),
+            $this->createAncestry([]),
+        );
 
         self::assertSame([10, 20], $subject->filterUidsBySite([10, 20], 'gone'));
     }
@@ -51,16 +55,31 @@ final class SiteScopeServiceTest extends TestCase
     #[Test]
     public function pagesWithoutResolvableSiteAreDropped(): void
     {
-        $subject = new SiteScopeService($this->createSiteFinder(['main' => 1], [20 => 1]));
+        $subject = new SiteScopeService(
+            $this->createSiteFinder(['main' => 1]),
+            $this->createAncestry([1 => 0, 20 => 1]),
+        );
 
         self::assertSame([20], $subject->filterUidsBySite([20, 999], 'main'));
     }
 
+    #[Test]
+    public function aNestedSiteBelongsToItsNearestRootNotTheEnclosingSite(): void
+    {
+        // Site "nested" has its root page (5) INSIDE main's tree: 1 > 3 > 5 > 6.
+        // Page 6 must resolve to "nested", not "main" - the nearest site root
+        // up the chain wins, mirroring SiteFinder::getSiteByPageId().
+        $siteFinder = $this->createSiteFinder(['main' => 1, 'nested' => 5]);
+        $ancestry = $this->createAncestry([1 => 0, 3 => 1, 5 => 3, 6 => 5]);
+
+        self::assertSame([3], (new SiteScopeService($siteFinder, $ancestry))->filterUidsBySite([3, 6], 'main'));
+        self::assertSame([6], (new SiteScopeService($siteFinder, $ancestry))->filterUidsBySite([3, 6], 'nested'));
+    }
+
     /**
      * @param array<string, int> $identifierToRoot
-     * @param array<int, int>    $pageToRoot
      */
-    private function createSiteFinder(array $identifierToRoot, array $pageToRoot): SiteFinder
+    private function createSiteFinder(array $identifierToRoot): SiteFinder
     {
         $siteFinder = self::createStub(SiteFinder::class);
         $siteFinder->method('getSiteByIdentifier')->willReturnCallback(
@@ -72,17 +91,22 @@ final class SiteScopeServiceTest extends TestCase
                 return $this->createSite($identifierToRoot[$identifier]);
             },
         );
-        $siteFinder->method('getSiteByPageId')->willReturnCallback(
-            function (int $pageId) use ($pageToRoot): Site {
-                if (!isset($pageToRoot[$pageId])) {
-                    throw new SiteNotFoundException('', 1752600001);
-                }
-
-                return $this->createSite($pageToRoot[$pageId]);
-            },
+        $siteFinder->method('getAllSites')->willReturn(
+            array_map($this->createSite(...), array_values($identifierToRoot)),
         );
 
         return $siteFinder;
+    }
+
+    /**
+     * @param array<int, int> $pidMap
+     */
+    private function createAncestry(array $pidMap): PageAncestryService
+    {
+        $ancestry = self::createStub(PageAncestryService::class);
+        $ancestry->method('buildPidMap')->willReturn($pidMap);
+
+        return $ancestry;
     }
 
     private function createSite(int $rootPageId): Site

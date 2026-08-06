@@ -20,8 +20,12 @@ use TYPO3\CMS\Core\Site\SiteFinder;
  * SiteScopeService.
  *
  * "site:" is a scope, not a criterion: it produces no match set. Matched UIDs
- * are post-filtered by rootline against the site root page - cheap, because
- * result sets are small; never materialize the full site subtree.
+ * are post-filtered by ancestry against the site root page - never materialize
+ * the full site subtree. A page belongs to the site whose root is the NEAREST
+ * site root in its ancestor chain (same semantics as SiteFinder's
+ * getSiteByPageId, which matters for sites nested inside another site's tree),
+ * but resolved via one batched pid-map lookup ({@see PageAncestryService})
+ * instead of a per-page rootline query.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -29,6 +33,7 @@ final readonly class SiteScopeService
 {
     public function __construct(
         private SiteFinder $siteFinder,
+        private PageAncestryService $ancestry,
     ) {}
 
     /**
@@ -44,14 +49,30 @@ final readonly class SiteScopeService
             return $uids; // unknown site token -> ignored, never an error
         }
 
-        return array_values(array_filter($uids, function (int $uid) use ($rootPageId): bool {
-            try {
-                $site = $this->siteFinder->getSiteByPageId($uid);
-            } catch (SiteNotFoundException) {
-                return false;
+        if ([] === $uids) {
+            return [];
+        }
+
+        $siteRoots = [];
+        foreach ($this->siteFinder->getAllSites() as $site) {
+            $siteRoots[$site->getRootPageId()] = true;
+        }
+
+        $pidMap = $this->ancestry->buildPidMap($uids);
+
+        return array_values(array_filter($uids, static function (int $uid) use ($pidMap, $siteRoots, $rootPageId): bool {
+            // First site root up the chain decides the page's site; pages
+            // whose chain hits no site root at all (unknown or deleted uids)
+            // are dropped. The depth guard only breaks pid cycles in corrupt
+            // data - real trees end at 0.
+            $depth = 0;
+            for ($current = $uid; $current > 0 && $depth++ < 999; $current = $pidMap[$current] ?? 0) {
+                if (isset($siteRoots[$current])) {
+                    return $current === $rootPageId;
+                }
             }
 
-            return $site->getRootPageId() === $rootPageId;
+            return false;
         }));
     }
 }

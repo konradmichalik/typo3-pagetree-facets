@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageSubtreeScopeService, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageAncestryService, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
 use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use PHPUnit\Framework\Attributes\Test;
@@ -155,10 +155,11 @@ final class PageTreeFilterListenerTest extends TestCase
     #[Test]
     public function pageScopeTokenIsParsedButNeverAppliedToAnAlreadyEmptyResult(): void
     {
-        // PageSubtreeScopeService touches the database (BEgetRootLine()), so
-        // this deliberately stays a pure unit test: forcing the intersection
-        // empty beforehand (via an unmatched freetext) proves "under:" is
-        // parsed without ever reaching that DB-bound call.
+        // The subtree scope resolves ancestry from the database (via the
+        // stubbed PageAncestryService), so this deliberately stays a pure unit
+        // test: forcing the intersection empty beforehand (via an unmatched
+        // freetext) proves "under:" is parsed without ever reaching that
+        // DB-bound lookup.
         $event = $this->createEvent('doktype:1 under:5 nirvana');
         $this->createListener()($event);
 
@@ -211,8 +212,8 @@ final class PageTreeFilterListenerTest extends TestCase
         return new PageTreeFilterListener(
             new TokenParser(),
             $registry,
-            new SiteScopeService($this->createSiteFinder($siteMap)),
-            new PageSubtreeScopeService(),
+            new SiteScopeService($this->createSiteFinder($siteMap), $this->createAncestry($siteMap)),
+            new PageSubtreeScopeService(self::createStub(PageAncestryService::class)),
             $queryHelper,
         );
     }
@@ -223,13 +224,9 @@ final class PageTreeFilterListenerTest extends TestCase
     private function createSiteFinder(array $siteMap): SiteFinder
     {
         $identifierToRoot = [];
-        $pageToRoot = [];
         $root = 0;
-        foreach ($siteMap as $identifier => $pageUids) {
+        foreach (array_keys($siteMap) as $identifier) {
             $identifierToRoot[$identifier] = ++$root;
-            foreach ($pageUids as $pageUid) {
-                $pageToRoot[$pageUid] = $root;
-            }
         }
 
         $siteFinder = self::createStub(SiteFinder::class);
@@ -242,17 +239,34 @@ final class PageTreeFilterListenerTest extends TestCase
                 return $this->createSite($identifierToRoot[$identifier]);
             },
         );
-        $siteFinder->method('getSiteByPageId')->willReturnCallback(
-            function (int $pageId) use ($pageToRoot): Site {
-                if (!isset($pageToRoot[$pageId])) {
-                    throw new SiteNotFoundException('', 1752600003);
-                }
-
-                return $this->createSite($pageToRoot[$pageId]);
-            },
+        $siteFinder->method('getAllSites')->willReturn(
+            array_map($this->createSite(...), array_values($identifierToRoot)),
         );
 
         return $siteFinder;
+    }
+
+    /**
+     * Pid map matching createSiteFinder(): every page uid of the n-th site
+     * hangs directly under that site's root page (uid n).
+     *
+     * @param array<string, list<int>> $siteMap
+     */
+    private function createAncestry(array $siteMap): PageAncestryService
+    {
+        $pidMap = [];
+        $root = 0;
+        foreach ($siteMap as $pageUids) {
+            $pidMap[++$root] = 0;
+            foreach ($pageUids as $pageUid) {
+                $pidMap[$pageUid] = $root;
+            }
+        }
+
+        $ancestry = self::createStub(PageAncestryService::class);
+        $ancestry->method('buildPidMap')->willReturn($pidMap);
+
+        return $ancestry;
     }
 
     private function createSite(int $rootPageId): Site
