@@ -10,7 +10,8 @@ import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
-import { appendRichText, clearable, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
@@ -233,9 +234,9 @@ class FacetsModal {
     }
     this.#tokenField = this.#renderTokenField();
     search.append(this.#tokenField);
-    const help = this.#renderHelp();
+    const help = renderHelp({ hasPageScope: Boolean(this.#currentPageId) });
     this.#tokenToggle = this.#renderTokenToggle();
-    search.append(this.#tokenToggle, this.#renderHelpToggle(help));
+    search.append(this.#tokenToggle, renderHelpToggle(help));
     header.append(search, help);
 
     // Utility row: the page scope on the left, the filter-wide actions on the
@@ -297,49 +298,12 @@ class FacetsModal {
     this.#chips = document.createElement('div');
     this.#chips.className = 'pagetree-facets__chips';
 
-    this.#hint = this.#renderHint();
+    this.#hint = renderHint();
 
     this.#active.append(this.#hint, this.#chips);
 
     header.append(this.#active);
     return header;
-  }
-
-  // A lightbulb usage tip shown while no filter is active. One is picked at
-  // random per modal open (not per refresh) so it stays put while the user
-  // toggles filters on and off.
-  #renderHint() {
-    const keys = [
-      'pagetreeFacets.modal.hint.tokens',
-      'pagetreeFacets.modal.hint.combine',
-      'pagetreeFacets.modal.hint.favorites',
-      'pagetreeFacets.modal.hint.copyLink',
-      'pagetreeFacets.modal.hint.liveSearch',
-      'pagetreeFacets.modal.hint.scope',
-    ];
-    const fallbacks = {
-      'pagetreeFacets.modal.hint.tokens': 'Prefer typing? Enter tokens like `doktype:1 is:empty` straight into the tree\'s search field.',
-      'pagetreeFacets.modal.hint.combine': 'Whitespace means AND, a comma means OR within one criterion — try `doktype:1,4`.',
-      'pagetreeFacets.modal.hint.favorites': 'Save a filter you use often as a favorite and reopen it in one click.',
-      'pagetreeFacets.modal.hint.copyLink': 'Copy a filter as a link and hand it to a colleague — it reopens exactly as you left it.',
-      'pagetreeFacets.modal.hint.liveSearch': 'Looking for a single record instead? The global backend search opens with [[Ctrl]]/[[Cmd]]+[[K]].',
-      'pagetreeFacets.modal.hint.scope': 'Narrow results to one site or the current subtree with the scope controls above.',
-    };
-    const key = keys[Math.floor(Math.random() * keys.length)];
-
-    const hint = document.createElement('div');
-    hint.className = 'pagetree-facets__hint';
-
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-lightbulb-on');
-    icon.setAttribute('size', 'small');
-    icon.setAttribute('aria-hidden', 'true');
-
-    const text = document.createElement('span');
-    appendRichText(text, TYPO3.lang?.[key] ?? fallbacks[key]);
-
-    hint.append(icon, text);
-    return hint;
   }
 
   #renderBody() {
@@ -534,69 +498,6 @@ class FacetsModal {
       },
     ));
     this.#resultsPanel.hidden = false;
-  }
-
-  // Usage help, written for editors: how picking criteria behaves, not what the
-  // token grammar looks like. The token syntax is mentioned once at the end as
-  // an aside - editors work through these controls, not by typing tokens.
-  // Collapsed by default; reference material, not a step in the flow.
-  #renderHelp() {
-    const panel = document.createElement('div');
-    panel.className = 'alert alert-info pagetree-facets__help';
-    panel.id = uniqueId('pagetree-facets__help');
-    panel.hidden = true;
-
-    const intro = document.createElement('p');
-    intro.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.intro']
-      ?? 'Pick one or more criteria to narrow the page tree down to the pages you are looking for.';
-    panel.append(intro);
-
-    const points = [
-      ['combine', 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.'],
-      ['chips', 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset". Your selection only takes effect once you choose "Apply".'],
-      // Only worth explaining while the control it describes is on screen.
-      ...(this.#currentPageId
-        ? [['scope', '"Search from current page down" limits the result to the page you currently have open and its subpages.']]
-        : []),
-      ['share', '"Copy link" copies a link to your current selection, so you can hand it to a colleague.'],
-    ];
-    const list = document.createElement('ul');
-    list.className = 'pagetree-facets__help-points';
-    for (const [key, fallback] of points) {
-      const item = document.createElement('li');
-      item.textContent = TYPO3.lang?.[`pagetreeFacets.modal.help.${key}`] ?? fallback;
-      list.append(item);
-    }
-    panel.append(list);
-
-    const advanced = document.createElement('p');
-    advanced.className = 'mb-0';
-    advanced.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.advanced']
-      ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly.';
-    panel.append(advanced);
-
-    return panel;
-  }
-
-  #renderHelpToggle(panel) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__help-toggle';
-    const label = TYPO3.lang?.['pagetreeFacets.modal.help'] ?? 'Filter syntax';
-    button.title = label;
-    button.setAttribute('aria-label', label);
-    button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-controls', panel.id);
-    const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-info-circle');
-    icon.setAttribute('size', 'small');
-    button.append(icon);
-    button.addEventListener('click', () => {
-      const expand = panel.hidden;
-      panel.hidden = !expand;
-      button.setAttribute('aria-expanded', String(expand));
-    });
-    return button;
   }
 
   // Single-line editor for the whole token phrase, hidden until token view is
