@@ -4,6 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { clearable } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * Typeahead over be_users, backed by a small debounced AJAX search - one single
@@ -57,11 +58,7 @@ export function closeOpenUserDropdowns() {
  * @param {object} tab - the owning tab, for the control's name
  * @param {object} field - field descriptor; `field.currentUser` pins the "Me" entry
  * @param {string|string[]|undefined} state - hydrated value ("me" or a uid)
- * @param {{
- *   getRoot: () => HTMLElement,
- *   clearable: (input: HTMLInputElement) => HTMLElement,
- *   onLabelResolved: () => void,
- * }} deps
+ * @param {{getRoot: () => HTMLElement, onLabelResolved: () => void}} deps
  * @returns {HTMLElement} the control, ready to append
  */
 export function renderUserPicker(tab, field, state, deps) {
@@ -106,7 +103,7 @@ class UserPicker {
 
     this.#element = document.createElement('div');
     this.#element.className = 'pagetree-facets__user-picker';
-    this.#element.append(deps.clearable(this.#input), this.#results);
+    this.#element.append(clearable(this.#input), this.#results);
   }
 
   get element() {

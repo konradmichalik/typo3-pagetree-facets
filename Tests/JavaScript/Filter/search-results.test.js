@@ -8,15 +8,7 @@ const match = (overrides = {}) => ({
   ...overrides,
 });
 
-const deps = (control = null) => ({
-  findControl: vi.fn(() => control),
-  renderOptionHelp: vi.fn(() => {
-    const help = document.createElement('span');
-    help.className = 'help';
-
-    return help;
-  }),
-});
+const deps = (control = null) => ({ findControl: vi.fn(() => control) });
 
 const realCheckbox = (checked = false) => {
   const input = document.createElement('input');
@@ -120,14 +112,26 @@ describe('renderSearchResults', () => {
     expect(proxy.getAttribute('role')).toBe('switch');
   });
 
-  it('adds the shared option help only when there is a description', () => {
-    const withHelp = deps(realCheckbox());
-    renderSearchResults([match({ option: { value: 'x', label: 'X', description: 'Why' } })], withHelp);
-    expect(withHelp.renderOptionHelp).toHaveBeenCalled();
+  it('exposes a description to screen readers without putting it in the label', () => {
+    const list = renderSearchResults(
+      [match({ option: { value: 'x', label: 'X', description: 'Why this matters' } })],
+      deps(realCheckbox()),
+    );
+    const proxy = list.querySelector('input');
+    const help = list.querySelector('.visually-hidden');
 
-    const without = deps(realCheckbox());
-    renderSearchResults([match()], without);
-    expect(without.renderOptionHelp).not.toHaveBeenCalled();
+    // The chips are derived from label text, so a description must stay out of the
+    // visible label and be reachable only through aria-describedby.
+    expect(help.textContent).toBe('Why this matters');
+    expect(proxy.getAttribute('aria-describedby')).toBe(help.id);
+    expect(list.querySelector('.pagetree-facets__search-result-label').textContent).toBe('X');
+  });
+
+  it('adds no help markup when there is no description', () => {
+    const list = renderSearchResults([match()], deps(realCheckbox()));
+
+    expect(list.querySelector('.visually-hidden')).toBeNull();
+    expect(list.querySelector('input').getAttribute('aria-describedby')).toBeNull();
   });
 
   it('carries an option icon when one is configured', () => {

@@ -4,6 +4,8 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 
+import { clearable, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+
 /**
  * The cross-tab filter search: its input, and the flat result list that replaces
  * the tab panels while it has text.
@@ -16,10 +18,10 @@
  */
 
 /**
- * @param {{clearable: (input: HTMLInputElement) => HTMLElement, onQuery: (query: string) => void}} deps
+ * @param {{onQuery: (query: string) => void}} deps
  * @returns {HTMLElement}
  */
-export function buildFilterSearchInput({ clearable, onQuery }) {
+export function buildFilterSearchInput({ onQuery }) {
   const wrap = document.createElement('div');
   wrap.className = 'pagetree-facets__filter-search';
 
@@ -40,10 +42,7 @@ export function buildFilterSearchInput({ clearable, onQuery }) {
 
 /**
  * @param {Array<{tab: object, field: object, option: object}>} matches
- * @param {{
- *   findControl: (tab: object, field: object, option: object) => HTMLInputElement|null,
- *   renderOptionHelp: (proxy: HTMLElement, description: string) => HTMLElement,
- * }} deps
+ * @param {{findControl: (tab: object, field: object, option: object) => HTMLInputElement|null}} deps
  * @returns {HTMLElement} the list, or a "nothing found" note - ready to replace
  *   whatever the results panel currently holds
  */
@@ -65,7 +64,7 @@ export function renderSearchResults(matches, deps) {
   return list;
 }
 
-function renderResultItem({ tab, field, option }, { findControl, renderOptionHelp }) {
+function renderResultItem({ tab, field, option }, { findControl }) {
   const isRadio = 'radio-presets' === field.type;
   const control = findControl(tab, field, option);
 
@@ -98,7 +97,7 @@ function renderResultItem({ tab, field, option }, { findControl, renderOptionHel
 
   if (option.description) {
     label.title = option.description;
-    label.append(renderOptionHelp(proxy, option.description));
+    label.append(optionHelp(proxy, option.description));
   }
 
   item.append(label);

@@ -9,6 +9,7 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
+import { appendRichText, clearable, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns, renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
@@ -56,7 +57,6 @@ class FacetsModal {
   #syncTimer = null;
   #resultsPanel = null;
   #root = null;
-  #nextHelpId = 0;
   #currentPageId = null;
   #favoritesList = null;
   // Client-side pseudo-tab: favorites are not a filter criterion (no token
@@ -335,33 +335,10 @@ class FacetsModal {
     icon.setAttribute('aria-hidden', 'true');
 
     const text = document.createElement('span');
-    this.#appendRichText(text, TYPO3.lang?.[key] ?? fallbacks[key]);
+    appendRichText(text, TYPO3.lang?.[key] ?? fallbacks[key]);
 
     hint.append(icon, text);
     return hint;
-  }
-
-  // Render a hint string, turning `code` spans into <code> and [[key]] markers
-  // into <kbd>. Both delimiters are developer-authored in the label file; we
-  // build real DOM nodes and never assign innerHTML, so no markup in the string
-  // is ever parsed as HTML - safe even once translations are added.
-  #appendRichText(container, text) {
-    const pattern = /`([^`]+)`|\[\[([^\]]+)\]\]/g;
-    let lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        container.append(document.createTextNode(text.slice(lastIndex, match.index)));
-      }
-      const [, code, key] = match;
-      const element = document.createElement(code !== undefined ? 'code' : 'kbd');
-      element.textContent = code ?? key;
-      container.append(element);
-      lastIndex = pattern.lastIndex;
-    }
-    if (lastIndex < text.length) {
-      container.append(document.createTextNode(text.slice(lastIndex)));
-    }
   }
 
   #renderBody() {
@@ -390,7 +367,6 @@ class FacetsModal {
     const nav = document.createElement('div');
     nav.className = 'col-3 pagetree-facets__nav';
     nav.append(buildFilterSearchInput({
-      clearable: (input) => this.#clearable(input),
       onQuery: (query) => this.#applyFilterSearch(query),
     }));
     const list = document.createElement('ul');
@@ -554,7 +530,6 @@ class FacetsModal {
         findControl: (tab, field, option) => this.#modal.querySelector(
           `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
         ),
-        renderOptionHelp: (proxy, description) => this.#renderOptionHelp(proxy, description),
       },
     ));
     this.#resultsPanel.hidden = false;
@@ -567,7 +542,7 @@ class FacetsModal {
   #renderHelp() {
     const panel = document.createElement('div');
     panel.className = 'alert alert-info pagetree-facets__help';
-    panel.id = `pagetree-facets__help-${this.#nextHelpId++}`;
+    panel.id = uniqueId('pagetree-facets__help');
     panel.hidden = true;
 
     const intro = document.createElement('p');
@@ -662,40 +637,6 @@ class FacetsModal {
     return button;
   }
 
-  // Wraps a text-ish input so it carries a clear button while it has a value.
-  // Clearing dispatches the same input/change events typing would, so chips,
-  // per-tab counts, the cross-tab search and the user-picker's own listener all
-  // react through their existing wiring rather than being special-cased here.
-  #clearable(input) {
-    const wrap = document.createElement('div');
-    wrap.className = 'pagetree-facets__clearable';
-
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'pagetree-facets__clear';
-    clear.textContent = '×';
-    const label = TYPO3.lang?.['pagetreeFacets.modal.clear'] ?? 'Clear';
-    clear.title = label;
-    clear.setAttribute('aria-label', label);
-    clear.hidden = '' === input.value;
-
-    clear.addEventListener('click', () => {
-      input.value = '';
-      // Picker controls keep the wire value out of band (see #effectiveValue),
-      // so clearing the visible text alone would leave the criterion active.
-      delete input.dataset.value;
-      delete input.dataset.label;
-      clear.hidden = true;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      input.focus();
-    });
-    input.addEventListener('input', () => { clear.hidden = '' === input.value; });
-
-    wrap.append(input, clear);
-    return wrap;
-  }
-
   #renderFreetext() {
     // Freetext must survive the modal round trip - it is a first-class
     // criterion (intersected engine-side), not decoration.
@@ -709,7 +650,7 @@ class FacetsModal {
     input.placeholder = freetextLabel;
     input.setAttribute('aria-label', freetextLabel);
     input.value = this.#configuration.freetext ?? '';
-    row.append(this.#clearable(input));
+    row.append(clearable(input));
     return row;
   }
 
@@ -781,7 +722,6 @@ class FacetsModal {
       // is after every field has been built.
       group.append(renderUserPicker(tab, field, state, {
         getRoot: () => this.#root,
-        clearable: (input) => this.#clearable(input),
         onLabelResolved: () => this.#refreshActiveIndicators(),
       }));
       return group;
@@ -825,7 +765,7 @@ class FacetsModal {
         label.append(document.createTextNode(' '), optionLabel);
         if (option.description) {
           label.title = option.description;
-          label.append(this.#renderOptionHelp(input, option.description));
+          label.append(optionHelp(input, option.description));
         }
         optionsWrap.append(label);
       }
@@ -855,25 +795,8 @@ class FacetsModal {
       // never becomes a placeholder-as-label.
       input.placeholder = field.placeholder;
     }
-    group.append(this.#clearable(input));
+    group.append(clearable(input));
     return group;
-  }
-
-  // A visually-hidden span wired via aria-describedby on the control itself -
-  // the caller also sets `title` on the enclosing label for a native mouse
-  // tooltip; this covers keyboard/screen-reader users a bare `title` would
-  // miss. No visible icon: it inflated .textContent (leaking the description
-  // into active-filter chips, which read a checkbox's label text) and was
-  // one more thing cluttering the row for a plain hover hint.
-  #renderOptionHelp(input, description) {
-    const descId = `pagetree-facets__option-help-${this.#nextHelpId++}`;
-    input.setAttribute('aria-describedby', descId);
-
-    const hiddenDescription = document.createElement('span');
-    hiddenDescription.id = descId;
-    hiddenDescription.className = 'visually-hidden';
-    hiddenDescription.textContent = description;
-    return hiddenDescription;
   }
 
   // Personal favorites: saved filter phrases, surfaced as a first-class tab at
@@ -1161,7 +1084,7 @@ class FacetsModal {
             if (input.checked) {
               // Scoped to the dedicated label span, not the whole <label>'s
               // textContent - that would also pick up the visually-hidden
-              // option-description span (see #renderOptionHelp).
+              // option-description span (see optionHelp in Filter/form-controls.js).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
               criteria.push(this.#criterion(prefix, tab, label, () => { input.checked = false; }));
             }
