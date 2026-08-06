@@ -136,6 +136,10 @@ final class SeedDemoContentCommand extends Command
                     'hidden' => 0,
                     'abstract' => 'Learn more about our company and team.',
                     'description' => 'Company background and team overview.',
+                    // Only a couple of pages get one, so a filter on "no navigation
+                    // title" has something to tell apart - EXT:example_tab adds
+                    // exactly that criterion as its demo option.
+                    'nav_title' => 'About',
                 ],
                 'NEW_products' => [
                     'pid' => $rootPageId,
@@ -143,6 +147,7 @@ final class SeedDemoContentCommand extends Command
                     'doktype' => 1,
                     'hidden' => 0,
                     'no_index' => 1,
+                    'nav_title' => 'Our products',
                 ],
                 'NEW_archive' => [
                     'pid' => $rootPageId,
