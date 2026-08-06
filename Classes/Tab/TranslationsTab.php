@@ -156,5 +156,4 @@ final class TranslationsTab extends AbstractPagesQueryTab
             ],
         ];
     }
-
 }
