@@ -169,7 +169,21 @@ function post_setup() {
   _progress " ├─ Update TYPO3"
     update_typo3
   _done
+  _progress " ├─ Seed demo content"
+    seed_demo_content
+  _done
   printf " └─ \033[33mTYPO3 $VERSION setup completed!\033[0m Open in your browser: https://$VERSION.${EXTENSION_NAME}.ddev.site\n"
+}
+
+# Function to seed the demo pages and content elements to filter against.
+# Runs last on purpose: the command writes records, so it needs the schema from
+# update_typo3 to exist first. It is idempotent, and skipped when the demo_content
+# fixture extension is absent, so a trimmed-down checkout still installs.
+function seed_demo_content() {
+    if ! $TYPO3_BIN list 2>/dev/null | grep -q 'pagetree-facets:seed-demo-content'; then
+        return
+    fi
+    $TYPO3_BIN pagetree-facets:seed-demo-content
 }
 
 # Function to display an introductory message for the TYPO3 version.
@@ -289,6 +303,32 @@ function install_composer_packages() {
             helhum/typo3-console:'*' \
             --no-progress -n -d $BASE_PATH
   _done
+  require_additional_extensions
+}
+
+# Function to require the local-only fixture extensions that were symlinked into
+# packages/ by create_symlinks_additional_extensions.
+# Symlinking alone only makes them resolvable through the "packages/*" path
+# repository - without requiring them they are never installed, so their event
+# listeners and commands do not exist in the running instance. Kept generic, so a
+# newly added fixture extension needs no change here.
+function require_additional_extensions() {
+    shopt -s nullglob
+    local packages=()
+    for dir in Tests/Functional/Fixtures/Extensions/*/; do
+        local name
+        name=$(composer config name --working-dir "$dir" 2>/dev/null) || continue
+        packages+=("$name:*@dev")
+    done
+    shopt -u nullglob
+
+    if [ ${#packages[@]} -eq 0 ]; then
+        return
+    fi
+
+    _progress " ├─ Install local fixture extensions"
+      composer req "${packages[@]}" --no-progress -n -d $BASE_PATH
+    _done
 }
 
 # Function to set up site configuration from templates.
