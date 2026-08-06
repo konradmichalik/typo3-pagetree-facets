@@ -100,7 +100,13 @@ final class TranslationsTab extends AbstractPagesQueryTab
         // site: scope; without one, offer the union of all accessible sites.
         $options = [];
         $seen = [];
+        $backendUser = $context->backendUser;
         foreach ($this->siteFinder->getAllSites() as $site) {
+            // Same web-mount boundary as the modal's site options: a non-admin
+            // must not see language titles of sites outside their mounts.
+            if (!$backendUser->isAdmin() && null === $backendUser->isInWebMount($site->getRootPageId())) {
+                continue;
+            }
             if (null !== $context->siteIdentifier && $site->getIdentifier() !== $context->siteIdentifier) {
                 continue;
             }

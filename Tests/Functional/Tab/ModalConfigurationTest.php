@@ -177,6 +177,43 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         self::assertSame('Dansk', $options[0]['label']);
     }
 
+    #[Test]
+    public function translationOptionsAreLimitedToSitesInsideTheUsersWebMounts(): void
+    {
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/TranslationsTabSecondSite.csv');
+        $this->writeSiteConfiguration('main', [
+            'rootPageId' => 1,
+            'base' => '/',
+            'languages' => [
+                ['languageId' => 0, 'title' => 'English', 'locale' => 'en_US.UTF-8', 'base' => '/', 'flag' => 'us'],
+                ['languageId' => 1, 'title' => 'Dansk', 'locale' => 'da_DK.UTF-8', 'base' => '/da/', 'flag' => 'dk'],
+            ],
+        ]);
+        $this->writeSiteConfiguration('other', [
+            'rootPageId' => 6,
+            'base' => '/other/',
+            'languages' => [
+                ['languageId' => 0, 'title' => 'English', 'locale' => 'en_US.UTF-8', 'base' => '/', 'flag' => 'us'],
+                ['languageId' => 2, 'title' => 'Deutsch', 'locale' => 'de_DE.UTF-8', 'base' => '/de/', 'flag' => 'de'],
+            ],
+        ]);
+
+        // isInWebMount() resolves the rootline with the SHOW permission clause,
+        // so the mounted root page needs real perms for the non-admin editor.
+        $this->getConnectionPool()->getConnectionForTable('pages')
+            ->update('pages', ['perms_everybody' => 15], ['uid' => 1]);
+        $editor = $this->setUpBackendUser(2);
+        $editor->groupData['webmounts'] = '1';
+
+        $configuration = $this->get(TranslationsTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+
+        self::assertSame(
+            ['1'],
+            array_column($configuration['fields'][0]['options'], 'value'),
+            'Languages of sites outside the web mounts must not be offered',
+        );
+    }
+
     /**
      * The content element tab spreads its options over one field per wizard
      * group, so value-level assertions need them back in one list.
