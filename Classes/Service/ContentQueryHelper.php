@@ -44,6 +44,16 @@ class ContentQueryHelper
      */
     public const array NON_CONTENT_DOKTYPES = [3, 4, 7, 199, 254, 255]; // external, shortcut, mountpoint, spacer, sysfolder, recycler
 
+    /**
+     * Hard cap on the LIKE-based text searches only (never on set-inversion
+     * queries like is:empty, where a truncated set would flip absent pages to
+     * false positives). Guards against pathological phrases materializing
+     * six-digit UID arrays. Above the cap results may be incomplete - but a
+     * tree "narrowed" to 10k+ matches is not usably filtered anyway, and in
+     * the AND intersection truncation can only drop matches, never invent one.
+     */
+    private const int TEXT_MATCH_LIMIT = 10000;
+
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly SearchableSchemaFieldsCollector $searchableFieldsCollector,
@@ -159,7 +169,8 @@ class ContentQueryHelper
             ->where(
                 $queryBuilder->expr()->gt('pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
                 $queryBuilder->expr()->or(...$likes),
-            );
+            )
+            ->setMaxResults(self::TEXT_MATCH_LIMIT);
 
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
     }
@@ -190,7 +201,8 @@ class ContentQueryHelper
         $queryBuilder
             ->select('uid')
             ->from('pages')
-            ->where($queryBuilder->expr()->or(...$conditions));
+            ->where($queryBuilder->expr()->or(...$conditions))
+            ->setMaxResults(self::TEXT_MATCH_LIMIT);
 
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
     }
