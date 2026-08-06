@@ -9,6 +9,7 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
+import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns, renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
@@ -388,7 +389,10 @@ class FacetsModal {
   #renderNavigation() {
     const nav = document.createElement('div');
     nav.className = 'col-3 pagetree-facets__nav';
-    nav.append(this.#renderFilterSearch());
+    nav.append(buildFilterSearchInput({
+      clearable: (input) => this.#clearable(input),
+      onQuery: (query) => this.#applyFilterSearch(query),
+    }));
     const list = document.createElement('ul');
     list.className = 'list-unstyled';
 
@@ -518,25 +522,6 @@ class FacetsModal {
     this.#panels.append(this.#resultsPanel);
   }
 
-  // Cross-tab search: matches field/option labels already present in the
-  // hydrated configuration (client-side only). While it has text, it replaces
-  // the tab panels with a flat, clickable results list; clearing it restores
-  // the previously active tab.
-  #renderFilterSearch() {
-    const wrap = document.createElement('div');
-    wrap.className = 'pagetree-facets__filter-search';
-    const input = document.createElement('input');
-    input.className = 'form-control form-control-sm';
-    input.type = 'search';
-    input.dataset.role = 'filter-search';
-    const label = TYPO3.lang?.['pagetreeFacets.modal.search'] ?? 'Search filters';
-    input.placeholder = label;
-    input.setAttribute('aria-label', label);
-    input.addEventListener('input', () => this.#applyFilterSearch(input.value));
-    wrap.append(this.#clearable(input));
-    return wrap;
-  }
-
   #applyFilterSearch(query) {
     const trimmed = query.trim().toLowerCase();
     if ('' === trimmed) {
@@ -561,88 +546,18 @@ class FacetsModal {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
     });
-    this.#renderSearchResults(findFilterMatches(this.#configuration.tabs, trimmed));
+    this.#resultsPanel.replaceChildren(renderSearchResults(
+      findFilterMatches(this.#configuration.tabs, trimmed),
+      {
+        // The criterion a result stands for lives in a now-hidden panel; the proxy
+        // row mirrors that control and writes back to it.
+        findControl: (tab, field, option) => this.#modal.querySelector(
+          `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
+        ),
+        renderOptionHelp: (proxy, description) => this.#renderOptionHelp(proxy, description),
+      },
+    ));
     this.#resultsPanel.hidden = false;
-  }
-
-  #renderSearchResults(matches) {
-    this.#resultsPanel.replaceChildren();
-    if (!matches.length) {
-      const empty = document.createElement('p');
-      empty.className = 'pagetree-facets__search-empty text-muted';
-      empty.textContent = TYPO3.lang?.['pagetreeFacets.modal.noSearchResults'] ?? 'No matching filters';
-      this.#resultsPanel.append(empty);
-      return;
-    }
-    const list = document.createElement('ul');
-    list.className = 'pagetree-facets__search-list list-unstyled';
-    for (const match of matches) {
-      list.append(this.#renderSearchResultItem(match));
-    }
-    this.#resultsPanel.append(list);
-  }
-
-  // Mirrors the SAME control the matching tab panel already rendered (panels
-  // stay in the DOM, merely hidden) as a real checkbox/radio - not a plain
-  // button - so a result reads exactly like its field's own list. Toggling
-  // the proxy writes through to the real control and dispatches its change
-  // event, so chips/nav counts refresh without any extra wiring.
-  #renderSearchResultItem({ tab, field, option }) {
-    const isRadio = 'radio-presets' === field.type;
-    const realInput = this.#modal.querySelector(
-      `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
-    );
-    const item = document.createElement('li');
-    const label = document.createElement('label');
-    label.className = 'pagetree-facets__search-result form-check d-flex align-items-center gap-2'
-      + (isRadio ? '' : ' form-switch');
-
-    const proxy = document.createElement('input');
-    proxy.className = 'form-check-input';
-    proxy.type = isRadio ? 'radio' : 'checkbox';
-    if (isRadio) {
-      // A synthetic, list-scoped group name - native mutual exclusion between
-      // matches for the same field, without colliding with the real field's
-      // bracketed name (which the generic collectors key off of).
-      proxy.name = `search-radio-${tab.identifier}-${field.name}`;
-    } else {
-      proxy.setAttribute('role', 'switch');
-    }
-    proxy.checked = Boolean(realInput?.checked);
-    proxy.disabled = !realInput;
-    proxy.addEventListener('change', () => {
-      if (!realInput) {
-        return;
-      }
-      realInput.checked = proxy.checked;
-      realInput.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    label.append(proxy);
-
-    if (option.icon) {
-      const icon = document.createElement('typo3-backend-icon');
-      icon.setAttribute('identifier', option.icon);
-      icon.setAttribute('size', 'small');
-      icon.setAttribute('aria-hidden', 'true');
-      label.append(icon);
-    }
-    const text = document.createElement('span');
-    text.className = 'pagetree-facets__search-result-label';
-    text.textContent = option.label;
-    label.append(text);
-
-    const tabBadge = document.createElement('span');
-    tabBadge.className = 'pagetree-facets__search-result-tab';
-    tabBadge.textContent = tab.label;
-    label.append(tabBadge);
-
-    if (option.description) {
-      label.title = option.description;
-      label.append(this.#renderOptionHelp(proxy, option.description));
-    }
-
-    item.append(label);
-    return item;
   }
 
   // Usage help, written for editors: how picking criteria behaves, not what the
