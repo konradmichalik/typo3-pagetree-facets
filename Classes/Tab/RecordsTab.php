@@ -90,7 +90,12 @@ final class RecordsTab extends AbstractPagesQueryTab
         $bucketLabels = [];
         foreach (array_keys($GLOBALS['TCA'] ?? []) as $tableKey) {
             $table = (string) $tableKey;
-            if (!$this->isAllowedTable($table, $context) || true === ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)) {
+            if (!$this->isAllowedTable($table, $context)
+                || true === ($GLOBALS['TCA'][$table]['ctrl']['hideTable'] ?? false)
+                // rootLevel-only tables (be_groups, be_users, ...) live on pid 0
+                // and can never match the pid > 0 record queries - dead options.
+                || 1 === (int) ($GLOBALS['TCA'][$table]['ctrl']['rootLevel'] ?? 0)
+            ) {
                 continue;
             }
             $bucketKey = $this->bucketKeyForTable($table, $extensionBuckets);

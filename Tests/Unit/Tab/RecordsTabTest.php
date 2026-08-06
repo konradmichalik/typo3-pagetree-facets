@@ -114,6 +114,21 @@ final class RecordsTabTest extends TestCase
     }
 
     #[Test]
+    public function rootLevelOnlyTablesAreHiddenFromTheModal(): void
+    {
+        // be_groups lives on pid 0 only (rootLevel = 1) - it can never match
+        // the pid > 0 record queries, so offering it would be a dead option.
+        // rootLevel = -1 (both) tables can have records on pages and stay.
+        $GLOBALS['TCA'] = $this->fakeTca(['pages', 'be_groups', 'sys_category']);
+        $GLOBALS['TCA']['be_groups']['ctrl']['rootLevel'] = 1;
+        $GLOBALS['TCA']['sys_category']['ctrl']['rootLevel'] = -1;
+
+        $fields = $this->modalFields($this->createTab());
+
+        self::assertSame(['pages', 'sys_category'], array_column($fields[0]['options'], 'value'));
+    }
+
+    #[Test]
     public function bucketsAppearInFirstSeenTcaOrder(): void
     {
         $GLOBALS['TCA'] = $this->fakeTca(['tx_news_domain_model_news', 'pages', 'tx_news_domain_model_category']);
