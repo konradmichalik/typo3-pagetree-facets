@@ -1,31 +1,28 @@
-import { execFileSync } from 'node:child_process';
-import { typo3BinPath, typo3Cli } from '@konradmichalik/ptu';
-
-const FIXTURE_PACKAGES = [
-  'konradmichalik/pagetree-facets-demo-content',
-  'konradmichalik/pagetree-facets-example-tab',
-];
+import { typo3Cli } from '@konradmichalik/ptu';
 
 /**
- * `ddev install <version>` symlinks the fixture extensions into the instance's
- * packages/ directory but does NOT add them to its composer.json require section,
- * so neither the seed command nor the third-party `example` tab exists until they
- * are required explicitly. Verified live: without this the seed command fails with
- * "There are no commands defined in the pagetree-facets namespace."
+ * `ddev install <version>` provisions the instance once: it requires the
+ * fixture extensions under `Tests/Functional/Fixtures/Extensions/*`, updates
+ * the schema/cache, and seeds the demo content (see
+ * `.ddev/.setup/scripts/utils.sh`: `require_additional_extensions`,
+ * `update_typo3`, `seed_demo_content`). This global setup does not repeat any
+ * of that - it only re-seeds the demo content immediately before the suite
+ * runs, so the fixture pages the specs assert against are in a known state
+ * regardless of what an earlier test run, or manual poking around in the
+ * backend, left behind.
  *
- * Both this and the seed command are idempotent, so running them on every suite
- * start is cheap insurance against a half-prepared instance.
+ * `pagetree-facets:seed-demo-content` is idempotent - it deletes the pages
+ * from a prior run by title, then recreates them - which is what makes
+ * re-seeding on every suite start safe.
  */
 export default function globalSetup(): void {
-  const instanceDir = typo3BinPath().replace(/\/vendor\/bin\/typo3$/, '');
-
-  execFileSync(
-    'composer',
-    ['require', ...FIXTURE_PACKAGES.map((name) => `${name}:*@dev`), '--no-interaction', '--no-progress'],
-    { cwd: instanceDir, stdio: 'inherit' },
-  );
-
-  typo3Cli(['extension:setup']);
-  typo3Cli(['cache:flush']);
-  typo3Cli(['pagetree-facets:seed-demo-content']);
+  try {
+    typo3Cli(['pagetree-facets:seed-demo-content']);
+  } catch (error) {
+    const stdout = error && typeof error === 'object' && 'stdout' in error ? String((error as { stdout: unknown }).stdout) : '';
+    throw new Error(
+      `pagetree-facets:seed-demo-content failed - has \`ddev install <version>\` provisioned this instance? ${stdout}`,
+      { cause: error },
+    );
+  }
 }
