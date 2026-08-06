@@ -52,6 +52,12 @@ class FacetsModal {
   // identifier and renders the nav item and panel for it itself.
   #favoritesTabId = '__favorites';
   #favoritesNavItem = null;
+  #refreshDebounce = null;
+  // Hide-callbacks of currently open user-picker dropdowns: their scroll
+  // listeners live on `document`, so closing the modal with a dropdown still
+  // open (blur does not fire on element removal) must run them explicitly or
+  // the listeners would outlive the modal and retain its detached DOM.
+  #openUserDropdowns = new Set();
 
   async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
@@ -109,17 +115,35 @@ class FacetsModal {
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
     });
+    this.#modal.addEventListener('typo3-modal-hidden', () => this.#teardown());
+  }
+
+  // Everything that outlives the modal's own DOM: pending debounced refreshes,
+  // the token view's reflect/sync timers and the document-level scroll
+  // listeners of open user dropdowns.
+  #teardown() {
+    clearTimeout(this.#refreshDebounce);
+    this.#cancelTokenTimers();
+    [...this.#openUserDropdowns].forEach((hide) => hide());
   }
 
   #render() {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
     wrap.append(this.#renderHeader(), this.#renderBody());
-    // One listener for the whole content: the body-level ones never see the
+    // One listener for the whole content: a body-level one would never see the
     // header controls (freetext, site scope, page scope), which change the
-    // filter just as much.
+    // filter just as much. Text inputs fire per keystroke and get the full
+    // (debounced) refresh; discrete controls refresh the apply state
+    // immediately and are covered chip-wise by the body's change listener.
     wrap.addEventListener('change', () => this.#refreshApplyState());
-    wrap.addEventListener('input', () => this.#refreshApplyState());
+    wrap.addEventListener('input', (event) => {
+      if (event.target.matches('input[type="text"]')) {
+        this.#scheduleRefresh();
+      } else {
+        this.#refreshApplyState();
+      }
+    });
     // Kept for reparenting the user-picker dropdown out of the scrolling panel
     // (see #showUserResults). Modal.advanced() renders `content` into its own
     // Lit-managed custom element - appending directly to that element is
@@ -283,13 +307,15 @@ class FacetsModal {
     // Keep chips and per-tab counts in sync with the live controls. In token
     // view the form is the other editable half, so a form edit also mirrors
     // back into the phrase field (#scheduleTokenFieldSync is a no-op otherwise).
+    // Text inputs get their (debounced) indicator refresh from the wrapper's
+    // input listener - the same event bubbles there - so per keystroke this
+    // one only owns the token-field sync.
     body.addEventListener('change', () => {
       this.#refreshActiveIndicators();
       this.#scheduleTokenFieldSync();
     });
     body.addEventListener('input', (event) => {
       if (event.target.matches('input[type="text"]')) {
-        this.#refreshActiveIndicators();
         this.#scheduleTokenFieldSync();
       }
     });
@@ -1070,6 +1096,9 @@ class FacetsModal {
       // ancestor scrolled.
       results.__hideOnScroll = () => this.#hideUserResults(input, results);
       document.addEventListener('scroll', results.__hideOnScroll, true);
+      // Registered for #teardown: closing the modal must run this cleanup too,
+      // since neither blur nor scroll fires when the modal DOM is removed.
+      this.#openUserDropdowns.add(results.__hideOnScroll);
     }
   }
 
@@ -1079,6 +1108,7 @@ class FacetsModal {
     input.removeAttribute('aria-activedescendant');
     if (results.__hideOnScroll) {
       document.removeEventListener('scroll', results.__hideOnScroll, true);
+      this.#openUserDropdowns.delete(results.__hideOnScroll);
       delete results.__hideOnScroll;
       delete results.dataset.scrollBound;
     }
@@ -1299,6 +1329,14 @@ class FacetsModal {
     this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((el) => {
       el.hidden = el.dataset.panel !== identifier;
     });
+  }
+
+  // Coalesce per-keystroke refreshes: the full pass below walks every control
+  // in the modal (chips, nav counts, apply state) twice over, which is wasted
+  // work between keystrokes. 100ms is imperceptible for the indicators.
+  #scheduleRefresh() {
+    clearTimeout(this.#refreshDebounce);
+    this.#refreshDebounce = setTimeout(() => this.#refreshActiveIndicators(), 100);
   }
 
   // Rebuild the active-filter chips and nav dots from the current control state.
