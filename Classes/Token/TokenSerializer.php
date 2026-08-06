@@ -43,7 +43,7 @@ final class TokenSerializer
 
         $parts = array_map(self::serializeToken(...), $keyed);
         if ('' !== $freetext) {
-            $parts[] = str_contains($freetext, ' ') ? '"'.$freetext.'"' : $freetext;
+            $parts[] = self::quoteValue($freetext);
         }
 
         return implode(' ', $parts);
@@ -51,11 +51,16 @@ final class TokenSerializer
 
     private static function serializeToken(Token $token): string
     {
-        $value = implode(',', $token->values);
-        if (1 === preg_match('/[\s"]/', $value)) {
-            $value = '"'.str_replace('"', '', $value).'"';
-        }
+        return $token->key.':'.self::quoteValue(implode(',', $token->values));
+    }
 
-        return $token->key.':'.$value;
+    /**
+     * Literal quotes are stripped, not escaped - the grammar has no escape
+     * sequence, and a quote surviving into the phrase would end the quoted
+     * range early and let the remainder re-parse as extra keyed tokens.
+     */
+    private static function quoteValue(string $value): string
+    {
+        return 1 === preg_match('/[\s"]/', $value) ? '"'.str_replace('"', '', $value).'"' : $value;
     }
 }

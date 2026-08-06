@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Token;
 
-use KonradMichalik\PagetreeFacets\Token\{TokenParser, TokenSerializer};
+use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -45,6 +45,23 @@ final class TokenSerializerTest extends TestCase
             'text:"annual report"',
             $serializer->serialize($parser->parse('text:"annual report"')),
         );
+    }
+
+    #[Test]
+    public function stripsLiteralQuotesFromFreetextSoNoKeyedTokenCanBeSmuggledIn(): void
+    {
+        $serializer = new TokenSerializer();
+        $token = new Token(Token::FREETEXT, ['x" raw:t|f=v "'], 'x" raw:t|f=v "');
+
+        $phrase = $serializer->serialize([$token]);
+
+        self::assertSame('"x raw:t|f=v "', $phrase);
+        // The serialized phrase must re-parse as pure freetext - a surviving
+        // quote would end the quoted range early and turn the remainder into
+        // an extra raw: token.
+        $parsed = (new TokenParser())->parse($phrase);
+        self::assertCount(1, $parsed);
+        self::assertTrue($parsed[0]->isFreetext());
     }
 
     #[Test]
