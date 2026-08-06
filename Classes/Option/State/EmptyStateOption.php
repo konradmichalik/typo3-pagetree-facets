@@ -23,7 +23,10 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
  *
  * "is:empty" - pages without any tt_content record (deleted=0; hidden COUNTS
  * as content, a page with five disabled elements is not empty). Restricted to
- * content-bearing doktypes so shortcuts/folders do not flood results.
+ * content-bearing doktypes so shortcuts/folders do not flood results. The
+ * "no records" test is a NOT EXISTS anti-join, so only the final (small) set
+ * is materialized - a fetch-both-sets-and-subtract approach would pull every
+ * non-empty pid plus every candidate uid into PHP.
  *
  * Pages with content_from_pid are excluded: they own no records but render
  * another page's content, so reporting them would be a false positive for the
@@ -60,18 +63,15 @@ final class EmptyStateOption extends AbstractPagesQueryOption
 
     public function resolvePageUids(FilterContext $context): array
     {
-        $nonEmpty = array_flip($this->queryHelper->getPageUidsWithRecords('tt_content', $context));
-
-        $candidates = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
+        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder) use ($context): void {
             $this->excludeNonContentDoktypes($queryBuilder);
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->or(
                     $queryBuilder->expr()->isNull('content_from_pid'),
                     $queryBuilder->expr()->eq('content_from_pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
                 ),
+                'NOT '.$this->queryHelper->createRecordsExistExpression('tt_content', 'pid', $context),
             );
         });
-
-        return array_values(array_filter($candidates, static fn (int $uid): bool => !isset($nonEmpty[$uid])));
     }
 }

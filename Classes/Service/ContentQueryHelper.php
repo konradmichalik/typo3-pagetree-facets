@@ -207,6 +207,36 @@ class ContentQueryHelper
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
     }
 
+    /**
+     * "EXISTS (SELECT ...)" sub-select testing for at least one record in
+     * $table whose $correlationColumn points at the outer query's pages.uid -
+     * the building block that lets set-inversion criteria (is:empty,
+     * untouched-since presets, missing translations) run as ONE query instead
+     * of materializing full-table UID sets into PHP and subtracting there.
+     *
+     * $andWhere is raw SQL appended to the sub-select; any named parameters in
+     * it must be created on the OUTER query builder (the one that executes).
+     * $alias is required when $table equals the outer table (self-join on
+     * pages), optional otherwise.
+     */
+    public function createRecordsExistExpression(string $table, string $correlationColumn, FilterContext $context, string $andWhere = '', string $alias = ''): string
+    {
+        $alias = '' !== $alias ? $alias : $table;
+        $subQueryBuilder = $this->createQueryBuilder($table, $context);
+        $subQueryBuilder
+            ->select($alias.'.uid')
+            ->from($table, $alias === $table ? null : $alias)
+            ->where($subQueryBuilder->expr()->eq(
+                $alias.'.'.$correlationColumn,
+                $subQueryBuilder->quoteIdentifier('pages.uid'),
+            ));
+        if ('' !== $andWhere) {
+            $subQueryBuilder->andWhere($andWhere);
+        }
+
+        return 'EXISTS ('.$subQueryBuilder->getSQL().')';
+    }
+
     private function isWildcardValue(string $value): bool
     {
         return str_starts_with($value, '*') || str_ends_with($value, '*');

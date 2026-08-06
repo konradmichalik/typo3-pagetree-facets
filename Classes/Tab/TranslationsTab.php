@@ -68,27 +68,35 @@ final class TranslationsTab extends AbstractPagesQueryTab
         // The two keys are exact inverses over the same candidate set, so both
         // run through one code path - which also guarantees "translated" honours
         // the doktype exclusion instead of leaking folders that happen to carry
-        // a translation record.
+        // a translation record. Each language is a correlated (NOT) EXISTS on
+        // the aliased pages self-join, OR-combined (missing from - or present
+        // in - ANY of the languages), so everything resolves as ONE query
+        // instead of one full default-language set plus one translated set per
+        // language in PHP.
         $wantTranslated = 'translated' === $token->key;
-        $candidates = $this->fetchPageUids($context, function (QueryBuilder $queryBuilder): void {
+
+        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder) use ($context, $languageIds, $wantTranslated): void {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             );
             $this->excludeNonContentDoktypes($queryBuilder);
+
+            $terms = [];
+            foreach ($languageIds as $languageId) {
+                $exists = $this->queryHelper->createRecordsExistExpression(
+                    'pages',
+                    'l10n_parent',
+                    $context,
+                    $queryBuilder->expr()->eq(
+                        'translation.sys_language_uid',
+                        $queryBuilder->createNamedParameter($languageId, Connection::PARAM_INT),
+                    ),
+                    'translation',
+                );
+                $terms[] = $wantTranslated ? $exists : 'NOT '.$exists;
+            }
+            $queryBuilder->andWhere($queryBuilder->expr()->or(...$terms));
         });
-
-        $sets = [];
-        foreach ($languageIds as $languageId) {
-            $translated = array_flip($this->fetchTranslatedParentUids($languageId, $context));
-            $sets[] = array_values(array_filter(
-                $candidates,
-                static fn (int $uid): bool => isset($translated[$uid]) === $wantTranslated,
-            ));
-        }
-
-        // Values within one token are OR-combined (missing from - or present in -
-        // ANY of the languages).
-        return array_values(array_unique(array_merge(...$sets)));
     }
 
     /**
@@ -149,21 +157,4 @@ final class TranslationsTab extends AbstractPagesQueryTab
         ];
     }
 
-    /**
-     * @return list<int>
-     */
-    private function fetchTranslatedParentUids(int $languageId, FilterContext $context): array
-    {
-        $queryBuilder = $this->queryHelper->createQueryBuilder('pages', $context);
-        $queryBuilder
-            ->select('l10n_parent')
-            ->distinct()
-            ->from('pages')
-            ->where(
-                $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter($languageId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->gt('l10n_parent', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            );
-
-        return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
-    }
 }

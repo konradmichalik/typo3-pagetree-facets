@@ -106,6 +106,13 @@ final class ActivityTab extends AbstractPagesQueryTab
     }
 
     /**
+     * One query for both directions, with the content dimension as a
+     * correlated (NOT) EXISTS: "<30d" is own-stamp recent OR recent content;
+     * ">1y" is own-stamp stale AND no content newer than the threshold. The
+     * earlier union/subtract implementation materialized most of the tree
+     * into PHP for ">"-presets ("untouched for a year" matches almost
+     * everything on a mature installation).
+     *
      * @return list<int>
      */
     private function resolveUpdated(string $preset, FilterContext $context): array
@@ -115,30 +122,28 @@ final class ActivityTab extends AbstractPagesQueryTab
             return [];
         }
 
-        // Effective change: pages.tstamp OR any tt_content.tstamp on the page.
-        $pagesByOwnStamp = $this->resolveTimestampField('tstamp', $preset, $context);
-        // For "<30d" (touched within 30 days) content matching is a simple
-        // EXISTS with tstamp >= threshold. For ">1y" (untouched for a year)
-        // the page must have NO content newer than the threshold - handled by
-        // subtracting recently-touched pages from the own-stamp candidates.
-        $queryBuilder = $this->queryHelper->createQueryBuilder('tt_content', $context);
-        $queryBuilder
-            ->select('pid')
-            ->distinct()
-            ->from('tt_content')
-            ->where(
-                $queryBuilder->expr()->gt('pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-                $queryBuilder->expr()->comparison('tstamp', '>=', $queryBuilder->createNamedParameter($threshold, Connection::PARAM_INT)),
+        return $this->fetchPageUids($context, function (QueryBuilder $queryBuilder) use ($operator, $threshold, $context): void {
+            $ownStamp = $queryBuilder->expr()->comparison(
+                'tstamp',
+                '<' === $operator ? '>=' : '<',
+                $queryBuilder->createNamedParameter($threshold, Connection::PARAM_INT),
             );
-        $pagesWithRecentContent = array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
-
-        if ('<' === $operator) {
-            return array_values(array_unique(array_merge($pagesByOwnStamp, $pagesWithRecentContent)));
-        }
-
-        $recent = array_flip($pagesWithRecentContent);
-
-        return array_values(array_filter($pagesByOwnStamp, static fn (int $uid): bool => !isset($recent[$uid])));
+            $recentContent = $this->queryHelper->createRecordsExistExpression(
+                'tt_content',
+                'pid',
+                $context,
+                $queryBuilder->expr()->comparison(
+                    'tt_content.tstamp',
+                    '>=',
+                    $queryBuilder->createNamedParameter($threshold, Connection::PARAM_INT),
+                ),
+            );
+            if ('<' === $operator) {
+                $queryBuilder->andWhere($queryBuilder->expr()->or($ownStamp, $recentContent));
+            } else {
+                $queryBuilder->andWhere($ownStamp, 'NOT '.$recentContent);
+            }
+        });
     }
 
     /**
