@@ -156,8 +156,13 @@ final readonly class FacetsModalController
         // Activity tab this endpoint backs is disabled) - must not be able to
         // enumerate be_users through the raw endpoint. The UI never loads for
         // them anyway; this closes the direct-request bypass.
+        // The tables_select check additionally binds the endpoint to TYPO3's own
+        // be_users listing permission (admins always pass): filtering by editor
+        // is a page-tree concern, but *which accounts exist* is be_users data -
+        // without the grant, any editor could enumerate all account names here.
         if ($this->tabRegistry->isDisabledForUser($backendUser)
             || null === $this->tabRegistry->findTabForToken(new Token('by', ['0'], 'by:0'), $backendUser)
+            || !$backendUser->check('tables_select', 'be_users')
         ) {
             return new JsonResponse(['users' => []]);
         }

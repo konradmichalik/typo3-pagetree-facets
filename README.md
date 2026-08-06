@@ -128,6 +128,12 @@ Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
 > Disabling a tab also makes its token keys unknown to the filter engine, so the
 > restriction cannot be bypassed by typing the token into the search field manually.
 
+> [!NOTE]
+> The Activity tab's "Edited by" / "Created by" picker searches backend user
+> names. For non-admins this requires `be_users` among the group's allowed
+> tables (*Tables (listing)* / `tables_select`) — without that grant the picker
+> offers no suggestions (filtering by a known uid, e.g. `by:3`, still works).
+
 #### The `raw:` power-user token
 
 Syntax: `raw:<table>|<field>=<value>|<field2>=<value2>...`, e.g.

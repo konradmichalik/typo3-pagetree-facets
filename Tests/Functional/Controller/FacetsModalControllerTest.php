@@ -190,6 +190,28 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function theUserEnumerationEndpointRequiresBeUsersListAccess(): void
+    {
+        // Feature on, Activity tab on - but a non-admin whose groups do not
+        // grant be_users in "tables_select" must not read account names either.
+        $this->setUpBackendUser(2);
+
+        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
+
+        self::assertSame([], $payload['users']);
+    }
+
+    #[Test]
+    public function theUserEnumerationEndpointOpensWithBeUsersListAccess(): void
+    {
+        $this->setUpBackendUser(4); // non-admin; group 1 grants tables_select on be_users
+
+        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
+
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+    }
+
+    #[Test]
     public function theUserEnumerationEndpointIsClosedWhenTheActivityTabIsDisabled(): void
     {
         // Feature stays on, but the tab that owns the "by" key is disabled - the
