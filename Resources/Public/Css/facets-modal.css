@@ -374,6 +374,18 @@
     line-height: 1.4;
 }
 
+/* The facet name is subordinate to the value the user picked, so it steps back a
+   little - but it is real information (which criterion this is), so it still has
+   to clear 4.5:1. Not --pl-muted: against the chip's accent tint that lands near
+   4.0:1 in light and 3.6:1 in dark, and shrinking it makes that worse. A weakened
+   currentColor keeps ~7:1 light / ~6:1 dark while still reading as greyer, and it
+   follows the themed text colour automatically. Size in em so it scales with the
+   chip rather than pinning a second absolute value. */
+.pagetree-facets__chip-prefix {
+    color: color-mix(in srgb, currentColor 75%, transparent);
+    font-size: 0.9em;
+}
+
 .pagetree-facets__chip-remove {
     display: inline-flex;
     align-items: center;

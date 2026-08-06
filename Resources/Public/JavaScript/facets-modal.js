@@ -1670,16 +1670,28 @@ class FacetsModal {
     return undefined !== input.dataset.picker ? (input.dataset.value ?? '') : input.value;
   }
 
+  // `label` stays the joined form: it is the chip's accessible name, which has to
+  // read as one phrase no matter how the two halves are styled apart visually.
   #criterion(prefix, tab, valueLabel, remove) {
-    return { tab: tab.identifier, label: `${prefix}: ${valueLabel}`, remove };
+    return { tab: tab.identifier, prefix, value: valueLabel, label: `${prefix}: ${valueLabel}`, remove };
   }
 
   #renderChip(criterion) {
     const chip = document.createElement('span');
     chip.className = 'pagetree-facets__chip';
+    // Two spans inside the label wrapper rather than two chip children: the chip's
+    // own gap is what separates the label from the remove button, and reusing it
+    // between prefix and value would space them out like separate items. A real
+    // space keeps the phrase intact for selection and copy.
     const text = document.createElement('span');
     text.className = 'pagetree-facets__chip-label';
-    text.textContent = criterion.label;
+    const prefix = document.createElement('span');
+    prefix.className = 'pagetree-facets__chip-prefix';
+    prefix.textContent = `${criterion.prefix}:`;
+    const value = document.createElement('span');
+    value.className = 'pagetree-facets__chip-value';
+    value.textContent = criterion.value;
+    text.append(prefix, document.createTextNode(' '), value);
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'pagetree-facets__chip-remove';
