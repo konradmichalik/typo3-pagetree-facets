@@ -1,17 +1,21 @@
-# cat=basic; type=boolean; label=Restrict to admins: Only administrators can use the filter modal and tokens.
+# Labels live in Resources/Private/Language/locallang_settings.xlf so they can be
+# translated; core resolves the LLL reference and then splits the result on its
+# first colon into title and description.
+
+# cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.adminOnly
 adminOnly = 0
 
-# cat=basic; type=string; label=Disabled tabs: Comma-separated list of built-in tab identifiers to disable installation-wide (records, ce, activity, doktype, state, translations, seo).
+# cat=basic; type=string; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.disabledTabs
 disabledTabs =
 
-# cat=basic; type=string; label=Disabled options: Comma-separated list of individual option identifiers ("tokenKey:value") to disable installation-wide, e.g. "is:editlocked, seo:nofollow". Disables a single value inside a tab without disabling the whole tab.
+# cat=basic; type=string; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.disabledOptions
 disabledOptions =
 
-# cat=basic; type=boolean; label=Persist filter for the session: Remember each backend user's current page tree filter for the duration of their session, so it survives a reload or module switch (cleared on logout).
+# cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.persistFilter
 persistFilter = 0
 
-# cat=basic; type=boolean; label=Notice on empty results: Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it.
+# cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.emptyResultNotice
 emptyResultNotice = 1
 
-# cat=advanced; type=boolean; label=Enable raw query tab (power users): Adds a "raw:<table>|<field>=<value>|..." token that matches arbitrary field values on any TCA table the current backend user has table-select access to. Off by default - review the security implications in the README before enabling.
+# cat=advanced; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.enableRawQueryTab
 enableRawQueryTab = 0

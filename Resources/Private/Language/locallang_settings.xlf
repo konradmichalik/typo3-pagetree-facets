@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" datatype="plaintext" original="EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf" date="2026-08-06T12:00:00Z" product-name="typo3_pagetree_facets">
+		<!--
+			Labels for ext_conf_template.txt, kept out of locallang.xlf on purpose:
+			that file is published inline into TYPO3.lang on every backend page
+			(see BackendAssetsListener), and these strings are only ever needed by
+			the Install Tool's Settings module.
+
+			Each source is "Title: Description" - core splits the *resolved* label on
+			its first colon (AstConstantCommentVisitor::parseComment()), so a
+			translation must keep exactly one colon separating the two parts. Later
+			colons are safe; a missing one leaves the setting without a description.
+		-->
+		<body>
+			<trans-unit id="settings.adminOnly"><source>Restrict to admins: Only administrators can use the filter modal and tokens.</source></trans-unit>
+			<trans-unit id="settings.disabledTabs"><source>Disabled tabs: Comma-separated list of built-in tab identifiers to disable installation-wide (records, ce, activity, doktype, state, translations, seo).</source></trans-unit>
+			<trans-unit id="settings.disabledOptions"><source>Disabled options: Comma-separated list of individual option identifiers ("tokenKey:value") to disable installation-wide, e.g. "is:editlocked, seo:nofollow". Disables a single value inside a tab without disabling the whole tab.</source></trans-unit>
+			<trans-unit id="settings.persistFilter"><source>Persist filter for the session: Remember each backend user's current page tree filter for the duration of their session, so it survives a reload or module switch (cleared on logout).</source></trans-unit>
+			<trans-unit id="settings.emptyResultNotice"><source>Notice on empty results: Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it.</source></trans-unit>
+			<trans-unit id="settings.enableRawQueryTab"><source>Enable raw query tab (power users): Adds a "raw:&lt;table&gt;|&lt;field&gt;=&lt;value&gt;|..." token that matches arbitrary field values on any TCA table the current backend user has table-select access to. Off by default - review the security implications in the README before enabling.</source></trans-unit>
+		</body>
+	</file>
+</xliff>
