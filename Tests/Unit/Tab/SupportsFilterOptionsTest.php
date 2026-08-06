@@ -51,6 +51,18 @@ final class SupportsFilterOptionsTest extends TestCase
     }
 
     #[Test]
+    public function modalConfigurationKeepsItsFieldsWhenNothingIsRegistered(): void
+    {
+        // The vocabulary tabs carry no options of their own - PageStateTab ships an
+        // empty option list and relies entirely on the registry - so a backend
+        // where every option is disabled must still yield the untouched field.
+        $config = $this->createTab([])->getModalConfiguration($this->createContext());
+
+        self::assertSame([], $config['fields'][0]['options']);
+        self::assertSame('is', $config['fields'][0]['name']);
+    }
+
+    #[Test]
     public function resolveOrCombinesValuesWithinOneToken(): void
     {
         $tab = $this->createTab([

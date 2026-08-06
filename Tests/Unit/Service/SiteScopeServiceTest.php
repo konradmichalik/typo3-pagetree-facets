@@ -53,6 +53,20 @@ final class SiteScopeServiceTest extends TestCase
     }
 
     #[Test]
+    public function anEmptyUidListStaysEmpty(): void
+    {
+        // Guard ahead of the pid map: when the token intersection upstream already
+        // came out empty there is nothing to scope, and the service must not turn
+        // that into a query. Empty in, empty out - never "no constraint".
+        $subject = new SiteScopeService(
+            $this->createSiteFinder(['main' => 1]),
+            $this->createAncestry([1 => 0]),
+        );
+
+        self::assertSame([], $subject->filterUidsBySite([], 'main'));
+    }
+
+    #[Test]
     public function pagesWithoutResolvableSiteAreDropped(): void
     {
         $subject = new SiteScopeService(
