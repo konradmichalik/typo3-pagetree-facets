@@ -27,6 +27,10 @@ test('the reset action clears the filter and restores the tree', async ({ page }
 
   await tree.search(NO_MATCH_TOKEN);
   await expect(notice).toBeVisible();
+  // Baseline, so the assertion after the reset is not vacuous: an empty result
+  // strips the tree down to the site root, so even "Home" is gone. Verified live
+  // against 14.3.5 - unfiltered renders [root, Home], doktype:99 renders [root].
+  await expect(tree.node(DEMO_PAGES.home)).toHaveCount(0);
 
   await notice.getByRole('button', { name: 'Reset filter' }).click();
 
