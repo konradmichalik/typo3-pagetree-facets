@@ -7,6 +7,8 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
+import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
 /**
  * The filter modal: stateless UI over the canonical token string. On open,
@@ -561,28 +563,8 @@ class FacetsModal {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
     });
-    this.#renderSearchResults(this.#findFilterMatches(trimmed));
+    this.#renderSearchResults(findFilterMatches(this.#configuration.tabs, trimmed));
     this.#resultsPanel.hidden = false;
-  }
-
-  // @return {tab, field, option}[] - text-type/user-picker fields have no
-  // enumerable options and are deliberately excluded from matching.
-  #findFilterMatches(query) {
-    const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
-    const matches = [];
-    for (const tab of this.#configuration.tabs) {
-      for (const field of tab.configuration.fields ?? []) {
-        if (!choiceTypes.includes(field.type)) {
-          continue;
-        }
-        for (const option of field.options ?? []) {
-          if (option.label.toLowerCase().includes(query)) {
-            matches.push({ tab, field, option });
-          }
-        }
-      }
-    }
-    return matches;
   }
 
   #renderSearchResults(matches) {
@@ -1588,8 +1570,8 @@ class FacetsModal {
   #collectActiveCriteria() {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
-      const fields = this.#distinctFields(tab);
-      const nameCounts = this.#fieldNameCounts(tab);
+      const fields = distinctFields(tab);
+      const nameCounts = fieldNameCounts(tab);
       // A name that occurs more than once in the raw (non-deduplicated) field
       // list is bucketed (e.g. RecordsTab's `table` split into TYPO3 Core/News/
       // Other, ContentElementTab's `ce` split per wizard group) - each field's
@@ -1726,33 +1708,6 @@ class FacetsModal {
         },
       ],
     );
-  }
-
-  // Controls are looked up by name, and a tab may spread one criterion over
-  // several fields that share that name - the content element tab does, one
-  // field per wizard group. Both collectors must therefore walk distinct names,
-  // not fields: per field, the document-wide name lookup returns every matching
-  // control, so six same-named fields reported one ticked box six times.
-  #distinctFields(tab) {
-    const byName = new Map();
-    for (const field of tab.configuration.fields ?? []) {
-      if (!byName.has(field.name)) {
-        byName.set(field.name, field);
-      }
-    }
-    return [...byName.values()];
-  }
-
-  // Raw (non-deduplicated) occurrence count per field name - used by
-  // #collectActiveCriteria() to tell a bucketed criterion (one name split
-  // across several field objects) from one that maps to exactly one field
-  // object, which #distinctFields() alone can't distinguish once collapsed.
-  #fieldNameCounts(tab) {
-    const counts = new Map();
-    for (const field of tab.configuration.fields ?? []) {
-      counts.set(field.name, (counts.get(field.name) ?? 0) + 1);
-    }
-    return counts;
   }
 
   // For dataset.picker controls (currently: user-picker), the visible .value is
@@ -1935,7 +1890,7 @@ class FacetsModal {
     const states = {};
     for (const tab of this.#configuration.tabs) {
       const state = {};
-      for (const field of this.#distinctFields(tab)) {
+      for (const field of distinctFields(tab)) {
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         const values = [];
         for (const input of inputs) {

@@ -11,3 +11,17 @@ jobs:
       php-versions: '["8.3", "8.4", "8.5"]'
       typo3-versions: '["14.0", "14.3"]'
       dependencies: '["highest", "lowest"]'
+
+  # Separate from the reusable TYPO3 workflow above, which only takes PHP and
+  # TYPO3 inputs. `npm install` rather than `npm ci` because the lock file is not
+  # committed - same reasoning as composer.lock, this being a library.
+  javascript:
+    name: JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install
+      - run: npm run test:js

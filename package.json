@@ -1,0 +1,17 @@
+{
+	"name": "@konradmichalik/typo3-pagetree-facets",
+	"description": "Development tooling for the pagetree_facets TYPO3 extension. Not published - the distributable package is the Composer one.",
+	"private": true,
+	"license": "GPL-2.0-or-later",
+	"type": "module",
+	"scripts": {
+		"test:js": "vitest run",
+		"test:js:watch": "vitest",
+		"test:js:coverage": "vitest run --coverage"
+	},
+	"devDependencies": {
+		"@vitest/coverage-v8": "^4.1.10",
+		"jsdom": "^30.0.1",
+		"vitest": "^4.1.10"
+	}
+}
