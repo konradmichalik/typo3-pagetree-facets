@@ -84,12 +84,44 @@ class FacetsToolbar {
     const url = new URL(window.location.href);
     const direct = url.searchParams.get(this.#shareParam);
     if (null !== direct) {
-      url.searchParams.delete(this.#shareParam);
-      window.history.replaceState({}, '', url.toString());
+      this.#scrubShareParam();
       return direct;
     }
     const redirectParams = url.searchParams.get('redirectParams');
-    return null !== redirectParams ? new URLSearchParams(redirectParams).get(this.#shareParam) : null;
+    const nested = null !== redirectParams ? new URLSearchParams(redirectParams).get(this.#shareParam) : null;
+    if (null !== nested) {
+      this.#scrubShareParam();
+    }
+    return nested;
+  }
+
+  // Scrubbing once, right here, is not enough to make it stick: TYPO3's own
+  // module router (module/router.js#updateBrowserState) reconstructs the
+  // final per-module URL straight from redirectParams via its own
+  // history.replaceState, once the module iframe reports back - carrying our
+  // param right back into the visible query string, since the router has no
+  // notion of it. That reconstruction is asynchronous and lands strictly
+  // after this first call, so a one-shot scrub loses the race every time
+  // (confirmed live: the param was still in location.href 12+ seconds after
+  // load, with no further popstate/hashchange in between - the router's
+  // replaceState is a same-document navigation that fires none of those).
+  // `typo3-module-loaded` is what the router dispatches (bubbling to
+  // document, per its own source) immediately after every one of its
+  // replaceState calls, in every code path that makes one - listening there
+  // lets us clean up right after the fact instead of guessing at a delay.
+  #scrubShareParam() {
+    const strip = () => {
+      const url = new URL(window.location.href);
+      if (null === url.searchParams.get(this.#shareParam)) {
+        return;
+      }
+      url.searchParams.delete(this.#shareParam);
+      // Preserve whatever state the router just set - it drives its own
+      // popstate-based back/forward handling, and only the URL is ours to touch.
+      window.history.replaceState(window.history.state, '', url.toString());
+    };
+    strip();
+    document.addEventListener('typo3-module-loaded', strip);
   }
 
   #injectWithRetry(attemptsLeft) {
