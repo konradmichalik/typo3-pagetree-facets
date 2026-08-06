@@ -169,21 +169,25 @@ function post_setup() {
   _progress " ├─ Update TYPO3"
     update_typo3
   _done
-  _progress " ├─ Seed demo content"
-    seed_demo_content
-  _done
+  seed_demo_content
   printf " └─ \033[33mTYPO3 $VERSION setup completed!\033[0m Open in your browser: https://$VERSION.${EXTENSION_NAME}.ddev.site\n"
 }
 
 # Function to seed the demo pages and content elements to filter against.
 # Runs last on purpose: the command writes records, so it needs the schema from
-# update_typo3 to exist first. It is idempotent, and skipped when the demo_content
-# fixture extension is absent, so a trimmed-down checkout still installs.
+# update_typo3 to exist first. It is idempotent, so re-installing is safe.
+# Deliberately NOT wrapped in _progress: that suppresses all output, and both the
+# "how much was seeded" summary and any failure are worth seeing. A missing command
+# means the demo_content fixture is not installed - reported rather than silently
+# skipped, since "no demo pages" is otherwise indistinguishable from success.
 function seed_demo_content() {
     if ! $TYPO3_BIN list 2>/dev/null | grep -q 'pagetree-facets:seed-demo-content'; then
+        printf " ├─ \033[33mNo demo content\033[0m: the demo_content fixture is not installed\n"
         return
     fi
-    $TYPO3_BIN pagetree-facets:seed-demo-content
+    local summary
+    summary=$($TYPO3_BIN pagetree-facets:seed-demo-content 2>&1 | grep -v 'JIT' | grep -v '^$' | tail -2)
+    printf " ├─ Demo content: %s\n" "$(echo "$summary" | tr '\n' ' ')"
 }
 
 # Function to display an introductory message for the TYPO3 version.
@@ -314,21 +318,38 @@ function install_composer_packages() {
 # newly added fixture extension needs no change here.
 function require_additional_extensions() {
     shopt -s nullglob
-    local packages=()
+    local specs=""
     for dir in Tests/Functional/Fixtures/Extensions/*/; do
         local name
-        name=$(composer config name --working-dir "$dir" 2>/dev/null) || continue
-        packages+=("$name:*@dev")
+        # PHP prints its startup warnings (e.g. about JIT) on STDOUT in this
+        # container, so redirecting STDERR is not enough - taking the whole output
+        # once produced "Warning: JIT ...:*@dev" and composer read "JIT" as a
+        # version constraint. Pick the line that has the shape of a package name.
+        name=$(composer config name --working-dir "$dir" 2>/dev/null \
+            | grep -Eo '^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$' | tail -1)
+        if [ -z "$name" ]; then
+            printf " ├─ \033[33mSkipped %s\033[0m: no package name could be read\n" "$dir"
+            continue
+        fi
+        specs="$specs $name:*@dev"
     done
     shopt -u nullglob
 
-    if [ ${#packages[@]} -eq 0 ]; then
+    if [ -z "${specs// /}" ]; then
         return
     fi
 
+    # Captured rather than streamed: _progress redirects STDOUT to /dev/null while
+    # its spinner runs and there is no log file, so an unchecked failure here is
+    # invisible - which is exactly how the broken version above went unnoticed.
+    local output status
     _progress " ├─ Install local fixture extensions"
-      composer req "${packages[@]}" --no-progress -n -d $BASE_PATH
+      output=$(composer req $specs --no-progress -n -d "$BASE_PATH" 2>&1)
+      status=$?
     _done
+    if [ $status -ne 0 ]; then
+        printf " ├─ \033[31mFixture extensions failed to install\033[0m (%s)\n%s\n" "${specs# }" "$output"
+    fi
 }
 
 # Function to set up site configuration from templates.
