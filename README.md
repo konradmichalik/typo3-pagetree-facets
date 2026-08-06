@@ -38,7 +38,7 @@ a public filter tab API.
 - **Built-in filter tabs**: Content elements (`ce:`), Records (`table:` `record:` `text:`), Activity (`updated:` `created:` `by:` `createdby:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:` `translated:`), SEO (`seo:`, requires EXT:seo)
 - **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
 - **Sharable links, session persistence and favorites**: copy the current filter as a link, have it survive a reload for the session, or save it as a named favorite for later
-- **Extensible tab API**: register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`; built-in tabs use the exact same path
+- **Extensible filter API**: add a single option to an existing tab (`FilterOptionInterface` + `RegisterFilterOptionsEvent`) or a whole tab (`FilterTabInterface` + `RegisterFilterTabsEvent`) — the built-ins use the exact same paths
 - **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_typo3pagetreefacets.disableTabs` / `.disable`)
 - **Raw query escape hatch** (`raw:`, opt-in, off by default): power-user token matching arbitrary `field=value` conditions against any TCA table the current backend user has table-select access to — see the Configuration section below for the syntax and security tradeoffs before enabling it
 
@@ -180,15 +180,55 @@ tx_typo3pagetreefacets.disableTabs = seo, translations
 
 ## 🔌 Extending
 
+There are two extension points, and the smaller one is usually the one you want.
+
+### A single option in an existing tab
+
+To add one more criterion to a token key that already exists — another value in
+Page state's `is:` group, say — implement `FilterOptionInterface` and register it
+via `RegisterFilterOptionsEvent`:
+
+```php
+#[AsEventListener(identifier: 'my-ext/register-option')]
+final readonly class MyOptionListener
+{
+    public function __construct(private MyOption $myOption) {}
+
+    public function __invoke(RegisterFilterOptionsEvent $event): void
+    {
+        $event->addOption($this->myOption);   // priority 0 = after the built-ins
+    }
+}
+```
+
+The option reports which key it extends (`getTokenKey()`), its own value, label,
+icon and description, and resolves that value to page UIDs. Values of one token are
+OR-combined, separate tokens AND-intersected — identical to a built-in, because the
+built-in options use this same event. Extending `AbstractPagesQueryOption` is
+optional and saves the query plumbing when the criterion is a `pages` lookup.
+
+`getTokenKey()`+`getValue()` (e.g. `is:no-nav-title`) is the identifier
+administrators disable the option under, so treat it as public API.
+
+Only vocabulary tabs surface options — Page state (`is:`) and SEO (`seo:`).
+TCA-derived tabs such as Page type or Records build their options dynamically and
+ignore the event.
+
+### A whole tab
+
 Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
 (`#[AsEventListener]`); the built-in tabs use the exact same path. A tab owns
 token keys, resolves them to page UIDs, and describes its modal UI declaratively.
 
-A complete, working example lives in this repository:
+### A working example of both
+
 [`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab) is a minimal
-extension adding an `abstract:set` / `abstract:empty` filter, with the interface
-contract explained method by method. It is a development fixture (not part of the
-released package), so copy it rather than depending on it.
+extension in this repository that exercises both paths: an `abstract:set` /
+`abstract:empty` tab, and an `is:no-nav-title` option added to the *built-in* Page
+state tab. Both are commented method by method, including the priority semantics.
+It is a development fixture (not part of the released package), so copy it rather
+than depending on it — `ddev install` sets it up automatically, so both show up in
+the modal of a freshly installed instance.
 
 ## 🙏 Acknowledgments
 

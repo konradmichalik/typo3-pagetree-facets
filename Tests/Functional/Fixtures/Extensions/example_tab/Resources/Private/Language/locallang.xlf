@@ -7,6 +7,8 @@
 			<trans-unit id="example.set.description"><source>The page's abstract field (shown as a teaser on some templates) is filled in.</source></trans-unit>
 			<trans-unit id="example.empty"><source>No teaser text</source></trans-unit>
 			<trans-unit id="example.empty.description"><source>The page's abstract field is empty or not set.</source></trans-unit>
+			<trans-unit id="option.noNavTitle"><source>No navigation title</source></trans-unit>
+			<trans-unit id="option.noNavTitle.description"><source>The page has no separate navigation title, so menus fall back to its page title. Added to the built-in "Page state" tab by EXT:example_tab.</source></trans-unit>
 		</body>
 	</file>
 </xliff>
