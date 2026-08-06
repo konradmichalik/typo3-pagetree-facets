@@ -9,6 +9,7 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { closeOpenUserDropdowns, renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
  * The filter modal: stateless UI over the canonical token string. On open,
@@ -54,7 +55,6 @@ class FacetsModal {
   #resultsPanel = null;
   #root = null;
   #nextHelpId = 0;
-  #nextListId = 0;
   #currentPageId = null;
   #favoritesList = null;
   // Client-side pseudo-tab: favorites are not a filter criterion (no token
@@ -63,11 +63,6 @@ class FacetsModal {
   #favoritesTabId = '__favorites';
   #favoritesNavItem = null;
   #refreshDebounce = null;
-  // Hide-callbacks of currently open user-picker dropdowns: their scroll
-  // listeners live on `document`, so closing the modal with a dropdown still
-  // open (blur does not fire on element removal) must run them explicitly or
-  // the listeners would outlive the modal and retain its detached DOM.
-  #openUserDropdowns = new Set();
 
   async open(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
@@ -185,7 +180,7 @@ class FacetsModal {
   #teardown() {
     clearTimeout(this.#refreshDebounce);
     this.#cancelTokenTimers();
-    [...this.#openUserDropdowns].forEach((hide) => hide());
+    closeOpenUserDropdowns();
   }
 
   #render() {
@@ -205,11 +200,12 @@ class FacetsModal {
         this.#refreshApplyState();
       }
     });
-    // Kept for reparenting the user-picker dropdown out of the scrolling panel
-    // (see #showUserResults). Modal.advanced() renders `content` into its own
-    // Lit-managed custom element - appending directly to that element is
-    // invisible (nodes it did not create are outside its render tree), but
-    // this wrapper is plain DOM we fully own, so appending here is safe.
+    // Handed to the user picker as its reparent target, so its dropdown escapes
+    // the scrolling panel's overflow (the module explains why it needs one).
+    // Modal.advanced() renders `content` into its own Lit-managed custom element -
+    // appending directly to that element is invisible (nodes it did not create are
+    // outside its render tree), but this wrapper is plain DOM we fully own, so
+    // appending here is safe.
     this.#root = wrap;
     return wrap;
   }
@@ -864,7 +860,13 @@ class FacetsModal {
     const state = tab.state?.[field.name];
 
     if (field.type === 'user-picker') {
-      group.append(this.#renderUserPicker(tab, field, state));
+      // #root is read lazily: it is only assigned once #render() finished, which
+      // is after every field has been built.
+      group.append(renderUserPicker(tab, field, state, {
+        getRoot: () => this.#root,
+        clearable: (input) => this.#clearable(input),
+        onLabelResolved: () => this.#refreshActiveIndicators(),
+      }));
       return group;
     }
 
@@ -955,268 +957,6 @@ class FacetsModal {
     hiddenDescription.className = 'visually-hidden';
     hiddenDescription.textContent = description;
     return hiddenDescription;
-  }
-
-  // Typeahead over be_users, backed by a small debounced AJAX search - one
-  // single mechanism, not a search box plus a separate "Me" toggle (the two
-  // used to show redundant, unstyled "Me"/"Me" text next to each other with
-  // no indication which one was actually selected). "Me" is pinned as the
-  // first suggestion whenever the dropdown opens, using the current user's
-  // own record the server already has in memory (no round trip). The input's
-  // visible value is a display label ("Me (admin)" or a picked user's own
-  // label); the value actually serialized/collected lives in
-  // input.dataset.value (uid or "me") - see the dataset.value fallback in
-  // #collectActiveCriteria/#serializeAndApply.
-  // ARIA "combobox with list autocomplete" pattern (WAI-ARIA APG): the input
-  // keeps real DOM focus at all times, arrow keys move a highlighted
-  // suggestion via aria-activedescendant, Enter selects it. This is not
-  // decoration - the suggestion list is reparented far from the input in the
-  // DOM (see #showUserResults's docblock), so plain Tab-key focus movement
-  // into it is either unreachable or lands wildly out of sequence; letting
-  // the browser's native Tab handling try was a real keyboard trap before
-  // this rewrite (Tab moved focus nowhere useful, and the list would hide
-  // itself out from under a focus that did land inside it).
-  #renderUserPicker(tab, field, state) {
-    const wrap = document.createElement('div');
-    wrap.className = 'pagetree-facets__user-picker';
-
-    const input = document.createElement('input');
-    input.className = 'form-control';
-    input.type = 'text';
-    input.name = `${tab.identifier}[${field.name}]`;
-    input.autocomplete = 'off';
-    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…';
-    // Marks this control as "dataset.value is the source of truth" - the typed
-    // text is a display-only query until a suggestion is picked, so the
-    // generic collectors must never treat mid-typing text as a criterion.
-    input.dataset.picker = '1';
-    input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-autocomplete', 'list');
-    input.setAttribute('aria-expanded', 'false');
-
-    const results = document.createElement('ul');
-    const resultsId = `pagetree-facets__user-results-${this.#nextListId++}`;
-    results.id = resultsId;
-    results.className = 'pagetree-facets__user-results list-unstyled';
-    results.setAttribute('role', 'listbox');
-    results.hidden = true;
-    input.setAttribute('aria-controls', resultsId);
-
-    const meLabel = TYPO3.lang?.['pagetreeFacets.modal.me'] ?? 'Me';
-    const currentUser = field.currentUser?.uid ? field.currentUser : null;
-    const currentUserLabel = currentUser ? `${meLabel} (${currentUser.username})` : meLabel;
-
-    let highlighted = -1;
-    const options = () => Array.from(results.querySelectorAll('[role="option"]'));
-
-    const setHighlighted = (index) => {
-      const items = options();
-      highlighted = items.length ? ((index % items.length) + items.length) % items.length : -1;
-      for (const [i, item] of items.entries()) {
-        const isActive = i === highlighted;
-        item.classList.toggle('is-highlighted', isActive);
-        item.setAttribute('aria-selected', String(isActive));
-        if (isActive) {
-          item.scrollIntoView({ block: 'nearest' });
-        }
-      }
-      if (highlighted > -1) {
-        input.setAttribute('aria-activedescendant', items[highlighted].id);
-      } else {
-        input.removeAttribute('aria-activedescendant');
-      }
-    };
-
-    const selectUser = (value, label) => {
-      input.value = label;
-      input.dataset.value = value;
-      input.dataset.label = label;
-      this.#hideUserResults(input, results);
-      input.focus();
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    };
-
-    const renderSuggestions = (users) => {
-      results.replaceChildren();
-      const items = currentUser ? [{ value: 'me', label: currentUserLabel }, ...users] : users;
-      items.forEach((item, index) => {
-        const li = document.createElement('li');
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.id = `${resultsId}-option-${index}`;
-        button.setAttribute('role', 'option');
-        button.setAttribute('aria-selected', 'false');
-        // Reached via the input's own arrow-key handling, not Tab - a real
-        // tabindex would put it back in the same broken position as before.
-        button.tabIndex = -1;
-        button.className = 'pagetree-facets__user-result';
-        button.textContent = item.label;
-        // Keeps focus on the input for mouse clicks too, so selecting a
-        // suggestion never needs the blur/setTimeout dance to "just work".
-        button.addEventListener('mousedown', (event) => event.preventDefault());
-        button.addEventListener('click', () => selectUser(String(item.value ?? item.uid), item.label));
-        li.append(button);
-        results.append(li);
-      });
-      highlighted = -1;
-      if (items.length) {
-        this.#showUserResults(input, results);
-      } else {
-        this.#hideUserResults(input, results);
-      }
-    };
-
-    const existingValue = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
-    if ('me' === existingValue && currentUser) {
-      input.value = currentUserLabel;
-      input.dataset.value = 'me';
-      input.dataset.label = currentUserLabel;
-    } else if (existingValue) {
-      input.value = existingValue;
-      input.dataset.value = existingValue;
-      this.#resolveUserLabel(existingValue).then((label) => {
-        if (label && input.dataset.value === existingValue) {
-          input.value = label;
-          input.dataset.label = label;
-          this.#refreshActiveIndicators();
-        }
-      });
-    }
-
-    let debounceTimer = null;
-    // Guards against out-of-order AJAX responses: clearTimeout() only cancels
-    // a debounced search that has not fired yet, not one already in flight.
-    // Typing fast enough that an older request resolves after a newer one
-    // would otherwise let the stale response overwrite the newer, correct
-    // suggestions - each input event bumps the token, and a response is only
-    // applied if it is still the most recent one requested.
-    let searchToken = 0;
-    // Pin "Me" as a suggestion the moment the field gains focus, before any
-    // typing - the common case (filter by my own edits) needs no search at all.
-    input.addEventListener('focus', () => {
-      if (input.value.trim().length < 2) {
-        searchToken += 1;
-        renderSuggestions([]);
-      }
-    });
-
-    input.addEventListener('input', () => {
-      delete input.dataset.value;
-      delete input.dataset.label;
-      window.clearTimeout(debounceTimer);
-      const query = input.value.trim();
-      const token = ++searchToken;
-      if (query.length < 2) {
-        renderSuggestions([]);
-        return;
-      }
-      debounceTimer = window.setTimeout(async () => {
-        const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_users)
-          .withQueryArguments({ q: query })
-          .get();
-        const { users } = await response.resolve();
-        if (token !== searchToken) {
-          return; // a newer query has started since - this response is stale
-        }
-        renderSuggestions(users);
-      }, 300);
-    });
-
-    input.addEventListener('keydown', (event) => {
-      if ('ArrowDown' === event.key) {
-        event.preventDefault();
-        if (results.hidden) {
-          if (results.children.length) {
-            this.#showUserResults(input, results);
-          } else {
-            renderSuggestions([]);
-          }
-        }
-        setHighlighted(highlighted + 1);
-      } else if ('ArrowUp' === event.key && !results.hidden) {
-        event.preventDefault();
-        setHighlighted(highlighted - 1);
-      } else if ('Enter' === event.key && !results.hidden && highlighted > -1) {
-        event.preventDefault();
-        // Also stops this Enter from reaching the modal-wide "Enter applies
-        // and closes" handler (bound higher up on .pagetree-facets) - picking
-        // a suggestion should not also apply/close the whole modal.
-        event.stopPropagation();
-        options()[highlighted].click();
-      } else if ('Escape' === event.key && !results.hidden) {
-        event.preventDefault();
-        this.#hideUserResults(input, results);
-      }
-    });
-
-    input.addEventListener('blur', () => {
-      // Delayed so a mouse click outside the input (that isn't one of our
-      // own suggestion buttons, which prevent this via mousedown above) still
-      // gets a chance to register before the list disappears.
-      window.setTimeout(() => this.#hideUserResults(input, results), 150);
-    });
-
-    wrap.append(this.#clearable(input), results);
-    return wrap;
-  }
-
-  // The dropdown lives inside .pagetree-facets__panels, which scrolls its own
-  // content - an absolutely positioned child gets clipped by that overflow
-  // once the input sits near the bottom of the visible area. Reparenting it to
-  // the modal root and positioning it `absolute` against that same root
-  // (coordinates relative to its own bounding box, not the viewport) escapes
-  // that clipping entirely. Deliberately not `fixed`: the modal dialog may
-  // itself establish a containing block (e.g. a transform-based open
-  // animation), which would silently reinterpret viewport coordinates against
-  // the dialog's box instead - .pagetree-facets never clips its own children,
-  // so `absolute` against it is the safer bet.
-  #showUserResults(input, results) {
-    if (this.#root && results.parentElement !== this.#root) {
-      this.#root.append(results);
-    }
-    const rootRect = this.#root.getBoundingClientRect();
-    const inputRect = input.getBoundingClientRect();
-    results.style.position = 'absolute';
-    results.style.left = `${inputRect.left - rootRect.left}px`;
-    results.style.top = `${inputRect.bottom - rootRect.top + 4}px`;
-    results.style.width = `${inputRect.width}px`;
-    results.hidden = false;
-    input.setAttribute('aria-expanded', 'true');
-    if (!results.dataset.scrollBound) {
-      results.dataset.scrollBound = '1';
-      // Scroll events on inner scrollable containers do not bubble - a capture
-      // listener still sees them on the way down, regardless of which
-      // ancestor scrolled.
-      results.__hideOnScroll = () => this.#hideUserResults(input, results);
-      document.addEventListener('scroll', results.__hideOnScroll, true);
-      // Registered for #teardown: closing the modal must run this cleanup too,
-      // since neither blur nor scroll fires when the modal DOM is removed.
-      this.#openUserDropdowns.add(results.__hideOnScroll);
-    }
-  }
-
-  #hideUserResults(input, results) {
-    results.hidden = true;
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
-    if (results.__hideOnScroll) {
-      document.removeEventListener('scroll', results.__hideOnScroll, true);
-      this.#openUserDropdowns.delete(results.__hideOnScroll);
-      delete results.__hideOnScroll;
-      delete results.dataset.scrollBound;
-    }
-  }
-
-  async #resolveUserLabel(uid) {
-    try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_users)
-        .withQueryArguments({ uid })
-        .get();
-      const { users } = await response.resolve();
-      return users[0]?.label ?? null;
-    } catch {
-      return null;
-    }
   }
 
   // Personal favorites: saved filter phrases, surfaced as a first-class tab at

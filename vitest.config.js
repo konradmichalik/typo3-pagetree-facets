@@ -23,6 +23,9 @@ export default defineConfig({
       // Mirrors the importmap prefix, so tests and the backend refer to the
       // modules by the same specifier.
       '@konradmichalik/pagetree-facets/': path('./Resources/Public/JavaScript/'),
+      // Stubs exist only where a module under test actually imports core. Each
+      // one is a shape, not a simulation - see the stub's own docblock.
+      '@typo3/core/ajax/ajax-request.js': path('./Tests/JavaScript/Stubs/typo3/core/ajax/ajax-request.js'),
     },
   },
   test: {
