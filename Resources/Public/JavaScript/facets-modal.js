@@ -8,11 +8,12 @@ import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
+import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
-import { appendRichText, clearable, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, clearable, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
-import { closeOpenUserDropdowns, renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
+import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
  * The filter modal: stateless UI over the canonical token string. On open,
@@ -703,100 +704,14 @@ class FacetsModal {
     panel.dataset.panel = tab.identifier;
     panel.hidden = tab.identifier !== this.#activeTab;
     for (const field of tab.configuration.fields ?? []) {
-      panel.append(this.#renderField(tab, field));
-    }
-    return panel;
-  }
-
-  #renderField(tab, field) {
-    const group = document.createElement('fieldset');
-    group.className = 'form-group';
-    const legend = document.createElement('legend');
-    legend.className = 'form-label';
-    legend.textContent = field.label;
-    group.append(legend);
-    const state = tab.state?.[field.name];
-
-    if (field.type === 'user-picker') {
-      // #root is read lazily: it is only assigned once #render() finished, which
-      // is after every field has been built.
-      group.append(renderUserPicker(tab, field, state, {
+      panel.append(renderField(tab, field, {
+        // #root is read lazily: it is only assigned once #render() finished, which
+        // is after every field has been built.
         getRoot: () => this.#root,
         onLabelResolved: () => this.#refreshActiveIndicators(),
       }));
-      return group;
     }
-
-    if (field.type === 'checkbox-group' || field.type === 'radio-presets') {
-      const isRadio = field.type === 'radio-presets';
-      // Options live in their own grid wrapper, not the fieldset itself - a
-      // <legend> that is a direct grid item gets extra browser-reserved space
-      // around it (a long-standing cross-browser fieldset/legend quirk),
-      // inflating the gap under the heading well beyond any margin we set.
-      const optionsWrap = document.createElement('div');
-      optionsWrap.className = 'pagetree-facets__options';
-      for (const option of field.options ?? []) {
-        const label = document.createElement('label');
-        // Checkboxes render as TYPO3's own toggle-switch style (form-switch,
-        // the same classes core uses for boolean settings) instead of plain
-        // browser checkboxes. Radios stay plain radios - a switch implies an
-        // independent on/off, which does not fit a mutually-exclusive group.
-        label.className = 'form-check d-flex align-items-center gap-1' + (isRadio ? '' : ' form-switch');
-        const input = document.createElement('input');
-        input.className = 'form-check-input';
-        input.type = isRadio ? 'radio' : 'checkbox';
-        if (!isRadio) {
-          input.setAttribute('role', 'switch');
-        }
-        input.name = `${tab.identifier}[${field.name}]`;
-        input.value = option.value;
-        input.checked = Array.isArray(state) ? state.includes(option.value) : state === option.value;
-        label.append(input);
-        if (option.icon) {
-          const icon = document.createElement('typo3-backend-icon');
-          icon.setAttribute('identifier', option.icon);
-          icon.setAttribute('size', 'small');
-          icon.setAttribute('aria-hidden', 'true');
-          label.append(icon);
-        }
-        const optionLabel = document.createElement('span');
-        optionLabel.className = 'pagetree-facets__option-label';
-        optionLabel.textContent = option.label;
-        label.append(document.createTextNode(' '), optionLabel);
-        if (option.description) {
-          label.title = option.description;
-          label.append(optionHelp(input, option.description));
-        }
-        optionsWrap.append(label);
-      }
-      group.append(optionsWrap);
-      return group;
-    }
-
-    if (field.type === 'select') {
-      const select = document.createElement('select');
-      select.className = 'form-select';
-      select.multiple = true;
-      select.name = `${tab.identifier}[${field.name}]`;
-      for (const option of field.options ?? []) {
-        select.append(new Option(option.label, option.value, false, Array.isArray(state) && state.includes(option.value)));
-      }
-      group.append(select);
-      return group;
-    }
-
-    const input = document.createElement('input');
-    input.className = 'form-control';
-    input.type = 'text';
-    input.name = `${tab.identifier}[${field.name}]`;
-    input.value = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
-    if (field.placeholder) {
-      // Purely a hint: the fieldset legend stays the accessible name, so this
-      // never becomes a placeholder-as-label.
-      input.placeholder = field.placeholder;
-    }
-    group.append(clearable(input));
-    return group;
+    return panel;
   }
 
   // Personal favorites: saved filter phrases, surfaced as a first-class tab at
