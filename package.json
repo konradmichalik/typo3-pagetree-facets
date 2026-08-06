@@ -7,9 +7,12 @@
 	"scripts": {
 		"test:js": "vitest run",
 		"test:js:watch": "vitest",
-		"test:js:coverage": "vitest run --coverage"
+		"test:js:coverage": "vitest run --coverage",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.62.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"jsdom": "^30.0.1",
 		"vitest": "^4.1.10"

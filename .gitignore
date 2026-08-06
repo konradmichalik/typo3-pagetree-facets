@@ -7,6 +7,9 @@ var
 Documentation-*
 .phpdoc
 node_modules
+/.auth/
+/test-results/
+/playwright-report/
 .php-cs-fixer.cache
 php-cs-fixer.xml
 phpstan.xml
