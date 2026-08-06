@@ -256,6 +256,7 @@ class FacetsModal {
     const copyLinkIcon = document.createElement('typo3-backend-icon');
     copyLinkIcon.setAttribute('identifier', 'actions-clipboard');
     copyLinkIcon.setAttribute('size', 'small');
+    copyLinkIcon.setAttribute('aria-hidden', 'true');
     copyLink.append(copyLinkIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
     copyLink.addEventListener('click', () => this.#copyLink());
 
@@ -265,6 +266,7 @@ class FacetsModal {
     const resetIcon = document.createElement('typo3-backend-icon');
     resetIcon.setAttribute('identifier', 'actions-refresh');
     resetIcon.setAttribute('size', 'small');
+    resetIcon.setAttribute('aria-hidden', 'true');
     reset.append(resetIcon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
     reset.addEventListener('click', () => this.#resetAll());
 
@@ -329,6 +331,7 @@ class FacetsModal {
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-lightbulb-on');
     icon.setAttribute('size', 'small');
+    icon.setAttribute('aria-hidden', 'true');
 
     const text = document.createElement('span');
     this.#appendRichText(text, TYPO3.lang?.[key] ?? fallbacks[key]);
@@ -594,6 +597,7 @@ class FacetsModal {
       const icon = document.createElement('typo3-backend-icon');
       icon.setAttribute('identifier', option.icon);
       icon.setAttribute('size', 'small');
+      icon.setAttribute('aria-hidden', 'true');
       label.append(icon);
     }
     const text = document.createElement('span');
@@ -865,6 +869,7 @@ class FacetsModal {
           const icon = document.createElement('typo3-backend-icon');
           icon.setAttribute('identifier', option.icon);
           icon.setAttribute('size', 'small');
+          icon.setAttribute('aria-hidden', 'true');
           label.append(icon);
         }
         const optionLabel = document.createElement('span');
@@ -1284,6 +1289,7 @@ class FacetsModal {
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-star');
     icon.setAttribute('size', 'small');
+    icon.setAttribute('aria-hidden', 'true');
     toggle.append(icon, document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
 
     const form = document.createElement('div');
@@ -1552,6 +1558,7 @@ class FacetsModal {
     const icon = document.createElement('typo3-backend-icon');
     icon.setAttribute('identifier', 'actions-info-circle');
     icon.setAttribute('size', 'small');
+    icon.setAttribute('aria-hidden', 'true');
     this.#pendingNotice.append(
       icon,
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.pending']
