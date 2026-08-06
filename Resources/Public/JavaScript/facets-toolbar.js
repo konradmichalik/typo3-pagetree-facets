@@ -135,7 +135,7 @@ class FacetsToolbar {
     button.className = 'btn btn-sm btn-icon btn-default btn-borderless pagetree-facets-toggle';
     button.title = `${TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree'} (Ctrl/Cmd+Shift+L)`;
     const icon = document.createElement('typo3-backend-icon');
-    icon.setAttribute('identifier', 'actions-filter');
+    icon.setAttribute('identifier', 'pagetree-facets');
     icon.setAttribute('size', 'small');
     button.append(icon);
     button.addEventListener('click', () => this.#openModal());
@@ -251,8 +251,17 @@ class FacetsToolbar {
 
     const adjust = document.createElement('button');
     adjust.type = 'button';
-    adjust.className = 'btn btn-sm btn-default';
-    adjust.textContent = TYPO3.lang?.['pagetreeFacets.empty.adjust'] ?? 'Adjust filter';
+    adjust.className = 'btn btn-sm btn-default d-inline-flex align-items-center gap-1';
+    // The same glyph the toolbar button carries, because it leads to the same
+    // place - the filter modal. Decorative: the button's own text is the label.
+    const adjustIcon = document.createElement('typo3-backend-icon');
+    adjustIcon.setAttribute('identifier', 'pagetree-facets');
+    adjustIcon.setAttribute('size', 'small');
+    adjustIcon.setAttribute('aria-hidden', 'true');
+    adjust.append(
+      adjustIcon,
+      document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.adjust'] ?? 'Adjust filter'),
+    );
     // Narrowing the criteria is usually the better way out than starting over,
     // so it comes first - the modal opens on the phrase that just failed.
     adjust.addEventListener('click', () => this.#openModal());
@@ -260,8 +269,16 @@ class FacetsToolbar {
 
     const reset = document.createElement('button');
     reset.type = 'button';
-    reset.className = 'btn btn-sm btn-default';
-    reset.textContent = TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter';
+    reset.className = 'btn btn-sm btn-default d-inline-flex align-items-center gap-1';
+    // Matches the modal's own "Reset" action, which uses the same icon.
+    const resetIcon = document.createElement('typo3-backend-icon');
+    resetIcon.setAttribute('identifier', 'actions-refresh');
+    resetIcon.setAttribute('size', 'small');
+    resetIcon.setAttribute('aria-hidden', 'true');
+    reset.append(
+      resetIcon,
+      document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter'),
+    );
     reset.addEventListener('click', () => {
       filterInput.value = '';
       // The core's toolbar binds a debounced "input" listener to this field and

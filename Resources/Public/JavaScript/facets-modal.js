@@ -92,6 +92,11 @@ class FacetsModal {
       title: TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree',
       size: Modal.sizes.large,
       content: this.#render(),
+      // Core puts these on the <dialog>, which gives us a scope for the few rules
+      // that have to reach its own markup (the title element holding the brand
+      // icon). Without it those selectors would restyle every backend modal, since
+      // this stylesheet is loaded backend-wide.
+      additionalCssClasses: ['pagetree-facets-modal'],
       buttons: [
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close',
@@ -119,6 +124,21 @@ class FacetsModal {
           this.#serializeAndApply();
         }
       });
+      // Brand mark in front of the modal title. Core's title is a plain string
+      // property, so there is no markup route through it - but the title element
+      // holds that string as a Lit part bounded by marker comments, and prepending
+      // lands outside that range, so a title update cannot displace the node.
+      // Injected into the title element rather than the header on purpose: the
+      // header is justify-content:space-between, so a third child there would push
+      // the title into the middle instead of leaving it beside the icon.
+      // Purely decorative - the title carries the meaning - hence aria-hidden.
+      const brandIcon = document.createElement('typo3-backend-icon');
+      brandIcon.className = 'pagetree-facets__brand';
+      brandIcon.setAttribute('identifier', 'pagetree-facets');
+      brandIcon.setAttribute('size', 'small');
+      brandIcon.setAttribute('aria-hidden', 'true');
+      this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
+
       // The notice talks about the Apply button, so it belongs beside it, in the
       // modal's own footer rather than in our content. That footer is Lit-
       // rendered, but its children are a single array part for the buttons,

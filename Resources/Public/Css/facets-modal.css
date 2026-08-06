@@ -269,6 +269,22 @@
     display: none;
 }
 
+/* The brand icon is injected into core's own title element, which carries no
+   styling of its own - so make it a flex row to line icon and text up without
+   guessing at baseline offsets. Scoped via the dialog class we pass as
+   additionalCssClasses: this stylesheet is loaded backend-wide, so an unscoped
+   .modal-header-title rule would restyle every modal in the backend. The header
+   itself stays untouched, keeping core's justify-content:space-between intact. */
+.pagetree-facets-modal .modal-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagetree-facets__brand {
+    flex: 0 0 auto;
+}
+
 /* The pending notice is injected into the modal's own footer, left of the
    buttons, so it sits OUTSIDE .pagetree-facets - the --pl-* custom properties are
    scoped to that element and are unavailable here. It therefore inherits the
