@@ -85,10 +85,7 @@ class FacetsModal {
     // the flag on would describe a view that is not on screen - #computePhrase()
     // would hand Apply the fresh (empty) field's value and clear the tree filter.
     this.#tokenMode = false;
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
-      .withQueryArguments({ phrase: currentPhrase })
-      .get();
-    this.#configuration = await response.resolve();
+    this.#configuration = await this.#requestConfiguration(this.#currentPhrase);
     if (!this.#configuration.tabs.length) {
       return;
     }
@@ -611,7 +608,7 @@ class FacetsModal {
   }
 
   // Personal favorites: saved filter phrases, surfaced as a first-class tab at
-  // the top of the navigation. The panel lists them (apply on click, × to
+  // the top of the navigation. The panel lists them (load on click, × to
   // remove); creating one lives in the header next to "Copy link". All three
   // round-trip through the AJAX endpoints, updating the in-memory list in place.
   #renderFavoritesNavItem() {
@@ -654,9 +651,29 @@ class FacetsModal {
 
   #renderFavoriteChips() {
     this.#favoritesList.replaceChildren(...favoriteRows(this.#configuration.favorites ?? [], {
-      onApply: (tokenString) => this.#apply(tokenString),
+      onLoad: (tokenString) => this.#loadFavorite(tokenString),
       onRemove: (index) => this.#removeFavorite(index),
     }));
+  }
+
+  // Loading, not applying. A favorite is a selection like any other, and this
+  // modal's whole contract is that selecting is not applying - the pending
+  // notice, the Apply button's dirty state and the close guard all exist for
+  // that. Applying straight from the list was the one path that drove past the
+  // guard, discarding an unapplied selection without asking.
+  //
+  // Trade-off: the phrase goes through the form, so Apply re-serializes it and
+  // drops what the form cannot represent (unknown keys, tokens of disabled
+  // tabs). The stored favorite itself is untouched - only what was loaded from
+  // it is canonical.
+  async #loadFavorite(tokenString) {
+    if (this.#tokenMode) {
+      // The typed field is authoritative in token view, so it has to carry the
+      // favorite too - otherwise Apply would hand over the phrase it replaced.
+      this.#cancelTokenTimers();
+      this.#tokenField.value = tokenString;
+    }
+    this.#adoptConfiguration(await this.#requestConfiguration(tokenString));
   }
 
   // Show the favorites tab only while there is at least one favorite. When the
@@ -996,7 +1013,7 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply & close',
           btnClass: 'btn-primary',
-          // #apply() closes the filter modal and sets the guard bypass itself.
+          // #serializeAndApply() closes the modal and bypasses the guard itself.
           trigger: () => {
             confirmation.hideModal();
             this.#serializeAndApply();
@@ -1090,16 +1107,27 @@ class FacetsModal {
   // triggers the reverse (form -> field) sync.
   async #reflectTokenQuery() {
     const seq = ++this.#reflectSeq;
-    const phrase = this.#tokenField.value;
-    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
-      .withQueryArguments({ phrase })
-      .get();
-    const configuration = await response.resolve();
+    const configuration = await this.#requestConfiguration(this.#tokenField.value);
     // A newer keystroke won, or token view was left while the request was in
     // flight - either way this response is stale.
     if (seq !== this.#reflectSeq || !this.#tokenMode) {
       return;
     }
+    this.#adoptConfiguration(configuration);
+  }
+
+  async #requestConfiguration(phrase) {
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
+      .withQueryArguments({ phrase })
+      .get();
+
+    return response.resolve();
+  }
+
+  // Replace the hydrated state wholesale and bring every derived surface with
+  // it. The order is the point: the panels hold the controls that the chips,
+  // counts and Apply state are read from, so they have to exist first.
+  #adoptConfiguration(configuration) {
     this.#configuration = configuration;
     this.#populatePanels();
     this.#syncHeaderControlsFromConfig();
@@ -1154,8 +1182,17 @@ class FacetsModal {
     }
   }
 
+  // The only path to the tree: everything else in the modal selects, this one
+  // applies.
   async #serializeAndApply() {
-    this.#apply(await this.#computePhrase());
+    const phrase = await this.#computePhrase();
+    // hideModal() runs before #onApply(), and neither #baselineState nor
+    // #currentPhrase is refreshed afterwards - so the state still counts as
+    // dirty here and the close guard would pop its dialog on the apply path
+    // itself.
+    this.#skipCloseGuard = true;
+    this.#modal?.hideModal();
+    this.#onApply?.(phrase);
   }
 
   // Same serialization Apply uses, factored out so "copy link" can share it -
@@ -1241,16 +1278,6 @@ class FacetsModal {
     }
   }
 
-  #apply(phrase) {
-    // hideModal() runs before #onApply(), and neither #baselineState nor
-    // #currentPhrase is refreshed afterwards - so the state still counts as
-    // dirty here and the close guard would pop its dialog on the apply path
-    // itself. Set in #apply rather than at the call sites so it covers both:
-    // the Apply button (via #serializeAndApply) and applying a favorite.
-    this.#skipCloseGuard = true;
-    this.#modal?.hideModal();
-    this.#onApply?.(phrase);
-  }
 }
 
 export default new FacetsModal();

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { shownNotifications } from './Stubs/typo3/backend/notification.js';
 import {
+  applyButton,
+  chipLabels,
   configurationFixture,
   navItem,
   openModal,
@@ -46,15 +48,45 @@ describe('the favorites tab', () => {
     expect(modal.querySelector('.pagetree-facets__favorite-phrase').textContent).toBe('is:hidden');
   });
 
-  it('applies a favorite as-is, without re-serializing the form', async () => {
-    const { modal, onApply } = await openModal({ favorites: saved });
-    const before = requests().length;
+  it('loads a favorite into the form instead of applying it behind the guard', async () => {
+    // Selecting is not applying, here as everywhere else in the modal: the
+    // favorite becomes a pending selection that Apply still has to confirm.
+    const { modal, onApply } = await openModal({
+      configuration: (phrase) => {
+        const hydrated = configurationFixture();
+        hydrated.tabs[1].state = 'is:hidden' === phrase ? { is: ['hidden'] } : {};
 
-    modal.querySelector('.pagetree-facets__favorite-apply').click();
+        return hydrated;
+      },
+      favorites: saved,
+    });
+    expect(chipLabels(modal)).toEqual([]);
 
-    expect(onApply).toHaveBeenCalledWith('is:hidden');
-    expect(document.body.contains(modal)).toBe(false);
-    expect(requests().slice(before)).toEqual([]);
+    modal.querySelector('.pagetree-facets__favorite-load').click();
+
+    await expect.poll(() => chipLabels(modal)).toEqual(['Page state: Hidden']);
+    expect(document.body.contains(modal)).toBe(true);
+    expect(onApply).not.toHaveBeenCalled();
+    expect(applyButton(modal).disabled).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__pending').hidden).toBe(false);
+  });
+
+  it('applies what was loaded once Apply confirms it', async () => {
+    const { modal, onApply } = await openModal({
+      configuration: (phrase) => {
+        const hydrated = configurationFixture();
+        hydrated.tabs[1].state = 'is:hidden' === phrase ? { is: ['hidden'] } : {};
+
+        return hydrated;
+      },
+      favorites: saved,
+    });
+
+    modal.querySelector('.pagetree-facets__favorite-load').click();
+    await expect.poll(() => applyButton(modal).disabled).toBe(false);
+    applyButton(modal).click();
+
+    await expect.poll(() => onApply.mock.calls).toEqual([['is:hidden']]);
   });
 
   it('takes focus itself when its panel has nothing focusable inside', async () => {

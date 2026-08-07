@@ -27,25 +27,25 @@ beforeEach(() => {
 
 describe('favoriteRows', () => {
   it('renders one row per favorite, with its label and phrase', () => {
-    const rows = favoriteRows(favorites, { onApply: vi.fn(), onRemove: vi.fn() });
+    const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove: vi.fn() });
 
     expect(rows).toHaveLength(2);
     expect(rows[0].querySelector('.pagetree-facets__favorite-label').textContent).toBe('Hidden pages');
     expect(rows[0].querySelector('.pagetree-facets__favorite-phrase').textContent).toBe('is:hidden');
   });
 
-  it('applies the phrase, not the label', () => {
-    const onApply = vi.fn();
-    const rows = favoriteRows(favorites, { onApply, onRemove: vi.fn() });
+  it('reports the phrase, not the label', () => {
+    const onLoad = vi.fn();
+    const rows = favoriteRows(favorites, { onLoad, onRemove: vi.fn() });
 
-    rows[1].querySelector('.pagetree-facets__favorite-apply').click();
+    rows[1].querySelector('.pagetree-facets__favorite-load').click();
 
-    expect(onApply).toHaveBeenCalledWith('doktype:4 is:empty');
+    expect(onLoad).toHaveBeenCalledWith('doktype:4 is:empty');
   });
 
   it('removes by index, since that is what the endpoint takes', () => {
     const onRemove = vi.fn();
-    const rows = favoriteRows(favorites, { onApply: vi.fn(), onRemove });
+    const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove });
 
     rows[1].querySelector('.pagetree-facets__favorite-remove').click();
 
@@ -55,14 +55,14 @@ describe('favoriteRows', () => {
   it('names the remove button after its favorite', () => {
     // Several × buttons sit in one list, so the accessible name has to say which
     // one this is rather than just "Remove favorite".
-    const rows = favoriteRows(favorites, { onApply: vi.fn(), onRemove: vi.fn() });
+    const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove: vi.fn() });
 
     expect(rows[0].querySelector('.pagetree-facets__favorite-remove').getAttribute('aria-label'))
       .toBe('Hidden pages – Remove favorite');
   });
 
   it('renders nothing for an empty list', () => {
-    expect(favoriteRows([], { onApply: vi.fn(), onRemove: vi.fn() })).toEqual([]);
+    expect(favoriteRows([], { onLoad: vi.fn(), onRemove: vi.fn() })).toEqual([]);
   });
 });
 

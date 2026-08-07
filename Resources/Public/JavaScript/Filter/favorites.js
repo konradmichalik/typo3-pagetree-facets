@@ -20,31 +20,33 @@ import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-cont
  */
 
 /**
- * One row per favorite: a wide button applying it, and a × removing it.
+ * One row per favorite: a wide button loading it into the modal, and a ×
+ * removing it. Loading rather than applying is the modal's decision and is
+ * explained at its call site - this module only reports the click.
  *
  * @param {Array<{label: string, tokenString: string}>} favorites
- * @param {{onApply: (tokenString: string) => void, onRemove: (index: number) => void}} handlers
+ * @param {{onLoad: (tokenString: string) => void, onRemove: (index: number) => void}} handlers
  * @returns {HTMLElement[]} ready for replaceChildren()
  */
-export function favoriteRows(favorites, { onApply, onRemove }) {
+export function favoriteRows(favorites, { onLoad, onRemove }) {
   const removeLabel = TYPO3.lang?.['pagetreeFacets.modal.removeFavorite'] ?? 'Remove favorite';
 
   return favorites.map((favorite, index) => {
     const row = document.createElement('div');
     row.className = 'pagetree-facets__favorite';
 
-    const apply = document.createElement('button');
-    apply.type = 'button';
-    apply.className = 'pagetree-facets__favorite-apply';
-    apply.title = favorite.tokenString;
+    const load = document.createElement('button');
+    load.type = 'button';
+    load.className = 'pagetree-facets__favorite-load';
+    load.title = favorite.tokenString;
     const label = document.createElement('span');
     label.className = 'pagetree-facets__favorite-label';
     label.textContent = favorite.label;
     const phrase = document.createElement('code');
     phrase.className = 'pagetree-facets__favorite-phrase';
     phrase.textContent = favorite.tokenString;
-    apply.append(label, phrase);
-    apply.addEventListener('click', () => onApply(favorite.tokenString));
+    load.append(label, phrase);
+    load.addEventListener('click', () => onLoad(favorite.tokenString));
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -54,7 +56,7 @@ export function favoriteRows(favorites, { onApply, onRemove }) {
     remove.setAttribute('aria-label', `${favorite.label} – ${removeLabel}`);
     remove.addEventListener('click', () => onRemove(index));
 
-    row.append(apply, remove);
+    row.append(load, remove);
 
     return row;
   });

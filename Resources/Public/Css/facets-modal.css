@@ -713,7 +713,7 @@
     background: var(--pl-hover);
 }
 
-.pagetree-facets__favorite-apply {
+.pagetree-facets__favorite-load {
     display: flex;
     flex: 1 1 auto;
     min-width: 0;
@@ -728,7 +728,7 @@
     cursor: pointer;
 }
 
-.pagetree-facets__favorite-apply:focus-visible {
+.pagetree-facets__favorite-load:focus-visible {
     outline: 2px solid var(--pl-accent);
     outline-offset: -2px;
     border-radius: 4px;
