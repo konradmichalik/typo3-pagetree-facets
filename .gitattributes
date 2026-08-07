@@ -12,10 +12,13 @@
 /CODEOWNERS                  export-ignore
 /CONTRIBUTING.md             export-ignore
 /package.json                export-ignore
+/package-lock.json           export-ignore
 /packaging_exclude.php       export-ignore
 /phpunit.xml                 export-ignore
 /phpunit.functional.xml      export-ignore
+/playwright.config.ts        export-ignore
 /vitest.config.js            export-ignore
+/composer-unused.php         export-ignore
 /renovate.json               export-ignore
 /SECURITY.md                 export-ignore
 /version-bumper.yaml         export-ignore

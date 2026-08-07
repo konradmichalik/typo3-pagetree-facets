@@ -37,6 +37,7 @@ return [
         'editorconfig',
         'gitattributes',
         'gitignore',
+        'package-lock.json',
         'packaging_exclude.php',
         'php-cs-fixer.php',
         'phpstan-baseline.neon',
