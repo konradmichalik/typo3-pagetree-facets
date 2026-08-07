@@ -284,6 +284,35 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function everyFavoriteEndpointDescribesWhatTheSavedPhrasesFilterFor(): void
+    {
+        // All three answer with the complete list and the client renders it as
+        // it stands, so a list without the resolved criteria would blank the
+        // descriptions out until the modal is reopened.
+        $addRequest = (new ServerRequest())->withParsedBody([
+            'label' => 'Empty pages',
+            'tokenString' => 'is:empty',
+        ]);
+        $payload = $this->decode($this->subject->addFavorite($addRequest));
+        // The real Page state vocabulary, not a fixture's - this is the wording
+        // the tab itself offers in the modal.
+        self::assertSame(['Page state: Without content elements'], $payload['favorites'][0]['criteria']);
+
+        $addSecond = (new ServerRequest())->withParsedBody([
+            'label' => 'Hidden pages',
+            'tokenString' => 'is:hidden',
+        ]);
+        $this->subject->addFavorite($addSecond);
+
+        $removeRequest = (new ServerRequest())->withParsedBody(['index' => 0]);
+        $payload = $this->decode($this->subject->removeFavorite($removeRequest));
+        self::assertSame(['Page state: Hidden'], $payload['favorites'][0]['criteria']);
+
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+        self::assertSame(['Page state: Hidden'], $payload['favorites'][0]['criteria']);
+    }
+
+    #[Test]
     public function persistIsANoOpWhenTheSettingIsOff(): void
     {
         $request = (new ServerRequest())->withParsedBody(['phrase' => 'doktype:1']);

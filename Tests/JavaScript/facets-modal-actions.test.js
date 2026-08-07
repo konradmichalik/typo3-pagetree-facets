@@ -118,6 +118,9 @@ describe('saving the current filter', () => {
       body: { label: 'Hidden pages', tokenString: 'is:hidden' },
     });
     expect(modal.querySelector('.pagetree-facets__favorite-label').textContent).toBe('Hidden pages');
+    // The CRUD endpoints answer with the described list, exactly as the
+    // configuration endpoint does - the new row is not a lesser one.
+    expect(modal.querySelector('.pagetree-facets__favorite-criteria').textContent).toBe('Saved: is:hidden');
     expect(shownNotifications()).toEqual([{
       severity: 'success',
       title: 'Favorite saved',

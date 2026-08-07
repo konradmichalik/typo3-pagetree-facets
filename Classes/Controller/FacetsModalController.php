@@ -123,7 +123,7 @@ final readonly class FacetsModalController
             trim((string) ($body['tokenString'] ?? '')),
         );
 
-        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($backendUser)]);
+        return new JsonResponse(['favorites' => $this->describedFavorites($backendUser)]);
     }
 
     public function removeFavorite(ServerRequestInterface $request): JsonResponse
@@ -132,7 +132,7 @@ final readonly class FacetsModalController
         $body = (array) ($request->getParsedBody() ?? []);
         $this->favoriteService->removeFavorite($backendUser, (int) ($body['index'] ?? -1));
 
-        return new JsonResponse(['favorites' => $this->favoriteService->getFavorites($backendUser)]);
+        return new JsonResponse(['favorites' => $this->describedFavorites($backendUser)]);
     }
 
     /**
@@ -210,6 +210,33 @@ final readonly class FacetsModalController
             ],
             $queryBuilder->executeQuery()->fetchAllAssociative(),
         )]);
+    }
+
+    /**
+     * The favorite list as the modal renders it, descriptions included. The CRUD
+     * endpoints answer with the complete list and the client adopts it as it
+     * stands, so they have to describe it too - returning the bare records there
+     * blanked every description out until the modal was reopened.
+     *
+     * Unscoped on purpose: a favorite may name a site other than the one the
+     * modal is currently scoped to, and the full vocabulary resolves more of
+     * them. Building the tabs costs a modal configuration, which is fair for a
+     * deliberate save or delete.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function describedFavorites(BackendUserAuthentication $backendUser): array
+    {
+        $context = new FilterContext(
+            backendUser: $backendUser,
+            workspaceId: $backendUser->workspace,
+            siteIdentifier: null,
+        );
+
+        return $this->phraseSummaryService->describeFavorites(
+            $this->favoriteService->getFavorites($backendUser),
+            $this->buildTabs($context, []),
+        );
     }
 
     /**
