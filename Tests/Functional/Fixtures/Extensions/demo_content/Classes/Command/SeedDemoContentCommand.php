@@ -29,9 +29,9 @@ use function count;
  * SeedDemoContentCommand.
  *
  * Seeds a page tree with enough variety (page states, doktypes, content
- * elements, one translation, SEO flags) that every built-in typo3_pagetree_facets
- * tab has something real to filter, instead of the single bare "Home" page
- * the base TYPO3 install produces. Dev-only, run via
+ * elements, one translation, SEO flags, several editors) that every built-in
+ * typo3_pagetree_facets tab has something real to filter, instead of the single
+ * bare "Home" page the base TYPO3 install produces. Dev-only, run via
  * `ddev 14 typo3 pagetree-facets:seed-demo-content`.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
@@ -46,7 +46,25 @@ final class SeedDemoContentCommand extends Command
     private const array PAGE_TITLES = [
         'About us', 'Products', 'Archive', 'Legal', 'Coming Soon',
         'Partner Website', 'Old Homepage', 'Assets', 'Contact',
+        'Team', 'Jobs',
     ];
+
+    /**
+     * Editors the Activity tab's "Edited by"/"Created by" pickers can be tried
+     * against - with only the install's single admin there is nobody to pick.
+     * Kept as admins on purpose: this is a local demo instance, and a full
+     * group/permission setup would be a different exercise than the one these
+     * accounts exist for. Never deleted on a re-run (see ensureEditors) - the
+     * history they are attributed in points at their uids.
+     */
+    private const array EDITORS = [
+        'anna.editor' => 'Anna Schmidt',
+        'ben.author' => 'Ben Weber',
+        'clara.reviewer' => 'Clara Fischer',
+    ];
+
+    /** The password the ddev addon gives its admin - dev-only, same as that one. */
+    private const string EDITOR_PASSWORD = 'Password1!';
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,
@@ -82,6 +100,7 @@ final class SeedDemoContentCommand extends Command
         }
 
         $this->backdateActivityTestData($uids);
+        $this->attributePagesToEditors($backendUser, $rootPageId, $uids, $output);
 
         $output->writeln('<info>Demo content seeded ('.count($uids).' records created).</info>');
 
@@ -235,6 +254,159 @@ final class SeedDemoContentCommand extends Command
         if ([] !== $dataHandler->errorLog) {
             $output->writeln('<comment>Skipped translating "About us": '.implode(', ', $dataHandler->errorLog).'</comment>');
         }
+    }
+
+    /**
+     * Gives the Activity tab's two people pickers something to find. Both keys
+     * read sys_history rather than a cruser_id column (that one is gone since
+     * v12), so the attribution has to come from a real write performed as that
+     * user - a hand-written history row would be a different thing wearing the
+     * same shape.
+     *
+     * @param array<string, int|string> $uids
+     */
+    private function attributePagesToEditors(
+        BackendUserAuthentication $backendUser,
+        int $rootPageId,
+        array $uids,
+        OutputInterface $output,
+    ): void {
+        $editors = $this->ensureEditors($output);
+
+        // One editor ends up under both pickers, one only under "Created by",
+        // one only under "Edited by" - enough to tell the two keys apart.
+        foreach (['anna.editor' => 'Team', 'ben.author' => 'Jobs'] as $username => $title) {
+            $this->asUser($backendUser, $editors[$username], $username, function () use ($rootPageId, $title): void {
+                $this->createEditorPage($rootPageId, $title);
+            });
+        }
+
+        $edits = [
+            'anna.editor' => 'NEW_about',
+            'clara.reviewer' => 'NEW_products',
+            'ben.author' => 'NEW_contact',
+        ];
+        foreach ($edits as $username => $key) {
+            if (!isset($uids[$key])) {
+                continue;
+            }
+            $this->asUser($backendUser, $editors[$username], $username, function () use ($uids, $key, $username): void {
+                $this->touchPage((int) $uids[$key], self::EDITORS[$username]);
+            });
+        }
+
+        $output->writeln('<comment>Attributed pages to '.implode(', ', array_keys($editors)).'.</comment>');
+    }
+
+    /**
+     * Creates the demo editors that are not there yet, matched by username.
+     * Existing ones are left alone rather than recreated: the history written
+     * above points at their uids, and a fresh account would orphan it.
+     *
+     * @return array<string, int> username => uid
+     */
+    private function ensureEditors(OutputInterface $output): array
+    {
+        $existing = $this->findEditorUids();
+        $missing = array_diff_key(self::EDITORS, $existing);
+        if ([] === $missing) {
+            return $existing;
+        }
+
+        $dataMap = ['be_users' => []];
+        foreach ($missing as $username => $realName) {
+            $dataMap['be_users']['NEW_'.str_replace('.', '_', $username)] = [
+                'pid' => 0,
+                'username' => $username,
+                'realName' => $realName,
+                // DataHandler hashes this on save, so the plaintext never lands
+                // in the database.
+                'password' => self::EDITOR_PASSWORD,
+                'admin' => 1,
+                'db_mountpoints' => '1',
+            ];
+        }
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start($dataMap, []);
+        $dataHandler->process_datamap();
+        if ([] !== $dataHandler->errorLog) {
+            $output->writeln('<error>'.implode("\n", $dataHandler->errorLog).'</error>');
+        }
+        $output->writeln('<comment>Created '.count($missing).' demo editor(s), password "'.self::EDITOR_PASSWORD.'".</comment>');
+
+        return $this->findEditorUids();
+    }
+
+    /**
+     * @return array<string, int> username => uid, for those that exist
+     */
+    private function findEditorUids(): array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $queryBuilder->getRestrictions()->removeAll();
+        $rows = $queryBuilder
+            ->select('uid', 'username')
+            ->from('be_users')
+            ->where(
+                $queryBuilder->expr()->in(
+                    'username',
+                    $queryBuilder->createNamedParameter(array_keys(self::EDITORS), Connection::PARAM_STR_ARRAY),
+                ),
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $uids = [];
+        foreach ($rows as $row) {
+            $uids[(string) $row['username']] = (int) $row['uid'];
+        }
+
+        return $uids;
+    }
+
+    /**
+     * DataHandler stamps history with whatever uid the current backend user
+     * carries, so borrowing that identity for one write is what makes the
+     * attribution real rather than staged.
+     */
+    private function asUser(BackendUserAuthentication $backendUser, int $uid, string $username, callable $work): void
+    {
+        $previous = [$backendUser->user['uid'], $backendUser->user['username']];
+        $backendUser->user['uid'] = $uid;
+        $backendUser->user['username'] = $username;
+        try {
+            $work();
+        } finally {
+            [$backendUser->user['uid'], $backendUser->user['username']] = $previous;
+        }
+    }
+
+    private function createEditorPage(int $rootPageId, string $title): void
+    {
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start([
+            'pages' => [
+                'NEW_'.strtolower($title) => [
+                    'pid' => $rootPageId,
+                    'title' => $title,
+                    'doktype' => 1,
+                    'hidden' => 0,
+                ],
+            ],
+        ], []);
+        $dataHandler->process_datamap();
+    }
+
+    /**
+     * A real edit, on a field no filter reads - the point is the history entry,
+     * not the value, and touching e.g. nav_title would quietly change what the
+     * other tabs have to show for themselves.
+     */
+    private function touchPage(int $pageUid, string $editor): void
+    {
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start(['pages' => [$pageUid => ['subtitle' => 'Last reviewed by '.$editor]]], []);
+        $dataHandler->process_datamap();
     }
 
     /**
