@@ -32,8 +32,9 @@
 			<trans-unit id="pagetreeFacets.modal.help.combine"><source>Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.chips"><source>Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset". Your selection only takes effect once you choose "Apply".</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.scope"><source>"Search from current page down" limits the result to the page you currently have open and its subpages.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.favorites"><source>Save a filter you use often under a name of your choice. Clicking a saved filter loads it back in here — like anything else you pick, it takes effect once you choose "Apply".</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.share"><source>"Copy link" copies a link to your current selection, so you can hand it to a colleague.</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.help.advanced"><source>Your selection also shows up as text in the page tree's search field. If you prefer typing, you can edit it there directly.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.help.advanced"><source>Your selection also shows up as text in the page tree's search field. If you prefer typing, you can edit it there directly, or switch this dialog to its editable filter text with the code button above.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.hint.tokens"><source>Prefer typing? Enter tokens like `doktype:1 is:empty` straight into the tree's search field.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.hint.combine"><source>Whitespace means AND, a comma means OR within one criterion — try `doktype:1,4`.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.hint.favorites"><source>Save a filter you use often as a favorite and reopen it in one click.</source></trans-unit>

@@ -29,6 +29,7 @@ const HELP_POINTS = {
   combine: 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.',
   chips: 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset". Your selection only takes effect once you choose "Apply".',
   scope: '"Search from current page down" limits the result to the page you currently have open and its subpages.',
+  favorites: 'Save a filter you use often under a name of your choice. Clicking a saved filter loads it back in here — like anything else you pick, it takes effect once you choose "Apply".',
   share: '"Copy link" copies a link to your current selection, so you can hand it to a colleague.',
 };
 
@@ -69,7 +70,7 @@ export function renderHelp({ hasPageScope }) {
     ?? 'Pick one or more criteria to narrow the page tree down to the pages you are looking for.';
   panel.append(intro);
 
-  const keys = ['combine', 'chips', ...(hasPageScope ? ['scope'] : []), 'share'];
+  const keys = ['combine', 'chips', ...(hasPageScope ? ['scope'] : []), 'favorites', 'share'];
   const list = document.createElement('ul');
   list.className = 'pagetree-facets__help-points';
   for (const key of keys) {
@@ -79,10 +80,12 @@ export function renderHelp({ hasPageScope }) {
   }
   panel.append(list);
 
+  // Kept as a closing paragraph rather than a sixth bullet: it is the one point
+  // that is not about using this dialog, but about leaving it behind.
   const advanced = document.createElement('p');
   advanced.className = 'mb-0';
   advanced.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.advanced']
-    ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly.';
+    ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly, or switch this dialog to its editable filter text with the code button above.';
   panel.append(advanced);
 
   return panel;

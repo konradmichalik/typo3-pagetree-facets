@@ -54,8 +54,8 @@ describe('renderHelp', () => {
     const withScope = renderHelp({ hasPageScope: true });
     const without = renderHelp({ hasPageScope: false });
 
-    expect(withScope.querySelectorAll('li')).toHaveLength(4);
-    expect(without.querySelectorAll('li')).toHaveLength(3);
+    expect(withScope.querySelectorAll('li')).toHaveLength(5);
+    expect(without.querySelectorAll('li')).toHaveLength(4);
     expect(withScope.textContent).toContain('Search from current page down');
     expect(without.textContent).not.toContain('Search from current page down');
   });
@@ -63,6 +63,21 @@ describe('renderHelp', () => {
   it('says that a selection only takes effect on Apply', () => {
     // The chips look like applied filters; this is where that is spelled out.
     expect(renderHelp({ hasPageScope: false }).textContent).toContain('"Apply"');
+  });
+
+  it('covers the two things the panel used to be silent about', () => {
+    // Favorites and the token view both postdate the original help text; a
+    // reference panel that omits half the dialog is worse than a long one.
+    const panel = renderHelp({ hasPageScope: false });
+
+    expect(panel.textContent).toContain('Save a filter you use often');
+    expect(panel.textContent).toContain('code button');
+  });
+
+  it('spells out that loading a favorite is still only a selection', () => {
+    // The one behaviour a user cannot guess from the list: a click loads, it
+    // does not apply.
+    expect(renderHelp({ hasPageScope: false }).textContent).toContain('loads it back in here');
   });
 });
 
