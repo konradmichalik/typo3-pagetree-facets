@@ -80,6 +80,11 @@ class FacetsModal {
     this.#skipCloseGuard = false;
     // Points into the previous modal's (now detached) footer until re-created.
     this.#pendingNotice = null;
+    // Token view belongs to the modal instance, not to the singleton: the field
+    // and the toggle are rebuilt hidden/unpressed by #render() below, so leaving
+    // the flag on would describe a view that is not on screen - #computePhrase()
+    // would hand Apply the fresh (empty) field's value and clear the tree filter.
+    this.#tokenMode = false;
     const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_configuration)
       .withQueryArguments({ phrase: currentPhrase })
       .get();
