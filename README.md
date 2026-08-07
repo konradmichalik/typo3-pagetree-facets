@@ -22,11 +22,6 @@ Filters are compact tokens that you can type into the tree's existing search
 field or assemble in a guided modal, and the whole feature is extensible through
 a public filter tab API.
 
-> [!WARNING]
-> This package is in early development stage and may change significantly in
-> the future. I am working steadily to release a stable version as soon as
-> possible.
-
 <div align="center">
 
 ![Filter modal](.github/assets/filter-modal.png)
@@ -64,9 +59,6 @@ composer require konradmichalik/typo3-pagetree-facets
 [![TER downloads](https://typo3-badges.dev/badge/typo3_pagetree_facets/downloads/shields.svg)](https://extensions.typo3.org/extension/typo3_pagetree_facets)
 
 Download the zip file from [TYPO3 extension repository (TER)](https://extensions.typo3.org/extension/typo3_pagetree_facets).
-
-> [!NOTE]
-> Not yet released to Packagist or TER; install from a VCS repository until the first tagged release.
 
 ## 📖 How it works
 
