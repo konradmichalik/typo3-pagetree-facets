@@ -113,8 +113,9 @@ function originBadge(tab, field) {
   badge.className = 'pagetree-facets__search-result-tab';
   badge.append(document.createTextNode(tab.label));
 
-  const fields = tab.configuration.fields ?? [];
-  if (fields.length < 2 || field.label === tab.label) {
+  // No `?? []` guard: a tab without fields produces no matches, so a row for it
+  // never reaches this function.
+  if (tab.configuration.fields.length < 2 || field.label === tab.label) {
     return badge;
   }
 
