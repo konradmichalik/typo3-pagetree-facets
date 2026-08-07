@@ -371,7 +371,7 @@ final class SeedDemoContentCommand extends Command
      */
     private function asUser(BackendUserAuthentication $backendUser, int $uid, string $username, callable $work): void
     {
-        $previous = [$backendUser->user['uid'], $backendUser->user['username']];
+        $previous = [$backendUser->user['uid'] ?? 0, $backendUser->user['username'] ?? ''];
         $backendUser->user['uid'] = $uid;
         $backendUser->user['username'] = $username;
         try {
