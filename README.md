@@ -105,6 +105,12 @@ unknown tokens are ignored.
 > they narrow the tree to the pages those records live on. The result of a filter
 > is always a set of pages.
 
+Matching pages are marked in the tree with a narrow colour stripe — the same one
+the core's own title search uses. A filtered tree shows the matches *plus the
+branches leading down to them*, so the stripe is what tells an actual hit from a
+parent that is only there to hold it. Hover a node to read the reason in its
+tooltip.
+
 > [!NOTE]
 > This is not the global backend search (the toolbar magnifier / <kbd>Cmd</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd>).
 > That one finds individual records, pages and modules and jumps you to them; this
