@@ -225,7 +225,7 @@ final readonly class PhraseSummaryService
     private function label(string $key, string $fallback): string
     {
         $translated = $this->getLanguageService()->sL(
-            'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:pagetreeFacets.modal.'.$key,
+            'typo3_pagetree_facets.messages:pagetreeFacets.modal.'.$key,
         );
 
         return '' !== $translated ? $translated : $fallback;
