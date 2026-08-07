@@ -103,6 +103,10 @@
     display: flex;
     flex: 1 1 auto;
     align-items: stretch;
+    /* Takes the row's full height rather than its own content's. Without a
+       definite height here the toggle inside has none either when its width is
+       resolved, and its 1:1 aspect ratio falls back to the icon's width. */
+    align-self: stretch;
     min-width: 0;
     gap: 0;
 }
@@ -114,14 +118,21 @@
 }
 
 .pagetree-facets__search-group .pagetree-facets__token-toggle {
-    flex: 0 0 auto;
     border-start-start-radius: 0;
     border-end-start-radius: 0;
     margin-inline-start: -1px;
 }
 
+/* Both icon buttons in this row are squares as tall as the field beside them:
+   stretch takes whatever height the input has (so nothing is hard-coded to a
+   pixel size that a theme could change) and the aspect ratio turns that height
+   into the width. */
+.pagetree-facets__token-toggle,
 .pagetree-facets__help-toggle {
     flex: 0 0 auto;
+    align-self: stretch;
+    aspect-ratio: 1;
+    padding: 0;
 }
 
 /* Pressed state mirrors the tab-nav "active" tint, so the toggle reads as a

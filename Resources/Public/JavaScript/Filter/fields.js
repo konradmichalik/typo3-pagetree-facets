@@ -78,7 +78,9 @@ function renderChoiceOption(tab, field, option, state, isRadio) {
   // classes core uses for boolean settings) instead of plain browser checkboxes.
   // Radios stay plain radios - a switch implies an independent on/off, which does
   // not fit a mutually-exclusive group.
-  label.className = 'form-check d-flex align-items-center gap-1' + (isRadio ? '' : ' form-switch');
+  // gap-2 matches the cross-tab search rows, and gives the switch enough room
+  // that its label does not read as part of the control.
+  label.className = 'form-check d-flex align-items-center gap-2' + (isRadio ? '' : ' form-switch');
 
   const input = document.createElement('input');
   input.className = 'form-check-input';
@@ -98,7 +100,9 @@ function renderChoiceOption(tab, field, option, state, isRadio) {
   const optionLabel = document.createElement('span');
   optionLabel.className = 'pagetree-facets__option-label';
   optionLabel.textContent = option.label;
-  label.append(document.createTextNode(' '), optionLabel);
+  // No separating space: the flex gap owns the spacing now, and a text node
+  // between the items would add an uneven one of its own.
+  label.append(optionLabel);
 
   if (option.description) {
     label.title = option.description;
