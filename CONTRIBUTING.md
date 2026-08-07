@@ -52,6 +52,9 @@ ddev cgl sca:php
 
 ## Run tests
 
+The test suite has three layers: PHPUnit (unit + functional), Vitest (JavaScript
+unit tests, jsdom), and Playwright (end-to-end, against a running ddev instance).
+
 ```bash
 # Unit tests
 ddev composer test:unit
@@ -61,6 +64,23 @@ ddev composer test:functional
 
 # Unit tests with code coverage
 ddev composer test:coverage
+```
+
+```bash
+# JavaScript unit tests
+ddev npm install                 # first time only
+ddev npm run test:js
+ddev npm run test:js:coverage
+```
+
+End-to-end tests need the TYPO3 instance from the section below and must run
+**inside** the container:
+
+```bash
+ddev exec npm install                          # first time only
+ddev exec npx playwright install chromium      # first time only
+ddev exec npx playwright test                  # whole E2E suite
+ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
 ```
 
 ## TYPO3 Setup
