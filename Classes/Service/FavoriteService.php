@@ -56,10 +56,24 @@ final class FavoriteService
             return; // nothing to favorite - a favorite is defined by its phrase
         }
         $label = mb_substr($label, 0, self::MAX_LABEL_LENGTH);
+        $label = '' !== $label ? $label : $tokenString;
 
         $favorites = $this->getFavorites($backendUser);
+        // A favorite is its phrase: two entries filtering identically are
+        // indistinguishable in the list and produce the same tree, so saving a
+        // phrase that is already saved renames that entry rather than adding a
+        // twin. It keeps its place and its creation date - a new name does not
+        // make it a new favorite.
+        foreach ($favorites as $index => $favorite) {
+            if (($favorite['tokenString'] ?? null) === $tokenString) {
+                $favorites[$index]['label'] = $label;
+                $this->persist($backendUser, $favorites);
+
+                return;
+            }
+        }
         $favorites[] = [
-            'label' => '' !== $label ? $label : $tokenString,
+            'label' => $label,
             'tokenString' => $tokenString,
             'createdAt' => time(),
         ];

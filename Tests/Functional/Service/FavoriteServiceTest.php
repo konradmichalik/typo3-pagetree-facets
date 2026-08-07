@@ -61,6 +61,36 @@ final class FavoriteServiceTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function savingAPhraseThatIsAlreadySavedRenamesItInsteadOfAddingASecondEntry(): void
+    {
+        // Two rows with identical filters are indistinguishable once applied, so
+        // the phrase is the identity - saving it again is a rename.
+        $this->subject->addFavorite($this->backendUser, 'Empty pages', 'is:empty');
+        $this->subject->addFavorite($this->backendUser, 'Pages without content', 'is:empty');
+
+        $favorites = $this->subject->getFavorites($this->backendUser);
+        self::assertCount(1, $favorites);
+        self::assertSame('Pages without content', $favorites[0]['label']);
+    }
+
+    #[Test]
+    public function aRenamedFavoriteKeepsItsPlaceAndCreationDate(): void
+    {
+        $this->subject->addFavorite($this->backendUser, 'First', 'is:empty');
+        $createdAt = $this->subject->getFavorites($this->backendUser)[0]['createdAt'];
+        $this->subject->addFavorite($this->backendUser, 'Second', 'is:hidden');
+
+        $this->subject->addFavorite($this->backendUser, 'First renamed', 'is:empty');
+
+        $favorites = $this->subject->getFavorites($this->backendUser);
+        self::assertCount(2, $favorites);
+        self::assertSame('First renamed', $favorites[0]['label']);
+        self::assertSame('Second', $favorites[1]['label']);
+        // Renaming does not make it a new favorite.
+        self::assertSame($createdAt, $favorites[0]['createdAt']);
+    }
+
+    #[Test]
     public function removesFavoriteByIndexAndReindexes(): void
     {
         $this->subject->addFavorite($this->backendUser, 'First', 'is:empty');
