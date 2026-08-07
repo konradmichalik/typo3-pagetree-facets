@@ -128,10 +128,13 @@ final class PageTreeFilterListenerTest extends FunctionalTestCase
     public function theLabelTextResolvesFromTheExtensionsOwnXlfFile(): void
     {
         // The listener falls back to the English wording when the reference does
-        // not resolve, so only this can tell a working LLL path from a typo.
+        // not resolve, and the fallback is that same string - so nothing else,
+        // the E2E specs included, can tell a working reference from a typo.
+        // Asserts the v14 translation-domain form the listener passes to sL(),
+        // in which locallang_tree.xlf becomes the "<extension>.tree" domain.
         self::assertSame(
             'Matches the filter',
-            $this->languageService->sL('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_tree.xlf:tree.match'),
+            $this->languageService->sL('typo3_pagetree_facets.tree:tree.match'),
         );
     }
 

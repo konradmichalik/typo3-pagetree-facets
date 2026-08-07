@@ -60,8 +60,6 @@ final readonly class SearchResultLabelListener
      */
     private const string LABEL_COLOR = '#F5A770';
 
-    private const string LABEL = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_tree.xlf:tree.match';
-
     public function __construct(
         private MatchedPageRegistry $registry,
     ) {}
@@ -75,7 +73,7 @@ final readonly class SearchResultLabelListener
             return;
         }
 
-        $label = $this->getLanguageService()->sL(self::LABEL) ?: 'Matches the filter';
+        $label = $this->getLanguageService()->sL('typo3_pagetree_facets.tree:tree.match') ?: 'Matches the filter';
         $items = $event->getItems();
         foreach ($items as &$item) {
             $page = $item['_page'] ?? null;
