@@ -81,6 +81,40 @@ describe('renderHelp', () => {
   });
 });
 
+describe('the help panel\'s own close button', () => {
+  const open = () => {
+    const panel = renderHelp({ hasPageScope: false });
+    const toggle = renderHelpToggle(panel);
+    toggle.click();
+
+    return { panel, toggle, close: panel.querySelector('.pagetree-facets__help-close') };
+  };
+
+  it('closes the panel and reports it on the toggle', () => {
+    const { panel, toggle, close } = open();
+    expect(panel.hidden).toBe(false);
+
+    close.click();
+
+    // Both come from one place, so the button cannot keep looking pressed.
+    expect(panel.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('hands focus back rather than leaving it on a hidden node', () => {
+    const { toggle, close } = open();
+    document.body.append(toggle);
+
+    close.click();
+
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  it('is named, being icon-only', () => {
+    expect(open().close.getAttribute('aria-label')).toBe('Close');
+  });
+});
+
 describe('renderHelpToggle', () => {
   it('points at the panel it controls', () => {
     const panel = renderHelp({ hasPageScope: false });

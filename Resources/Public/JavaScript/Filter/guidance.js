@@ -95,6 +95,11 @@ export function renderHelp({ hasPageScope }) {
  * The icon-only button expanding the help panel. Icon-only, so its accessible name
  * comes from aria-label rather than from content.
  *
+ * It also fits the panel with its own × - the two are wired together here
+ * because this is the one place that knows both, and a panel that can only be
+ * closed by the button that opened it makes the reader hunt for that button
+ * again once the text has scrolled it out of reach.
+ *
  * @param {HTMLElement} panel - as returned by renderHelp()
  * @returns {HTMLElement}
  */
@@ -110,11 +115,31 @@ export function renderHelpToggle(panel) {
 
   button.append(decorativeIcon('actions-info-circle'));
 
-  button.addEventListener('click', () => {
-    const expand = panel.hidden;
+  // One place decides, so the panel and the button can never disagree - which
+  // is what the [aria-expanded="true"] styling on the button relies on.
+  const setExpanded = (expand) => {
     panel.hidden = !expand;
     button.setAttribute('aria-expanded', String(expand));
-  });
+  };
+  button.addEventListener('click', () => setExpanded(panel.hidden));
+  panel.append(renderHelpClose(() => {
+    setExpanded(false);
+    // Focus would otherwise be left on a node that just became hidden.
+    button.focus();
+  }));
 
   return button;
+}
+
+function renderHelpClose(onClose) {
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'pagetree-facets__help-close';
+  const label = TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close';
+  close.title = label;
+  close.setAttribute('aria-label', label);
+  close.textContent = '×';
+  close.addEventListener('click', onClose);
+
+  return close;
 }

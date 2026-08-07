@@ -135,9 +135,12 @@
     padding: 0;
 }
 
-/* Pressed state mirrors the tab-nav "active" tint, so the toggle reads as a
-   sticky mode switch rather than a one-shot action. */
-.pagetree-facets__token-toggle[aria-pressed="true"] {
+/* Both buttons keep the tab-nav "active" tint while what they opened is on
+   screen, so they read as sticky switches rather than one-shot actions - and
+   the help panel's own × cannot leave the button looking pressed, because both
+   states come from the same place (see renderHelpToggle). */
+.pagetree-facets__token-toggle[aria-pressed="true"],
+.pagetree-facets__help-toggle[aria-expanded="true"] {
     background: var(--pl-active);
     color: var(--pl-text);
 }
@@ -215,9 +218,43 @@
    list layout is ours. The header does not shrink, so an expanded panel is
    capped and scrolls on its own rather than squeezing the tabs out of view. */
 .pagetree-facets__help {
+    position: relative;
     margin: 0;
     max-height: 40vh;
     overflow-y: auto;
+    /* Room for the × so long lines do not run underneath it. */
+    padding-inline-end: 2.25rem;
+}
+
+/* The panel's own way out, besides the button that opened it. */
+.pagetree-facets__help-close {
+    position: absolute;
+    inset-block-start: 0.35rem;
+    inset-inline-end: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 1.15rem;
+    line-height: 1;
+    opacity: 0.65;
+    cursor: pointer;
+}
+
+.pagetree-facets__help-close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.pagetree-facets__help-close:focus-visible {
+    outline: 2px solid var(--pl-accent);
+    outline-offset: 1px;
 }
 
 .pagetree-facets__help-points {
