@@ -742,9 +742,11 @@
     font-weight: 500;
 }
 
-/* The phrase behind the favorite, shown as secondary technical text; truncated
- * so a long token string never blows out the panel width. */
-.pagetree-facets__favorite-phrase {
+/* What the favorite filters for, as secondary text under its name; truncated so
+ * a filter with many criteria never blows out the panel width. Deliberately not
+ * monospaced (the phrase itself used to sit here): these are the same words the
+ * chips use, not query syntax. */
+.pagetree-facets__favorite-criteria {
     max-width: 100%;
     overflow: hidden;
     color: var(--pl-muted);

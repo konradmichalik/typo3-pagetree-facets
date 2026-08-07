@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FavoriteService, SessionFilterService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{FavoriteService, PhraseSummaryService, SessionFilterService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -42,6 +42,7 @@ final readonly class FacetsModalController
         private TokenParser $tokenParser,
         private TokenSerializer $tokenSerializer,
         private FavoriteService $favoriteService,
+        private PhraseSummaryService $phraseSummaryService,
         private SessionFilterService $sessionFilterService,
         private SiteFinder $siteFinder,
         private ConnectionPool $connectionPool,
@@ -59,15 +60,23 @@ final readonly class FacetsModalController
             siteIdentifier: $siteIdentifier,
         );
 
+        $tabs = $this->buildTabs($context, $tokens);
+
         return new JsonResponse([
-            'tabs' => $this->buildTabs($context, $tokens),
+            'tabs' => $tabs,
             'sites' => $this->buildSiteOptions($backendUser),
             'activeSite' => $siteIdentifier,
             // "under:<uid>" scope, set from the modal's "current page and its
             // subpages" toggle - null when no such scope is active.
             'pageScope' => $this->extractPageScope($tokens),
             'freetext' => $this->extractFreetext($tokens),
-            'favorites' => $this->favoriteService->getFavorites($backendUser),
+            // Saved phrases are listed by what they filter for, not by their
+            // syntax. Resolved against the tab vocabulary just built above, so
+            // no tab is asked for its options twice.
+            'favorites' => $this->phraseSummaryService->describeFavorites(
+                $this->favoriteService->getFavorites($backendUser),
+                $tabs,
+            ),
         ]);
     }
 

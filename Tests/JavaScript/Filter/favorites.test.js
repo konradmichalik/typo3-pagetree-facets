@@ -8,8 +8,12 @@ import {
 import { requests, resetAjaxStub, respondWith } from '../Stubs/typo3/core/ajax/ajax-request.js';
 
 const favorites = [
-  { label: 'Hidden pages', tokenString: 'is:hidden' },
-  { label: 'Empty shortcuts', tokenString: 'doktype:4 is:empty' },
+  { label: 'Hidden pages', tokenString: 'is:hidden', criteria: ['Page state: Hidden'] },
+  {
+    label: 'Empty shortcuts',
+    tokenString: 'doktype:4 is:empty',
+    criteria: ['Page type: Shortcut', 'Page state: Empty'],
+  },
 ];
 
 beforeEach(() => {
@@ -26,12 +30,30 @@ beforeEach(() => {
 });
 
 describe('favoriteRows', () => {
-  it('renders one row per favorite, with its label and phrase', () => {
+  it('renders one row per favorite, named and described in the modal\'s own words', () => {
     const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove: vi.fn() });
 
     expect(rows).toHaveLength(2);
     expect(rows[0].querySelector('.pagetree-facets__favorite-label').textContent).toBe('Hidden pages');
-    expect(rows[0].querySelector('.pagetree-facets__favorite-phrase').textContent).toBe('is:hidden');
+    expect(rows[1].querySelector('.pagetree-facets__favorite-criteria').textContent)
+      .toBe('Page type: Shortcut · Page state: Empty');
+  });
+
+  it('keeps the phrase itself on the title, one hover away', () => {
+    const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove: vi.fn() });
+
+    expect(rows[0].querySelector('.pagetree-facets__favorite-load').title).toBe('is:hidden');
+  });
+
+  it('leaves the second line out when the name already is the summary', () => {
+    // The server drops `criteria` in that case (see describeFavorites) rather
+    // than letting the row say the same thing twice.
+    const rows = favoriteRows([{ label: 'Page state: Hidden', tokenString: 'is:hidden', criteria: [] }], {
+      onLoad: vi.fn(),
+      onRemove: vi.fn(),
+    });
+
+    expect(rows[0].querySelector('.pagetree-facets__favorite-criteria')).toBeNull();
   });
 
   it('reports the phrase, not the label', () => {

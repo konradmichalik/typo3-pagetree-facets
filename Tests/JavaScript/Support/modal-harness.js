@@ -177,7 +177,14 @@ export async function openModal({
       case urls.serialize:
         return { phrase: fakeSerialize(payload) };
       case urls.favoriteAdd:
-        stored = [...stored, { label: payload.label, tokenString: payload.tokenString }];
+        // `criteria` is the server's resolved summary of the phrase (see
+        // PhraseSummaryService); its exact wording is that service's business,
+        // so the stub only has to answer with something shaped like it.
+        stored = [...stored, {
+          label: payload.label,
+          tokenString: payload.tokenString,
+          criteria: [`Saved: ${payload.tokenString}`],
+        }];
 
         return { favorites: stored };
       case urls.favoriteRemove:

@@ -18,7 +18,7 @@ import {
  * share a suite with the phrase they are built from.
  */
 
-const saved = [{ label: 'Hidden pages', tokenString: 'is:hidden' }];
+const saved = [{ label: 'Hidden pages', tokenString: 'is:hidden', criteria: ['Page state: Hidden'] }];
 
 const favoritesItem = (modal) => navItem(modal, '__favorites').closest('li');
 
@@ -45,7 +45,7 @@ describe('the favorites tab', () => {
 
     expect(favoritesItem(modal).hidden).toBe(false);
     expect(modal.querySelector('.pagetree-facets__favorite-label').textContent).toBe('Hidden pages');
-    expect(modal.querySelector('.pagetree-facets__favorite-phrase').textContent).toBe('is:hidden');
+    expect(modal.querySelector('.pagetree-facets__favorite-criteria').textContent).toBe('Page state: Hidden');
   });
 
   it('loads a favorite into the form instead of applying it behind the guard', async () => {

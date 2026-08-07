@@ -65,7 +65,7 @@ final class FavoriteService
         // twin. It keeps its place and its creation date - a new name does not
         // make it a new favorite.
         foreach ($favorites as $index => $favorite) {
-            if (($favorite['tokenString'] ?? null) === $tokenString) {
+            if ($favorite['tokenString'] === $tokenString) {
                 $favorites[$index]['label'] = $label;
                 $this->persist($backendUser, $favorites);
 

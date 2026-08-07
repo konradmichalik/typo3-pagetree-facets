@@ -55,6 +55,8 @@
 			<trans-unit id="pagetreeFacets.modal.linkCopyFailed.message"><source>Could not copy the link to your clipboard.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pageScope"><source>Search from current page down</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pageScope.description"><source>Only includes the page you currently have open and its subpages.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.summary.site"><source>Site</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.summary.under"><source>Below</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>

@@ -42,10 +42,17 @@ export function favoriteRows(favorites, { onLoad, onRemove }) {
     const label = document.createElement('span');
     label.className = 'pagetree-facets__favorite-label';
     label.textContent = favorite.label;
-    const phrase = document.createElement('code');
-    phrase.className = 'pagetree-facets__favorite-phrase';
-    phrase.textContent = favorite.tokenString;
-    load.append(label, phrase);
+    load.append(label);
+    // What the filter actually looks for, in the words the rest of the modal
+    // uses - the raw phrase stays on the button's title for anyone who wants it.
+    // Resolved server-side (PhraseSummaryService); absent when the name already
+    // is that summary, in which case the row would only repeat itself.
+    if ((favorite.criteria ?? []).length) {
+      const criteria = document.createElement('span');
+      criteria.className = 'pagetree-facets__favorite-criteria';
+      criteria.textContent = favorite.criteria.join(' · ');
+      load.append(criteria);
+    }
     load.addEventListener('click', () => onLoad(favorite.tokenString));
 
     const remove = document.createElement('button');
