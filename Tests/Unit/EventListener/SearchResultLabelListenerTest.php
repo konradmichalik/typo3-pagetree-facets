@@ -52,7 +52,7 @@ final class SearchResultLabelListenerTest extends TestCase
         // The event fires on every tree render, including plain fetches and the
         // core's own title search - neither is ours to annotate.
         $event = $this->createEvent([$this->createItem(10), $this->createItem(20)]);
-        new SearchResultLabelListener(new MatchedPageRegistry())($event);
+        (new SearchResultLabelListener(new MatchedPageRegistry()))($event);
 
         foreach ($event->getItems() as $item) {
             self::assertArrayNotHasKey('labels', $item);
@@ -67,7 +67,7 @@ final class SearchResultLabelListenerTest extends TestCase
 
         // 10 is a rootline ancestor the core rendered for context, 20 the hit.
         $event = $this->createEvent([$this->createItem(10), $this->createItem(20)]);
-        new SearchResultLabelListener($registry)($event);
+        (new SearchResultLabelListener($registry))($event);
 
         $items = $event->getItems();
         // Untouched entirely rather than given an empty labels array: other
@@ -83,7 +83,7 @@ final class SearchResultLabelListenerTest extends TestCase
         $registry->record([20]);
 
         $event = $this->createEvent([$this->createItem(20)]);
-        new SearchResultLabelListener($registry)($event);
+        (new SearchResultLabelListener($registry))($event);
 
         $label = $event->getItems()[0]['labels'][0];
         self::assertInstanceOf(Label::class, $label);
@@ -109,7 +109,7 @@ final class SearchResultLabelListenerTest extends TestCase
         $item['labels'] = [$existing];
 
         $event = $this->createEvent([$item]);
-        new SearchResultLabelListener($registry)($event);
+        (new SearchResultLabelListener($registry))($event);
 
         $labels = $event->getItems()[0]['labels'];
         self::assertCount(2, $labels);
@@ -125,7 +125,7 @@ final class SearchResultLabelListenerTest extends TestCase
         // "_page" is documented as "only for use in events"; an item that never
         // got one (or got something else) must not blow up the tree render.
         $event = $this->createEvent([['identifier' => '20'], ['identifier' => '20', '_page' => 'nonsense']]);
-        new SearchResultLabelListener($registry)($event);
+        (new SearchResultLabelListener($registry))($event);
 
         foreach ($event->getItems() as $item) {
             self::assertArrayNotHasKey('labels', $item);
