@@ -644,7 +644,17 @@ class FacetsModal {
     panel.hidden = this.#favoritesTabId !== this.#activeTab;
     this.#favoritesList = document.createElement('div');
     this.#favoritesList.className = 'pagetree-facets__favorites-list';
-    panel.append(this.#favoritesList);
+    // The same fieldset/legend shape every other panel gets from renderField(),
+    // so this one starts on the same line and in the same rhythm instead of
+    // opening straight into rows. The heading repeats the tab label exactly as
+    // the single-field tabs do (Page type, Page state, SEO).
+    const group = document.createElement('fieldset');
+    group.className = 'form-group';
+    const legend = document.createElement('legend');
+    legend.className = 'form-label';
+    legend.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
+    group.append(legend, this.#favoritesList);
+    panel.append(group);
     this.#renderFavoriteChips();
     return panel;
   }

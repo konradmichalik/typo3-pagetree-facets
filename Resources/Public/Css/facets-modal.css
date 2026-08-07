@@ -702,11 +702,15 @@
     flex-direction: column;
 }
 
+/* Same padding, radius and hover transition as the option rows in every other
+ * panel (see .pagetree-facets__panel .form-check) - a favorite row is a row in
+ * a panel first and a favorite second. */
 .pagetree-facets__favorite {
     display: flex;
     align-items: center;
     gap: 0.25rem;
     border-radius: 6px;
+    transition: background-color 0.12s ease;
 }
 
 .pagetree-facets__favorite:hover {
@@ -720,7 +724,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.05rem;
-    padding: 0.35rem 0.5rem;
+    padding: 0.3rem 0.5rem;
     border: 0;
     background: transparent;
     color: var(--pl-text);
