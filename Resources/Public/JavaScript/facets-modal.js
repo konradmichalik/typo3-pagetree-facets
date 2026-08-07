@@ -278,8 +278,12 @@ class FacetsModal {
     this.#actions.className = 'pagetree-facets__actions';
     this.#actions.hidden = true;
     this.#actions.append(copyLink, saveToggle, reset);
-    this.#utility.append(this.#actions);
-    header.append(this.#utility, saveForm);
+    // The name form joins this row instead of opening one below it: as its own
+    // row it pushed the chips and the whole body down by ~50px on every save.
+    // While it is open the row's other occupants step aside (see the CSS), and
+    // the row reserves its height, so neither state moves anything.
+    this.#utility.append(this.#actions, saveForm);
+    header.append(this.#utility);
 
     // Selection row: the removable chips mirroring the currently *selected* tab
     // criteria - selected, not necessarily applied, which is what the pending
