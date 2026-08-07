@@ -128,6 +128,34 @@ final class PhraseSummaryServiceTest extends FunctionalTestCase
         self::assertSame([], $this->subject->describe('', [$this->pageStateTab()]));
     }
 
+    #[Test]
+    public function promotesTheSummaryToTheLabelOfAFavoriteSavedWithoutAName(): void
+    {
+        // FavoriteService stores the phrase as the label when none was typed.
+        // Showing the raw phrase as a heading and its readable summary right
+        // below would say the same thing twice, so the summary takes over the
+        // heading and the criteria list is dropped.
+        $favorites = $this->subject->describeFavorites(
+            [['label' => 'is:hidden,empty', 'tokenString' => 'is:hidden,empty', 'createdAt' => 1700000000]],
+            [$this->pageStateTab()],
+        );
+
+        self::assertSame('Page state: Hidden, Page state: Empty', $favorites[0]['label']);
+        self::assertSame([], $favorites[0]['criteria']);
+    }
+
+    #[Test]
+    public function keepsBothTheNameAndTheCriteriaForANamedFavorite(): void
+    {
+        $favorites = $this->subject->describeFavorites(
+            [['label' => 'Needs review', 'tokenString' => 'is:hidden', 'createdAt' => 1700000000]],
+            [$this->pageStateTab()],
+        );
+
+        self::assertSame('Needs review', $favorites[0]['label']);
+        self::assertSame(['Page state: Hidden'], $favorites[0]['criteria']);
+    }
+
     /**
      * @return array<string, mixed>
      */
