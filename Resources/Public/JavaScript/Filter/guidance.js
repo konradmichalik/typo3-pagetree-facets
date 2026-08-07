@@ -108,7 +108,9 @@ export function renderHelpToggle(panel) {
   button.type = 'button';
   button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__help-toggle';
   const label = TYPO3.lang?.['pagetreeFacets.modal.help'] ?? 'Filter syntax';
-  button.title = label;
+  // Icon-only: aria-label stays the short name, the title explains.
+  button.title = TYPO3.lang?.['pagetreeFacets.modal.help.description']
+    ?? 'Explains how criteria combine and what each action does.';
   button.setAttribute('aria-label', label);
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', panel.id);
@@ -136,7 +138,7 @@ function renderHelpClose(onClose) {
   close.type = 'button';
   close.className = 'pagetree-facets__help-close';
   const label = TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close';
-  close.title = label;
+  close.title = TYPO3.lang?.['pagetreeFacets.modal.help.close.description'] ?? 'Closes this panel.';
   close.setAttribute('aria-label', label);
   close.textContent = '×';
   close.addEventListener('click', onClose);

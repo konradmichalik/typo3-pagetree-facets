@@ -264,12 +264,18 @@ class FacetsModal {
     copyLink.type = 'button';
     copyLink.className = 'pagetree-facets__copy-link btn btn-sm btn-link d-inline-flex align-items-center gap-1';
     copyLink.append(decorativeIcon('actions-clipboard'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
+    // The title says what the action does, not what it is called - a label
+    // reads "Copy link", but what ends up on the clipboard is a whole view.
+    copyLink.title = TYPO3.lang?.['pagetreeFacets.modal.copyLink.description']
+      ?? 'Copies a link to this view with the current filter attached.';
     copyLink.addEventListener('click', () => this.#copyLink());
 
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'pagetree-facets__reset btn btn-sm btn-link d-inline-flex align-items-center gap-1';
     reset.append(decorativeIcon('actions-refresh'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
+    reset.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
+      ?? 'Removes every criterion here. The page tree keeps its current filter until you apply.';
     reset.addEventListener('click', () => this.#resetAll());
 
     // "Save current filter" sits alongside "Copy link" - both export the phrase
@@ -532,7 +538,9 @@ class FacetsModal {
     button.type = 'button';
     button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__token-toggle';
     const label = TYPO3.lang?.['pagetreeFacets.modal.tokenView'] ?? 'Token view';
-    button.title = label;
+    // Icon-only: the short name is what assistive technology announces, the
+    // longer title is the explanation a hover asks for.
+    button.title = TYPO3.lang?.['pagetreeFacets.modal.tokenView.description'] ?? 'Shows the whole filter as editable text.';
     button.setAttribute('aria-label', label);
     button.setAttribute('aria-pressed', 'false');
     button.append(decorativeIcon('actions-code'));
@@ -1074,7 +1082,10 @@ class FacetsModal {
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'pagetree-facets__chip-remove';
-    remove.setAttribute('aria-label', `${criterion.label} – ${TYPO3.lang?.['pagetreeFacets.modal.removeFilter'] ?? 'remove filter'}`);
+    const removeLabel = `${criterion.label} – ${TYPO3.lang?.['pagetreeFacets.modal.removeFilter'] ?? 'remove filter'}`;
+    remove.setAttribute('aria-label', removeLabel);
+    // Several × in a row: the tooltip has to name which criterion this one drops.
+    remove.title = removeLabel;
     remove.textContent = '×';
     remove.addEventListener('click', () => {
       criterion.remove();

@@ -141,6 +141,31 @@ describe('the scope controls', () => {
     expect(modal.querySelector('.pagetree-facets__search > .pagetree-facets__help-toggle')).not.toBeNull();
   });
 
+  it('explains every action on hover rather than repeating its label', async () => {
+    // Titles carry the consequence ("what happens if I press this"), which a
+    // three-word label cannot. Icon-only controls keep their short aria-label
+    // as the announced name, so the two never collide.
+    const { modal } = await openModal();
+    const titleOf = (selector) => modal.querySelector(selector).title;
+
+    expect(titleOf('.pagetree-facets__copy-link')).toBe('Copies a link to this view with the current filter attached.');
+    expect(titleOf('.pagetree-facets__reset'))
+      .toBe('Removes every criterion here. The page tree keeps its current filter until you apply.');
+    expect(titleOf('.pagetree-facets__favorite-add'))
+      .toBe('Saves the current filter under a name so you can reuse it later.');
+    expect(titleOf('.pagetree-facets__token-toggle')).toBe('Shows the whole filter as editable text.');
+    expect(titleOf('.pagetree-facets__help-toggle')).toBe('Explains how criteria combine and what each action does.');
+    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-label')).toBe('Token view');
+  });
+
+  it('names the criterion a chip\'s × would drop, there being several in a row', async () => {
+    const { modal } = await openModal();
+    const remove = modal.querySelector('.pagetree-facets__chip-remove');
+
+    expect(remove.title).toBe('Page state: Hidden – remove filter');
+    expect(remove.getAttribute('aria-label')).toBe(remove.title);
+  });
+
   it('prefills freetext from the hydrated phrase', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ freetext: 'contact' }),

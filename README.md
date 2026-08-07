@@ -17,6 +17,7 @@
 This extension turns the TYPO3 backend page tree into a faceted filter. Instead
 of scrolling through a large tree, you narrow it down to exactly the pages you
 care about: by content type, page state, records, activity, translations or SEO.
+
 Filters are compact tokens that you can type into the tree's existing search
 field or assemble in a guided modal, and the whole feature is extensible through
 a public filter tab API.
@@ -34,13 +35,12 @@ a public filter tab API.
 
 ## ✨ Features
 
-- **Filterable page tree**: type tokens into the tree's existing search field, or open a modal (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>) for a guided UI with active-filter chips and per-tab counts
-- **Built-in filter tabs**: Content elements (`ce:`), Records (`table:` `record:` `text:`), Activity (`updated:` `created:` `by:` `createdby:`), Page type (`doktype:`), Page state (`is:`), Translations (`untranslated:` `translated:`), SEO (`seo:`, requires EXT:seo)
-- **Scopes**: `site:<identifier>` narrows to one site, `under:<uid>` to the page currently open and its subpages
-- **Sharable links, session persistence and favorites**: copy the current filter as a link, have it survive a reload for the session, or save it as a named favorite for later
-- **Extensible filter API**: add a single option to an existing tab (`FilterOptionInterface` + `RegisterFilterOptionsEvent`) or a whole tab (`FilterTabInterface` + `RegisterFilterTabsEvent`) — the built-ins use the exact same paths
-- **Per-user/group control**: disable tabs globally (extension settings) or per user/group (`tx_typo3pagetreefacets.disableTabs` / `.disable`)
-- **Raw query escape hatch** (`raw:`, opt-in, off by default): power-user token matching arbitrary `field=value` conditions against any TCA table the current backend user has table-select access to — see the Configuration section below for the syntax and security tradeoffs before enabling it
+- **Filterable page tree** — type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
+- **Seven built-in filter tabs** — content elements, records, activity, page type, page state, translations and SEO, plus `site:` / `under:` scopes
+- **Sharable links, session persistence and favorites** — hand a filter to a colleague, keep it across a reload, or save it under a name
+- **Extensible** — add a single option to an existing tab, or a whole tab of your own
+- **Per-user/group control** — disable tabs installation-wide or via User TSconfig
+- **Raw query escape hatch** (`raw:`, opt-in) — match arbitrary `field=value` conditions against any TCA table the user may already read
 
 ## 🔥 Installation
 
@@ -75,13 +75,10 @@ field) to open the filter modal. Pick criteria by clicking through the tabs on
 the left; each selection appears as a removable chip above the tree, with a
 per-tab count of matching pages, and narrows the tree live as you go.
 
-Prefer typing? The **Token view** toggle (top bar) swaps the freetext field for a
-single editable phrase, kept in two-way sync with the form: edit the tokens and the
-chips, counts and controls follow along — or keep clicking the form and watch the
-phrase update. Applying sends the phrase as-is, so it doubles as a scratchpad for the
-exact string you would type into the tree's own search field. (Editing the form
-re-serialises the phrase, so tokens the form can't represent survive only while you
-edit them in the field directly.)
+Prefer typing? The **Token view** toggle (top bar) swaps the freetext field for the
+full filter phrase, kept in two-way sync with the form — edit either side and the
+other follows. Note that editing the form re-serialises the phrase, so tokens the
+form cannot represent survive only while you stay in the field.
 
 ![How the filter modal works](.github/assets/screencast.gif)
 
@@ -98,6 +95,23 @@ seo:missing-description           # indexable pages without meta description
 Whitespace means AND, a comma means OR within one criterion (`doktype:1,4`).
 Freetext without a `key:` prefix behaves like the core title/UID search, and
 unknown tokens are ignored.
+
+| Tab | Token keys |
+|---|---|
+| Content elements | `ce:` |
+| Records | `table:` `record:` `text:` |
+| Activity | `updated:` `created:` `by:` `createdby:` |
+| Page type | `doktype:` |
+| Page state | `is:` |
+| Translations | `untranslated:` `translated:` |
+| SEO (requires EXT:seo) | `seo:` |
+| Scopes | `site:<identifier>` `under:<uid>` |
+
+> [!IMPORTANT]
+> Every criterion resolves to **pages**, whatever it matches on. `ce:uploads` or
+> `table:tx_news_domain_model_news` do not list content elements or news records —
+> they narrow the tree to the pages those records live on. The result of a filter
+> is always a set of pages.
 
 > [!NOTE]
 > This is not the global backend search (the toolbar magnifier / <kbd>Cmd</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd>).
@@ -180,55 +194,20 @@ tx_typo3pagetreefacets.disableTabs = seo, translations
 
 ## 🔌 Extending
 
-There are two extension points, and the smaller one is usually the one you want.
+There are two extension points, and the smaller one is usually the one you want:
 
-### A single option in an existing tab
+- **A single option in an existing tab** — one more value under a token key that
+  already exists, e.g. another checkbox in Page state's `is:` group:
+  `FilterOptionInterface` + `RegisterFilterOptionsEvent`.
+- **A whole tab** — own token keys, own modal UI:
+  `FilterTabInterface` + `RegisterFilterTabsEvent`.
 
-To add one more criterion to a token key that already exists — another value in
-Page state's `is:` group, say — implement `FilterOptionInterface` and register it
-via `RegisterFilterOptionsEvent`:
+The built-ins use the exact same two paths; there is no private shortcut.
 
-```php
-#[AsEventListener(identifier: 'my-ext/register-option')]
-final readonly class MyOptionListener
-{
-    public function __construct(private MyOption $myOption) {}
-
-    public function __invoke(RegisterFilterOptionsEvent $event): void
-    {
-        $event->addOption($this->myOption);   // priority 0 = after the built-ins
-    }
-}
-```
-
-The option reports which key it extends (`getTokenKey()`), its own value, label,
-icon and description, and resolves that value to page UIDs. Values of one token are
-OR-combined, separate tokens AND-intersected — identical to a built-in, because the
-built-in options use this same event. Extending `AbstractPagesQueryOption` is
-optional and saves the query plumbing when the criterion is a `pages` lookup.
-
-`getTokenKey()`+`getValue()` (e.g. `is:no-nav-title`) is the identifier
-administrators disable the option under, so treat it as public API.
-
-Only vocabulary tabs surface options — Page state (`is:`) and SEO (`seo:`).
-TCA-derived tabs such as Page type or Records build their options dynamically and
-ignore the event.
-
-### A whole tab
-
-Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
-(`#[AsEventListener]`); the built-in tabs use the exact same path. A tab owns
-token keys, resolves them to page UIDs, and describes its modal UI declaratively.
-
-### A working example of both
-
-[`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab) is a minimal
-extension in this repository that exercises both paths: an `abstract:set` /
-`abstract:empty` tab, and an `is:no-nav-title` option added to the *built-in* Page
-state tab. Both are commented method by method, including the priority semantics.
-It is a development fixture (not part of the released package), so copy it rather
-than depending on it — `ddev install` sets it up automatically, so both show up in
-the modal of a freshly installed instance.
+**→ [`example_tab`](Tests/Functional/Fixtures/Extensions/example_tab/README.md)**
+is a minimal extension in this repository that exercises both, commented method by
+method. Its README walks through the interfaces, the priority semantics and what
+counts as public API.
 
 ## 🙏 Acknowledgments
 

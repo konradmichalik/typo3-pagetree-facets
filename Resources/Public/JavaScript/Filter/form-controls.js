@@ -62,7 +62,7 @@ export function clearable(input) {
   clear.className = 'pagetree-facets__clear';
   clear.textContent = '×';
   const label = TYPO3.lang?.['pagetreeFacets.modal.clear'] ?? 'Clear';
-  clear.title = label;
+  clear.title = TYPO3.lang?.['pagetreeFacets.modal.clear.description'] ?? 'Empties this field.';
   clear.setAttribute('aria-label', label);
   clear.hidden = '' === input.value;
 

@@ -39,10 +39,12 @@ describe('favoriteRows', () => {
       .toBe('Page type: Shortcut · Page state: Empty');
   });
 
-  it('keeps the phrase itself on the title, one hover away', () => {
+  it('says what the click does and keeps the phrase itself one hover away', () => {
     const rows = favoriteRows(favorites, { onLoad: vi.fn(), onRemove: vi.fn() });
 
-    expect(rows[0].querySelector('.pagetree-facets__favorite-load').title).toBe('is:hidden');
+    // The row shows resolved criteria now, so the phrase lives here or nowhere.
+    expect(rows[0].querySelector('.pagetree-facets__favorite-load').title)
+      .toBe('Loads this filter into the dialog. It takes effect once you apply.\nis:hidden');
   });
 
   it('leaves the second line out when the name already is the summary', () => {

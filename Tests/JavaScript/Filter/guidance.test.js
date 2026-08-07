@@ -110,8 +110,11 @@ describe('the help panel\'s own close button', () => {
     expect(document.activeElement).toBe(toggle);
   });
 
-  it('is named, being icon-only', () => {
-    expect(open().close.getAttribute('aria-label')).toBe('Close');
+  it('is named, being icon-only, and explains itself on hover', () => {
+    const { close } = open();
+
+    expect(close.getAttribute('aria-label')).toBe('Close');
+    expect(close.title).toBe('Closes this panel.');
   });
 });
 

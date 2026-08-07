@@ -70,8 +70,10 @@ describe('clearable', () => {
   it('is labelled, not just an × glyph', () => {
     const button = clearable(textInput()).querySelector('button');
 
+    // The pattern for every icon-only control here: the short name is what gets
+    // announced, the title is the explanation a hover asks for.
     expect(button.getAttribute('aria-label')).toBe('Clear');
-    expect(button.title).toBe('Clear');
+    expect(button.title).toBe('Empties this field.');
   });
 });
 

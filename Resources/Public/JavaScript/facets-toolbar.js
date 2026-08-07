@@ -298,6 +298,8 @@ class FacetsToolbar {
       decorativeIcon('pagetree-facets'),
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.adjust'] ?? 'Adjust filter'),
     );
+    adjust.title = TYPO3.lang?.['pagetreeFacets.empty.adjust.description']
+      ?? 'Opens the filter dialog on the filter that matched nothing.';
     // Narrowing the criteria is usually the better way out than starting over,
     // so it comes first - the modal opens on the phrase that just failed.
     adjust.addEventListener('click', () => this.#openModal());
@@ -311,6 +313,8 @@ class FacetsToolbar {
       decorativeIcon('actions-refresh'),
       document.createTextNode(TYPO3.lang?.['pagetreeFacets.empty.reset'] ?? 'Reset filter'),
     );
+    reset.title = TYPO3.lang?.['pagetreeFacets.empty.reset.description']
+      ?? 'Clears the filter and shows the whole page tree again.';
     reset.addEventListener('click', () => {
       filterInput.value = '';
       // The core's toolbar binds a debounced "input" listener to this field and

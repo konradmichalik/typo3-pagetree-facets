@@ -38,7 +38,11 @@ export function favoriteRows(favorites, { onLoad, onRemove }) {
     const load = document.createElement('button');
     load.type = 'button';
     load.className = 'pagetree-facets__favorite-load';
-    load.title = favorite.tokenString;
+    // Both halves earn their place: what the click does, and the raw phrase -
+    // which the row itself no longer shows, having traded it for the resolved
+    // criteria below.
+    load.title = `${TYPO3.lang?.['pagetreeFacets.modal.loadFavorite.description']
+      ?? 'Loads this filter into the dialog. It takes effect once you apply.'}\n${favorite.tokenString}`;
     const label = document.createElement('span');
     label.className = 'pagetree-facets__favorite-label';
     label.textContent = favorite.label;
@@ -82,6 +86,8 @@ export function buildSaveFavoriteForm({ onSave }) {
   toggle.type = 'button';
   toggle.className = 'pagetree-facets__favorite-add btn btn-sm btn-link d-inline-flex align-items-center gap-1';
   toggle.append(decorativeIcon('actions-star'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
+  toggle.title = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.description']
+    ?? 'Saves the current filter under a name so you can reuse it later.';
 
   const form = document.createElement('div');
   form.className = 'pagetree-facets__favorite-form';
@@ -98,11 +104,15 @@ export function buildSaveFavoriteForm({ onSave }) {
   save.type = 'button';
   save.className = 'btn btn-sm btn-primary';
   save.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.save'] ?? 'Save';
+  save.title = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.save.description']
+    ?? 'Saves the filter under the name entered here.';
 
   const cancel = document.createElement('button');
   cancel.type = 'button';
   cancel.className = 'btn btn-sm btn-default';
   cancel.textContent = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.cancel'] ?? 'Cancel';
+  cancel.title = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.cancel.description']
+    ?? 'Discards the name and closes this field.';
 
   const closeForm = () => {
     form.hidden = true;
