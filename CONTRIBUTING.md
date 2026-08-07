@@ -77,11 +77,19 @@ End-to-end tests need the TYPO3 instance from the section below and must run
 **inside** the container:
 
 ```bash
-ddev exec npm ci                               # first time only
-ddev exec npx playwright install chromium      # first time only
-ddev exec npx playwright test                  # whole E2E suite
+ddev exec npm ci                                     # first time only
+ddev exec sudo npx playwright install-deps chromium  # after every container rebuild
+ddev exec npx playwright install chromium            # after every container rebuild
+ddev exec npx playwright test                        # whole E2E suite
 ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
 ```
+
+Chromium and its system libraries are installed into the container's own
+filesystem rather than a mounted volume, so `ddev restart` discards them and both
+steps have to be repeated — the symptom is
+`browserType.launch: Executable doesn't exist`. Adding the libraries to
+`webimage_extra_packages` in `.ddev/config.yaml` would make them survive, at the
+cost of installing them for everyone who never runs the E2E suite.
 
 ## TYPO3 Setup
 
