@@ -2,11 +2,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 
 const match = (overrides = {}) => ({
-  tab: { identifier: 'state', label: 'State' },
-  field: { name: 'is', type: 'checkbox-group' },
+  tab: {
+    identifier: 'state',
+    label: 'State',
+    configuration: { fields: [{ name: 'is', type: 'checkbox-group', label: 'State' }] },
+  },
+  field: { name: 'is', type: 'checkbox-group', label: 'State' },
   option: { value: 'hidden', label: 'Hidden' },
   ...overrides,
 });
+
+/** A tab whose criteria are spread over two fields with interchangeable presets. */
+const activityMatch = (fieldLabel = 'Last updated') => ({
+  tab: {
+    identifier: 'activity',
+    label: 'Activity',
+    configuration: {
+      fields: [
+        { name: 'changed', type: 'radio-presets', label: 'Last updated' },
+        { name: 'created', type: 'radio-presets', label: 'Created' },
+      ],
+    },
+  },
+  field: { name: 'changed', type: 'radio-presets', label: fieldLabel },
+  option: { value: '7d', label: 'Last 7 days' },
+});
+
+const originBadge = (list) => list.querySelector('.pagetree-facets__search-result-tab');
 
 const deps = (control = null) => ({ findControl: vi.fn(() => control) });
 
@@ -61,6 +83,37 @@ describe('renderSearchResults', () => {
     expect(list.querySelectorAll('li')).toHaveLength(2);
     expect(list.querySelector('.pagetree-facets__search-result-label').textContent).toBe('Hidden');
     expect(list.querySelector('.pagetree-facets__search-result-tab').textContent).toBe('State');
+  });
+
+  it('names the field heading too where the tab alone does not identify the criterion', () => {
+    // Activity offers the same presets under "Last updated" and "Created" - two
+    // rows reading "Last 7 days · Activity" would be indistinguishable.
+    const list = renderSearchResults([activityMatch()], deps(realCheckbox()));
+
+    expect(originBadge(list).textContent).toContain('Activity');
+    expect(originBadge(list).textContent).toContain('Last updated');
+  });
+
+  it('keeps the chevron out of the accessible name and puts a comma in it', () => {
+    const list = renderSearchResults([activityMatch()], deps(realCheckbox()));
+
+    // "›" would be announced as "greater than"; the comma is what separates the
+    // two segments for a screen reader.
+    expect(originBadge(list).querySelector('.pagetree-facets__search-result-origin').getAttribute('aria-hidden'))
+      .toBe('true');
+    expect(originBadge(list).querySelector('.visually-hidden').textContent).toBe(',');
+  });
+
+  it('leaves a single-field tab as it was', () => {
+    const list = renderSearchResults([match()], deps(realCheckbox()));
+
+    expect(originBadge(list).textContent).toBe('State');
+  });
+
+  it('never says the same thing twice when a field carries its tab\'s own name', () => {
+    const list = renderSearchResults([activityMatch('Activity')], deps(realCheckbox()));
+
+    expect(originBadge(list).textContent).toBe('Activity');
   });
 
   it('mirrors the real control state into the proxy', () => {

@@ -85,11 +85,7 @@ function renderResultItem({ tab, field, option }, { findControl }) {
   text.textContent = option.label;
   label.append(text);
 
-  // Which tab this criterion belongs to - the whole point of a flat cross-tab list.
-  const tabBadge = document.createElement('span');
-  tabBadge.className = 'pagetree-facets__search-result-tab';
-  tabBadge.textContent = tab.label;
-  label.append(tabBadge);
+  label.append(originBadge(tab, field));
 
   if (option.description) {
     label.title = option.description;
@@ -99,6 +95,43 @@ function renderResultItem({ tab, field, option }, { findControl }) {
   item.append(label);
 
   return item;
+}
+
+/**
+ * Where the criterion lives - the whole point of a flat cross-tab list. The tab
+ * alone is not always enough: the Activity tab offers the same presets under
+ * "Last updated" and under "Created", so without the field heading those matches
+ * are two identical rows writing to different controls. The heading is therefore
+ * appended wherever a tab spreads its criteria over more than one field - which
+ * includes the bucketed ones (records by source, content elements by wizard
+ * group), where the panel's section heading is the only context a flat list has
+ * left. A single-field tab, or a field named after its own tab, would only say
+ * the same thing twice.
+ */
+function originBadge(tab, field) {
+  const badge = document.createElement('span');
+  badge.className = 'pagetree-facets__search-result-tab';
+  badge.append(document.createTextNode(tab.label));
+
+  const fields = tab.configuration.fields ?? [];
+  if (fields.length < 2 || field.label === tab.label) {
+    return badge;
+  }
+
+  // "›" is decoration - a screen reader would announce it as "greater than" - so
+  // it is hidden and a comma carries the separation into the accessible name.
+  const spoken = document.createElement('span');
+  spoken.className = 'visually-hidden';
+  spoken.textContent = ',';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'pagetree-facets__search-result-origin';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.textContent = '›';
+
+  badge.append(spoken, chevron, document.createTextNode(field.label));
+
+  return badge;
 }
 
 function buildProxy(tab, field, option, isRadio, control) {
