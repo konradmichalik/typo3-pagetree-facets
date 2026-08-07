@@ -94,6 +94,21 @@ final class ContentQueryHelperTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function pageUidsWithRecordsReturnsTheMatchingPageItselfForThePagesTable(): void
+    {
+        // Not pid (which would be 1, the parent): for "pages" the record IS
+        // the page, so the answer is its own uid.
+        self::assertSame([2], $this->subject->getPageUidsWithRecords('pages', $this->context, 'uid = 2'));
+    }
+
+    #[Test]
+    public function pageUidsWithRecordsUsesPidForEveryOtherTable(): void
+    {
+        // Counterpart to the test above - tt_content:200 lives on page 2.
+        self::assertSame([2], $this->subject->getPageUidsWithRecords('tt_content', $this->context, 'uid = 200'));
+    }
+
+    #[Test]
     public function pageUidsWithRecordsWithoutMatchingRowsIsEmpty(): void
     {
         self::assertSame([], $this->subject->getPageUidsWithRecords('tt_content', $this->context, 'CType = \'nonexistent\''));

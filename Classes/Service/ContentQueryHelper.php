@@ -74,6 +74,10 @@ class ContentQueryHelper
      * Page UIDs that have at least one record of the given table.
      * Hidden records count (a page with five disabled elements is not empty).
      *
+     * For "pages" the record IS the page, so its own uid is the answer -
+     * reading pid there would return the matching page's PARENT, which turns
+     * "find pages:5" into "find the page above pages:5".
+     *
      * @param array<string, mixed>                                                          $parameters
      * @param array<string, \Doctrine\DBAL\ArrayParameterType|\Doctrine\DBAL\ParameterType> $parameterTypes
      *
@@ -81,12 +85,13 @@ class ContentQueryHelper
      */
     public function getPageUidsWithRecords(string $table, FilterContext $context, ?string $andWhere = null, array $parameters = [], array $parameterTypes = []): array
     {
+        $pageUidColumn = 'pages' === $table ? 'uid' : 'pid';
         $queryBuilder = $this->createQueryBuilder($table, $context);
         $queryBuilder
-            ->select('pid')
+            ->select($pageUidColumn)
             ->distinct()
             ->from($table)
-            ->where($queryBuilder->expr()->gt('pid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)));
+            ->where($queryBuilder->expr()->gt($pageUidColumn, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)));
         if (null !== $andWhere) {
             $queryBuilder->andWhere($andWhere);
         }
