@@ -64,6 +64,29 @@ final class RawQueryTabTest extends AbstractTabTestCase
     }
 
     #[Test]
+    public function findsPagesByRecordUid(): void
+    {
+        // "uid" has no TCA columns entry - it is allowed as an explicit
+        // exception, otherwise the single most obvious raw query would be
+        // silently dropped.
+        self::assertSame([2], $this->resolve($this->get(RawQueryTab::class), 'raw:tt_content|uid=201'));
+    }
+
+    #[Test]
+    public function findsThePageItselfWhenQueryingThePagesTableByUid(): void
+    {
+        self::assertSame([3], $this->resolve($this->get(RawQueryTab::class), 'raw:pages|uid=3'));
+    }
+
+    #[Test]
+    public function findsThePageItselfWhenQueryingThePagesTableByField(): void
+    {
+        // Not the parent: for "pages" the matching record is the page. The
+        // value carries no space on purpose - whitespace separates tokens.
+        self::assertSame([1, 2, 3, 4], $this->resolve($this->get(RawQueryTab::class), 'raw:pages|doktype=1'));
+    }
+
+    #[Test]
     public function unknownFieldIsIgnoredRatherThanWideningToAnyRecord(): void
     {
         self::assertSame([], $this->resolve($this->get(RawQueryTab::class), 'raw:tt_content|bogus_field=x'));

@@ -127,6 +127,36 @@ final class RawQueryTabTest extends TestCase
     }
 
     #[Test]
+    public function uidIsAcceptedAlthoughItHasNoTcaColumnsEntry(): void
+    {
+        $GLOBALS['TCA']['tt_content'] = ['columns' => ['CType' => []]];
+        $context = $this->context();
+        $queryHelper = $this->createMock(ContentQueryHelper::class);
+        $queryHelper->expects(self::once())
+            ->method('getPageUidsWithFieldMatch')
+            ->with('tt_content', ['uid' => '201'], $context)
+            ->willReturn([2]);
+        $tab = new RawQueryTab($queryHelper);
+
+        $uids = $tab->resolvePageUids(new Token('raw', ['tt_content|uid=201'], 'raw:tt_content|uid=201'), $context);
+
+        self::assertSame([2], $uids);
+    }
+
+    #[Test]
+    public function schemaFieldsDoNotWhitelistArbitraryNonTcaFields(): void
+    {
+        // "uid" is an explicit exception, not the start of a general
+        // "any column of the table" rule - pid must still be dropped.
+        $GLOBALS['TCA']['tt_content'] = ['columns' => ['CType' => []]];
+        $tab = new RawQueryTab($this->queryHelperThatMustNotBeCalled());
+
+        $uids = $tab->resolvePageUids(new Token('raw', ['tt_content|pid=3'], 'raw:tt_content|pid=3'), $this->context());
+
+        self::assertSame([], $uids);
+    }
+
+    #[Test]
     public function bareTableWithoutConditionsDelegatesEmptyConditions(): void
     {
         $GLOBALS['TCA']['tt_content'] = ['columns' => ['CType' => []]];

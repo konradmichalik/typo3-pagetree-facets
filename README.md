@@ -154,6 +154,11 @@ it matches arbitrary fields on any table the current backend user can already
 select records from, so review your backend groups' table permissions before
 enabling it.
 
+Field names are whitelisted against the table's TCA `columns`, plus `uid`, which
+has no `columns` entry but is the most obvious thing to look a record up by:
+`raw:tt_content|uid=201` narrows the tree to the page holding that element.
+Unknown field names are dropped rather than matched.
+
 ### User TSconfig
 
 Both restrictions can also be applied per backend user or group:

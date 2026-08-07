@@ -34,6 +34,15 @@ use KonradMichalik\PagetreeFacets\Token\Token;
  */
 final class RawQueryTab extends AbstractPagesQueryTab
 {
+    /**
+     * Fields every TCA table has in its schema but none declares under
+     * "columns". Without this, the most obvious raw query of all -
+     * "raw:tt_content|uid=201" - would be silently dropped. The list stays a
+     * fixed literal: it is what makes the identifier safe to put into SQL, so
+     * it must never become configurable or derived from user input.
+     */
+    private const array SCHEMA_FIELDS = ['uid'];
+
     public function getIdentifier(): string
     {
         return 'raw';
@@ -65,7 +74,7 @@ final class RawQueryTab extends AbstractPagesQueryTab
             return [];
         }
         if ([] !== $conditions) {
-            $conditions = $this->onlyKnownColumns($table, $conditions);
+            $conditions = $this->onlyKnownFields($table, $conditions);
             if ([] === $conditions) {
                 return [];
             }
@@ -126,11 +135,11 @@ final class RawQueryTab extends AbstractPagesQueryTab
      *
      * @return array<string, string>
      */
-    private function onlyKnownColumns(string $table, array $conditions): array
+    private function onlyKnownFields(string $table, array $conditions): array
     {
-        $columns = array_keys($GLOBALS['TCA'][$table]['columns'] ?? []);
+        $fields = [...array_keys($GLOBALS['TCA'][$table]['columns'] ?? []), ...self::SCHEMA_FIELDS];
 
-        return array_intersect_key($conditions, array_flip($columns));
+        return array_intersect_key($conditions, array_flip($fields));
     }
 
     private function isAllowedTable(string $table, FilterContext $context): bool
