@@ -341,6 +341,15 @@
     line-height: 1.4;
 }
 
+/* Grey, because nothing is wrong: this is a status line about something still
+   pending, not a warning. It sits in the modal's own footer, outside
+   .pagetree-facets and therefore outside its palette, so the muted tone comes
+   from the backend's own token here (the dialog carries .pagetree-facets-modal,
+   see Modal.advanced()'s additionalCssClasses). */
+.pagetree-facets-modal .pagetree-facets__pending {
+    color: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+}
+
 /* inline-flex overrides the [hidden] attribute's display:none - restore it. */
 .pagetree-facets__pending[hidden] {
     display: none;
