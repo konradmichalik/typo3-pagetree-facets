@@ -31,7 +31,7 @@ a public filter tab API.
 ## ✨ Features
 
 - **Filterable page tree** — type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
-- **Seven built-in filter tabs** — content elements, records, activity, page type, page state, translations and SEO, plus `site:` / `under:` scopes
+- **Eight built-in filter tabs** — content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scopes
 - **Sharable links, session persistence and favorites** — hand a filter to a colleague, keep it across a reload, or save it under a name
 - **Extensible** — add a single option to an existing tab, or a whole tab of your own
 - **Per-user/group control** — disable tabs installation-wide or via User TSconfig
@@ -94,6 +94,7 @@ unknown tokens are ignored.
 | Records | `table:` `record:` `text:` |
 | Activity | `updated:` `created:` `by:` `createdby:` |
 | Page type | `doktype:` |
+| Layouts | `layout:` `pagelayout:` |
 | Page state | `is:` |
 | Translations | `untranslated:` `translated:` |
 | SEO (requires EXT:seo) | `seo:` |
@@ -133,7 +134,7 @@ You can find the extension settings in the TYPO3 backend under
 | `emptyResultNotice` | `1` | Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it. |
 | `enableRawQueryTab` | `0` | Enable the `raw:` power-user token (see below). Off by default. |
 
-Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `state`,
+Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `state`,
 `translations`, `seo`, `raw` (only registered at all when `enableRawQueryTab` is on).
 
 > [!NOTE]
@@ -181,6 +182,20 @@ tx_typo3pagetreefacets.disableTabs = seo, translations
   (e.g. `is:empty site:main` on an installation with thousands of empty pages)
   resolves one rootline per matched page; pair it with a narrower criterion if it
   ever feels slow.
+- **`layout:` matches the layout set on the page itself, not the effective one.**
+  A page that leaves `backend_layout` empty and only inherits a parent's
+  `backend_layout_next_level` is not a match. Resolving inheritance would mean
+  walking the rootline for every candidate page, which does not scale on large
+  trees. `backend_layout_next_level` has no token of its own — "what this page
+  uses" and "what this page hands down" are separate questions, and one token
+  answering both would make a hit ambiguous. The layouts offered in the modal are
+  collected from every site root (plus the global level) and deduplicated, so
+  layouts defined only in the page TSconfig of a *subtree* below a site root do
+  not appear as options — the token still matches them if you type it.
+  `pagelayout:` is the same tab's second criterion and matches the frontend
+  layout field (`pages.layout`) instead; its `0` ("Default") is the column
+  default and therefore offered as no checkbox, though `pagelayout:0` still
+  resolves if typed.
 - **Page permissions are enforced by the core, not this extension.** Tabs resolve
   page UIDs installation-wide; the core page tree then intersects that set with
   the backend user's `PAGE_SHOW` permission clause and mount points, so the tree

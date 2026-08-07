@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use Throwable;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -37,6 +37,7 @@ final readonly class BuiltInTabsListener
         private RecordsTab $recordsTab,
         private ActivityTab $activityTab,
         private DoktypeTab $doktypeTab,
+        private LayoutTab $layoutTab,
         private PageStateTab $pageStateTab,
         private TranslationsTab $translationsTab,
         private SeoTab $seoTab,
@@ -50,6 +51,10 @@ final readonly class BuiltInTabsListener
         $event->addTab($this->recordsTab, 90);
         $event->addTab($this->activityTab, 80);
         $event->addTab($this->doktypeTab, 70);
+        // 65, not a fresh multiple of ten: layout belongs directly next to
+        // doktype in the "content" group, and slotting it in beats renumbering
+        // every built-in below it.
+        $event->addTab($this->layoutTab, 65);
         $event->addTab($this->pageStateTab, 60);
         $event->addTab($this->translationsTab, 50);
         // Conditional registration: seo fields only exist with EXT:seo.

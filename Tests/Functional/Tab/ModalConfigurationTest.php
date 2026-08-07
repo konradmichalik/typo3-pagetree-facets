@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab, PageStateTab, RecordsTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RecordsTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 
 use function count;
 use function in_array;
@@ -37,6 +39,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__.'/../Fixtures/DoktypeTab.csv');
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/LayoutRecords.csv');
     }
 
     #[Test]
@@ -112,6 +115,70 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $configuration = $this->get(DoktypeTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
 
         self::assertSame(['1'], array_column($configuration['fields'][0]['options'], 'value'));
+    }
+
+    #[Test]
+    public function backendLayoutOptionsComeFromTheLayoutDataProvidersNotFromStaticTca(): void
+    {
+        // Static TCA holds only two placeholder items; everything real arrives
+        // through the itemsProcFunc, which is exactly what this asserts.
+        $configuration = $this->get(LayoutTab::class)->getModalConfiguration($this->createContext());
+        $values = array_column($configuration['fields'][0]['options'], 'value');
+
+        self::assertContains('10', $values, 'The backend_layout record from the fixture must be offered');
+        self::assertNotContains('', $values, 'The "not set" placeholder must not become a facet');
+    }
+
+    #[Test]
+    public function backendLayoutOptionsIncludeTheExplicitNoneEntry(): void
+    {
+        $configuration = $this->get(LayoutTab::class)->getModalConfiguration($this->createContext());
+
+        self::assertContains('-1', array_column($configuration['fields'][0]['options'], 'value'));
+    }
+
+    #[Test]
+    public function backendLayoutOptionsIncludeLayoutsFromASiteRootsOwnPageTsConfig(): void
+    {
+        // The reason options are collected per site root and not from page 0
+        // alone: page 0 sees globally registered page TSconfig, never what is
+        // typed into a root page's TSconfig field. Without the per-root pass
+        // this layout is invisible in the modal while "layout:pagets__from_root"
+        // still matches - the exact mismatch this asserts against.
+        $this->writeSiteConfiguration('main', ['rootPageId' => 1, 'base' => '/']);
+        // The config.backend_layout block is not decoration: the core's
+        // provider skips any TSconfig layout without one.
+        $this->setPageTsConfig(1, <<<'TSCONFIG'
+            mod.web_layout.BackendLayouts.from_root {
+                title = Root defined
+                config.backend_layout {
+                    colCount = 1
+                    rowCount = 1
+                    rows.1.columns.1 {
+                        name = Main
+                        colPos = 0
+                    }
+                }
+            }
+            TSCONFIG);
+
+        $configuration = $this->get(LayoutTab::class)->getModalConfiguration($this->createContext());
+        $options = array_column($configuration['fields'][0]['options'], null, 'value');
+
+        self::assertArrayHasKey('pagets__from_root', $options);
+        self::assertSame('Root defined', $options['pagets__from_root']['label']);
+    }
+
+    #[Test]
+    public function frontendLayoutOptionsComeFromStaticTcaWithoutTheDefaultValue(): void
+    {
+        $configuration = $this->get(LayoutTab::class)->getModalConfiguration($this->createContext());
+        $fields = array_column($configuration['fields'], null, 'name');
+
+        self::assertArrayHasKey('pagelayout', $fields, 'The frontend layout field must be offered alongside the backend one');
+        $values = array_column($fields['pagelayout']['options'], 'value');
+
+        self::assertSame(['1', '2', '3'], $values, 'Core ships 0..3; "0" is the column default and must not become a facet');
     }
 
     #[Test]
@@ -243,5 +310,27 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     private function writeSiteConfiguration(string $identifier, array $configuration): void
     {
         $this->get(SiteWriter::class)->write($identifier, $configuration);
+    }
+
+    /**
+     * Written straight to the column, not through DataHandler: the assertion is
+     * about how page TSconfig is *read* back, and a DataHandler round trip would
+     * add nothing but its own failure modes.
+     *
+     * The cache flush is what makes that shortcut work. Page TSconfig is
+     * assembled from the rootline, and both the rootline rows and the parsed
+     * TSconfig tree are cached - a bare UPDATE leaves whatever was read during
+     * setUp() in place, and the new value is never seen.
+     */
+    private function setPageTsConfig(int $pageUid, string $tsConfig): void
+    {
+        $this->get(ConnectionPool::class)
+            ->getConnectionForTable('pages')
+            ->update('pages', ['TSconfig' => $tsConfig], ['uid' => $pageUid]);
+
+        $cacheManager = $this->get(CacheManager::class);
+        foreach (['runtime', 'core'] as $identifier) {
+            $cacheManager->getCache($identifier)->flush();
+        }
     }
 }

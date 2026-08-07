@@ -1,0 +1,8 @@
+"pages"
+,"uid","pid","title","doktype","backend_layout","backend_layout_next_level","layout","deleted"
+,1,0,"Root",1,"","10",0,0
+,2,1,"Uses record layout",1,"10","",1,0
+,3,1,"Uses pageTS layout",1,"pagets__special","",2,0
+,4,1,"Inherits only",1,"","",0,0
+,5,1,"Explicitly none",1,"-1","",1,0
+,6,1,"Deleted with layout",1,"10","",3,1

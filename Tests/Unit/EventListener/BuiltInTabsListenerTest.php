@@ -17,11 +17,12 @@ use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
 use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
 use KonradMichalik\PagetreeFacets\EventListener\BuiltInTabsListener;
 use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
+use TYPO3\CMS\Backend\View\BackendLayoutView;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Package\PackageManager;
@@ -108,6 +109,7 @@ final class BuiltInTabsListenerTest extends TestCase
             new RecordsTab($queryHelper, $packageManager),
             new ActivityTab($queryHelper),
             new DoktypeTab($queryHelper),
+            new LayoutTab($queryHelper, self::createStub(BackendLayoutView::class), self::createStub(SiteFinder::class)),
             new PageStateTab($queryHelper, $optionRegistry),
             new TranslationsTab($queryHelper, self::createStub(SiteFinder::class)),
             new SeoTab($queryHelper, $optionRegistry),

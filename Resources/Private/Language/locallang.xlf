@@ -74,6 +74,9 @@
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
 			<trans-unit id="tab.doktype"><source>Page type</source></trans-unit>
+			<trans-unit id="tab.layout"><source>Layouts</source></trans-unit>
+			<trans-unit id="layout.backend"><source>Backend layout</source></trans-unit>
+			<trans-unit id="layout.frontend"><source>Frontend layout</source></trans-unit>
 			<trans-unit id="tab.state"><source>Page state</source></trans-unit>
 			<trans-unit id="tab.translations"><source>Missing translations</source></trans-unit>
 			<trans-unit id="translations.untranslated"><source>Translation missing in</source></trans-unit>
