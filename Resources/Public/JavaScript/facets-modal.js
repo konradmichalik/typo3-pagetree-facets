@@ -224,25 +224,27 @@ class FacetsModal {
     // Freetext (and the optional site scope) share the top slot with the token
     // editor; kept as a group so token view can hide both at once.
     const freetextRow = this.#renderFreetext();
-    search.append(freetextRow);
     this.#searchControls = [freetextRow];
+    this.#tokenField = this.#renderTokenField();
+    this.#tokenToggle = this.#renderTokenToggle();
+    // The toggle is glued to the field it switches - the same button-group shape
+    // the page tree's own toolbar uses (see facets-toolbar.js). Both fields live
+    // inside it because they take turns: whichever is visible, the button sits
+    // against its trailing edge rather than against a hidden one.
+    const searchGroup = document.createElement('div');
+    searchGroup.className = 'pagetree-facets__search-group';
+    searchGroup.append(freetextRow, this.#tokenField, this.#tokenToggle);
+    search.append(searchGroup);
     if ((this.#configuration.sites ?? []).length > 1) {
       const siteRow = this.#renderSiteScope();
       search.append(siteRow);
       this.#searchControls.push(siteRow);
     }
-    this.#tokenField = this.#renderTokenField();
-    search.append(this.#tokenField);
+    // Help stays on its own: it explains the dialog rather than switching how
+    // the filter is edited, so grouping it with the toggle would suggest a
+    // kinship the two do not have.
     const help = renderHelp({ hasPageScope: Boolean(this.#currentPageId) });
-    this.#tokenToggle = this.#renderTokenToggle();
-    // One unit at the trailing edge: neither of these changes the filter, they
-    // reveal another view of it. A btn-group claims nothing about how they
-    // relate - it only stops two icon buttons from floating separately - so the
-    // toggle keeps its aria-pressed and the help button its aria-expanded.
-    const views = document.createElement('div');
-    views.className = 'btn-group pagetree-facets__views';
-    views.append(this.#tokenToggle, renderHelpToggle(help));
-    search.append(views);
+    search.append(renderHelpToggle(help));
     header.append(search, help);
 
     // Utility row: the page scope on the left, the filter-wide actions on the

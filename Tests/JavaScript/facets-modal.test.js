@@ -127,15 +127,18 @@ describe('the scope controls', () => {
     expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(true);
   });
 
-  it('groups the two view toggles into one unit, each keeping its own state', async () => {
+  it('glues the token toggle to the two fields it switches between', async () => {
     const { modal } = await openModal();
-    const views = modal.querySelector('.pagetree-facets__views');
+    const group = modal.querySelector('.pagetree-facets__search-group');
 
-    expect([...views.children].map((button) => button.className.split(' ').at(-1)))
-      .toEqual(['pagetree-facets__token-toggle', 'pagetree-facets__help-toggle']);
-    // A btn-group is presentation only - it must not blur what each announces.
-    expect(views.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('false');
-    expect(views.querySelector('.pagetree-facets__help-toggle').getAttribute('aria-expanded')).toBe('false');
+    // Both fields belong to the group because they take turns - the button has
+    // to sit against whichever one is on screen.
+    expect([...group.children].map((child) => child.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__token-toggle']);
+    // Help explains the dialog rather than switching how it is edited, so it
+    // stays outside the group.
+    expect(group.querySelector('.pagetree-facets__help-toggle')).toBeNull();
+    expect(modal.querySelector('.pagetree-facets__search > .pagetree-facets__help-toggle')).not.toBeNull();
   });
 
   it('prefills freetext from the hydrated phrase', async () => {

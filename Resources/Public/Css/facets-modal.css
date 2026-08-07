@@ -94,10 +94,33 @@
     margin: 0;
 }
 
-/* Token view and help sit together as one button group (see #renderHeader), so
-   the row's own gap separates that unit from the input rather than the two
-   buttons from each other. */
-.pagetree-facets__views {
+/* The token toggle glued to the field it switches, mirroring the page tree
+   toolbar's own button group: zero gap inside, joined radii, and the button's
+   leading border overlapping the input's trailing one by 1px the way Bootstrap's
+   input-group does. Whichever of the two fields is visible (they take turns)
+   ends up flush against the button. */
+.pagetree-facets__search-group {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    min-width: 0;
+    gap: 0;
+}
+
+.pagetree-facets__search-group .pagetree-facets__freetext input,
+.pagetree-facets__search-group .pagetree-facets__token-field {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.pagetree-facets__search-group .pagetree-facets__token-toggle {
+    flex: 0 0 auto;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    margin-inline-start: -1px;
+}
+
+.pagetree-facets__help-toggle {
     flex: 0 0 auto;
 }
 
