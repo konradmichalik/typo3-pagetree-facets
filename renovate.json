@@ -3,5 +3,14 @@
 	"extends": [
 		"github>konradmichalik/renovate-config",
 		"github>konradmichalik/renovate-config:typo3-extension"
+	],
+	"packageRules": [
+		{
+			"description": "npm's default 'replace' strategy skips an update whose version already satisfies the declared range, so a caret range would only ever see majors — bump the range and the lock file together, the same way the typo3-extension preset does for composer",
+			"matchManagers": [
+				"npm"
+			],
+			"rangeStrategy": "bump"
+		}
 	]
 }
