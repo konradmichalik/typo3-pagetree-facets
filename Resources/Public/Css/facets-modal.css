@@ -94,11 +94,10 @@
     margin: 0;
 }
 
-.pagetree-facets__help-toggle {
-    flex: 0 0 auto;
-}
-
-.pagetree-facets__token-toggle {
+/* Token view and help sit together as one button group (see #renderHeader), so
+   the row's own gap separates that unit from the input rather than the two
+   buttons from each other. */
+.pagetree-facets__views {
     flex: 0 0 auto;
 }
 

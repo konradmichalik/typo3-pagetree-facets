@@ -235,7 +235,14 @@ class FacetsModal {
     search.append(this.#tokenField);
     const help = renderHelp({ hasPageScope: Boolean(this.#currentPageId) });
     this.#tokenToggle = this.#renderTokenToggle();
-    search.append(this.#tokenToggle, renderHelpToggle(help));
+    // One unit at the trailing edge: neither of these changes the filter, they
+    // reveal another view of it. A btn-group claims nothing about how they
+    // relate - it only stops two icon buttons from floating separately - so the
+    // toggle keeps its aria-pressed and the help button its aria-expanded.
+    const views = document.createElement('div');
+    views.className = 'btn-group pagetree-facets__views';
+    views.append(this.#tokenToggle, renderHelpToggle(help));
+    search.append(views);
     header.append(search, help);
 
     // Utility row: the page scope on the left, the filter-wide actions on the

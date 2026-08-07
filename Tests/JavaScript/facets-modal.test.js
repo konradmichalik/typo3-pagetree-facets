@@ -127,6 +127,17 @@ describe('the scope controls', () => {
     expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(true);
   });
 
+  it('groups the two view toggles into one unit, each keeping its own state', async () => {
+    const { modal } = await openModal();
+    const views = modal.querySelector('.pagetree-facets__views');
+
+    expect([...views.children].map((button) => button.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__token-toggle', 'pagetree-facets__help-toggle']);
+    // A btn-group is presentation only - it must not blur what each announces.
+    expect(views.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(views.querySelector('.pagetree-facets__help-toggle').getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('prefills freetext from the hydrated phrase', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ freetext: 'contact' }),
