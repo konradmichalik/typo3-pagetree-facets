@@ -5,7 +5,8 @@
  * `new AjaxRequest(url).withQueryArguments(args).get()` and `.post(body)`, both
  * resolving to an object with `.resolve()`. Tests drive it through
  * `respondWith` rather than by intercepting fetch, so no network layer
- * is involved at all.
+ * is involved at all. The handler receives `(payload, url)` - the url matters
+ * once a single test drives more than one endpoint (the modal talks to four).
  *
  * This deliberately does NOT try to imitate core's real behaviour beyond that
  * shape - a stub can only ever confirm what its author already believed.
@@ -43,14 +44,14 @@ export default class AjaxRequest {
 
   async get() {
     calls.push({ url: this.#url, args: this.#args });
-    const payload = await handler(this.#args);
+    const payload = await handler(this.#args, this.#url);
 
     return { resolve: async () => payload };
   }
 
   async post(body) {
     calls.push({ url: this.#url, body });
-    const payload = await handler(body);
+    const payload = await handler(body, this.#url);
 
     return { resolve: async () => payload };
   }

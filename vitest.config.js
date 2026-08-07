@@ -27,6 +27,9 @@ export default defineConfig({
       // one is a shape, not a simulation - see the stub's own docblock.
       '@typo3/core/ajax/ajax-request.js': path('./Tests/JavaScript/Stubs/typo3/core/ajax/ajax-request.js'),
       '@typo3/backend/hotkeys.js': path('./Tests/JavaScript/Stubs/typo3/backend/hotkeys.js'),
+      '@typo3/backend/modal.js': path('./Tests/JavaScript/Stubs/typo3/backend/modal.js'),
+      '@typo3/backend/notification.js': path('./Tests/JavaScript/Stubs/typo3/backend/notification.js'),
+      '@typo3/backend/enum/severity.js': path('./Tests/JavaScript/Stubs/typo3/backend/enum/severity.js'),
     },
   },
   test: {
