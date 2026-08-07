@@ -13,6 +13,7 @@ on:
       - '.ddev/**'
       - 'playwright.config.ts'
       - 'package.json'
+      - 'package-lock.json'
       - 'ext_localconf.php'
       - 'ext_conf_template.txt'
       - '.github/workflows/e2e.yml'
@@ -26,6 +27,7 @@ on:
       - '.ddev/**'
       - 'playwright.config.ts'
       - 'package.json'
+      - 'package-lock.json'
       - 'ext_localconf.php'
       - 'ext_conf_template.txt'
       - '.github/workflows/e2e.yml'
@@ -51,9 +53,8 @@ jobs:
       - name: Install TYPO3 14
         run: ddev install 14
 
-      # No `npm ci`: /package-lock.json is gitignored, the same way composer.lock is.
       - name: Install npm dependencies
-        run: ddev exec npm install
+        run: ddev exec npm ci
 
       - name: Install Playwright browsers
         run: ddev exec npx playwright install --with-deps chromium
