@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
-import { DEMO_PAGES } from '../support/fixtures.js';
+import { DEMO_PAGES } from '../support/demo-pages.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 test.beforeEach(async ({ page }) => {

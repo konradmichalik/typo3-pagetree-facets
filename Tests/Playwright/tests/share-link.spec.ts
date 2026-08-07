@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
-import { DEMO_PAGES } from '../support/fixtures.js';
-import { waitForTreeFilterApplied } from '../support/wait-for-tree-filter.js';
+import { DEMO_PAGES } from '../support/demo-pages.js';
+import { searchTree } from '../support/search-tree.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 
 const SHARE_PARAM = 'pagetreeFacetsFilter';
@@ -21,7 +21,7 @@ test('copy link puts the current phrase on the clipboard as a URL parameter', as
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
-  await waitForTreeFilterApplied(page, () => tree.search('doktype:3'));
+  await searchTree(page, tree, 'doktype:3');
   await modal.open();
   await modal.copyLinkButton().click();
 

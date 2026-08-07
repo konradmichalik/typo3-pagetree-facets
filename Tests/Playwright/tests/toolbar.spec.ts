@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
+import { searchTree } from '../support/search-tree.js';
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
@@ -33,7 +34,7 @@ test('the button carries a badge with the active filter count', async ({ page })
   await expect(modal.toggleButton()).toBeVisible();
   await expect(modal.badge()).toHaveCount(0);
 
-  await tree.search('doktype:3');
+  await searchTree(page, tree, 'doktype:3');
 
   await expect(modal.badge()).toHaveText('1');
 });

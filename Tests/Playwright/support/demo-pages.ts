@@ -1,8 +1,11 @@
 /**
  * Page titles created by `pagetree-facets:seed-demo-content`
  * (Tests/Functional/Fixtures/Extensions/demo_content). All sit directly under
- * "Home" (uid 1). Kept as named constants so a change to the seed command breaks
- * compilation here rather than producing a silently wrong assertion.
+ * "Home" (uid 1). Kept as named constants so a rename in the seed command is
+ * one edit here rather than a silently wrong string literal in every spec -
+ * there is no `tsconfig.json`/`tsc` step in this project, so nothing here
+ * would actually fail to compile; a drift would only surface as a failing
+ * assertion at runtime.
  */
 export const DEMO_PAGES = {
   home: 'Home',
