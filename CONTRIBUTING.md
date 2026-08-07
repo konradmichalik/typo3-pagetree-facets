@@ -68,7 +68,7 @@ ddev composer test:coverage
 
 ```bash
 # JavaScript unit tests
-ddev npm install                 # first time only
+ddev npm ci                      # first time only
 ddev npm run test:js
 ddev npm run test:js:coverage
 ```
@@ -77,7 +77,7 @@ End-to-end tests need the TYPO3 instance from the section below and must run
 **inside** the container:
 
 ```bash
-ddev exec npm install                          # first time only
+ddev exec npm ci                               # first time only
 ddev exec npx playwright install chromium      # first time only
 ddev exec npx playwright test                  # whole E2E suite
 ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
