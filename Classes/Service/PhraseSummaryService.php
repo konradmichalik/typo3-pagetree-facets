@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Service;
 
-use KonradMichalik\PagetreeFacets\Token\Token;
-use KonradMichalik\PagetreeFacets\Token\TokenParser;
+use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
@@ -74,8 +73,7 @@ final readonly class PhraseSummaryService
     }
 
     /**
-     * @param list<array<string, mixed>> $tabs as built for the modal: identifier,
-     *   label and the translated `configuration.fields` with their options
+     * @param list<array<string, mixed>> $tabs as built for the modal: identifier, label, translated `configuration.fields`
      *
      * @return list<string> one entry per criterion, in phrase order
      */
