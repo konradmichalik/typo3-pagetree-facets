@@ -50,6 +50,65 @@ final class SeedDemoContentCommand extends Command
     ];
 
     /**
+     * backend_layout RECORDS, so the Backend layout tab has record-based
+     * layouts ("10", "11" style values) to offer. Each carries its own grid:
+     * the filter tab never reads the config, but a record whose grid
+     * contradicts its title is worse than useless everywhere else in the
+     * backend.
+     *
+     * @var array<string, array{description: string, config: string}>
+     */
+    private const array LAYOUT_RECORDS = [
+        'Demo: One column' => [
+            'description' => 'Single content column.',
+            'config' => 'backend_layout {
+    colCount = 1
+    rowCount = 1
+    rows {
+        1 {
+            columns {
+                1 {
+                    name = Main
+                    colPos = 0
+                }
+            }
+        }
+    }
+}',
+        ],
+        'Demo: Two columns' => [
+            'description' => 'Main column plus sidebar.',
+            'config' => 'backend_layout {
+    colCount = 2
+    rowCount = 1
+    rows {
+        1 {
+            columns {
+                1 {
+                    name = Main
+                    colPos = 0
+                }
+                2 {
+                    name = Sidebar
+                    colPos = 1
+                }
+            }
+        }
+    }
+}',
+        ],
+    ];
+
+    /**
+     * The other half of what that tab surfaces: layouts defined in page
+     * TSconfig, which end up as "pagets__<key>" values. Written to the root
+     * page's TSconfig field between markers so a re-run replaces exactly this
+     * block and leaves anything else in that field alone.
+     */
+    private const string TSCONFIG_MARKER_START = '# --- pagetree-facets demo layouts (start) ---';
+    private const string TSCONFIG_MARKER_END = '# --- pagetree-facets demo layouts (end) ---';
+
+    /**
      * Editors the Activity tab's "Edited by"/"Created by" pickers can be tried
      * against - with only the install's single admin there is nobody to pick.
      * Kept as admins on purpose: this is a local demo instance, and a full
@@ -100,6 +159,8 @@ final class SeedDemoContentCommand extends Command
         }
 
         $this->backdateActivityTestData($uids);
+        $this->assignBackendLayouts($uids, $output);
+        $this->seedPageTsConfigLayouts($rootPageId, $output);
         $this->attributePagesToEditors($backendUser, $rootPageId, $uids, $output);
 
         $output->writeln('<info>Demo content seeded ('.count($uids).' records created).</info>');
@@ -138,6 +199,9 @@ final class SeedDemoContentCommand extends Command
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
         $dataHandler->start([], $cmd);
         $dataHandler->process_cmdmap();
+        // The layout records need no cleanup of their own: they live on the
+        // "Assets" sysfolder deleted right here, and deleteSpecificPage()
+        // cascades over every TCA table on a page it removes.
         $output->writeln('<comment>Removed '.count($uids).' page(s) from a previous run.</comment>');
     }
 
@@ -235,7 +299,146 @@ final class SeedDemoContentCommand extends Command
             'sys_category' => [
                 'NEW_cat1' => ['pid' => 'NEW_media', 'title' => 'Featured'],
             ],
+            // Parked on the "Assets" sysfolder like the demo category. The
+            // storage page does not matter for the layout pickers: with no
+            // _STORAGE_PID and no pageTSconfig id set, the core's data provider
+            // returns every backend_layout record regardless of where it lives.
+            'backend_layout' => $this->buildLayoutRecordMap(),
         ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildLayoutRecordMap(): array
+    {
+        $records = [];
+        $index = 0;
+        foreach (self::LAYOUT_RECORDS as $title => $layout) {
+            $records['NEW_layout'.$index++] = [
+                'pid' => 'NEW_media',
+                'title' => $title,
+                'description' => $layout['description'],
+                'config' => $layout['config'],
+            ];
+        }
+
+        return $records;
+    }
+
+    /**
+     * Spreads the seeded layouts over the demo pages so "layout:" has all four
+     * shapes to filter: a record layout, a page-TSconfig layout, the explicit
+     * "none", and pages that simply leave the field empty - plus a spread of
+     * "pagelayout:" values for the frontend layout field.
+     *
+     * A second DataHandler pass, not part of the main datamap: pages.backend_layout
+     * is a plain select without foreign_table, so DataHandler does not resolve
+     * NEW placeholders in it - the record uids have to exist first.
+     *
+     * @param array<string, int|string> $uids
+     */
+    private function assignBackendLayouts(array $uids, OutputInterface $output): void
+    {
+        $first = (int) ($uids['NEW_layout0'] ?? 0);
+        $second = (int) ($uids['NEW_layout1'] ?? 0);
+        if (0 === $first || 0 === $second) {
+            $output->writeln('<comment>Skipped backend layout assignment: layout records were not created.</comment>');
+
+            return;
+        }
+
+        // [backend_layout, layout]. The frontend layout deliberately does not
+        // track the backend one - "pagelayout:" has to be visibly its own
+        // criterion, not a synonym for "layout:".
+        $assignments = [
+            'NEW_about' => [(string) $first, '1'],
+            'NEW_products' => [(string) $second, '2'],
+            'NEW_contact' => [(string) $second, '0'],
+            'NEW_legal' => ['pagets__demo_landing', '1'],
+            // -1 is the core's "None" item: explicitly no layout, which is a
+            // different answer than leaving the field empty. "Coming Soon" and
+            // the rest stay empty on purpose so both cases exist in the tree.
+            'NEW_archive' => ['-1', '3'],
+        ];
+
+        $dataMap = ['pages' => []];
+        foreach ($assignments as $key => [$backendLayout, $frontendLayout]) {
+            if (isset($uids[$key])) {
+                $dataMap['pages'][(int) $uids[$key]] = [
+                    'backend_layout' => $backendLayout,
+                    'layout' => $frontendLayout,
+                ];
+            }
+        }
+        if ([] === $dataMap['pages']) {
+            return;
+        }
+
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start($dataMap, []);
+        $dataHandler->process_datamap();
+        if ([] !== $dataHandler->errorLog) {
+            $output->writeln('<error>'.implode("\n", $dataHandler->errorLog).'</error>');
+
+            return;
+        }
+        $output->writeln('<comment>Assigned backend layouts to '.count($dataMap['pages']).' page(s).</comment>');
+    }
+
+    /**
+     * Writes the "pagets__" half of the demo into the root page's TSconfig
+     * field. Root page, not a subtree page: page TSconfig is inherited down the
+     * rootline, and the filter modal collects its options from the site roots.
+     *
+     * Bounded by markers and rewritten in place, so re-running replaces exactly
+     * this block instead of appending a copy or overwriting a field this
+     * command does not own.
+     */
+    private function seedPageTsConfigLayouts(int $rootPageId, OutputInterface $output): void
+    {
+        $block = self::TSCONFIG_MARKER_START."\nmod.web_layout.BackendLayouts {\n"
+            ."    demo_landing {\n"
+            ."        title = Demo: Landing page\n"
+            ."        config {\n"
+            ."            backend_layout {\n"
+            ."                colCount = 1\n"
+            ."                rowCount = 1\n"
+            ."                rows.1.columns.1 {\n"
+            ."                    name = Landing\n"
+            ."                    colPos = 0\n"
+            ."                }\n"
+            ."            }\n"
+            ."        }\n"
+            ."    }\n}\n".self::TSCONFIG_MARKER_END;
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('pages');
+        $queryBuilder->getRestrictions()->removeAll();
+        $current = (string) ($queryBuilder
+            ->select('TSconfig')
+            ->from('pages')
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($rootPageId, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchOne() ?: '');
+
+        $pattern = '/'.preg_quote(self::TSCONFIG_MARKER_START, '/').'.*?'.preg_quote(self::TSCONFIG_MARKER_END, '/').'/s';
+        $updated = 1 === preg_match($pattern, $current)
+            ? (string) preg_replace($pattern, $block, $current)
+            : trim($current."\n\n".$block);
+
+        if ($updated === $current) {
+            return;
+        }
+
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start(['pages' => [$rootPageId => ['TSconfig' => $updated]]], []);
+        $dataHandler->process_datamap();
+        if ([] !== $dataHandler->errorLog) {
+            $output->writeln('<error>'.implode("\n", $dataHandler->errorLog).'</error>');
+
+            return;
+        }
+        $output->writeln('<comment>Added the "pagets__demo_landing" layout to the root page TSconfig.</comment>');
     }
 
     /**
