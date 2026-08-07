@@ -6,27 +6,42 @@ on:
       - main
     paths:
       - 'Classes/**'
+      - 'Configuration/**'
       - 'Resources/**'
       - 'Tests/Playwright/**'
       - 'Tests/Functional/Fixtures/Extensions/**'
       - '.ddev/**'
       - 'playwright.config.ts'
       - 'package.json'
+      - 'ext_localconf.php'
+      - 'ext_conf_template.txt'
       - '.github/workflows/e2e.yml'
   pull_request:
     paths:
       - 'Classes/**'
+      - 'Configuration/**'
       - 'Resources/**'
       - 'Tests/Playwright/**'
       - 'Tests/Functional/Fixtures/Extensions/**'
       - '.ddev/**'
       - 'playwright.config.ts'
       - 'package.json'
+      - 'ext_localconf.php'
+      - 'ext_conf_template.txt'
       - '.github/workflows/e2e.yml'
+
+# Cancels a superseded run on the same ref rather than letting it burn CI
+# minutes for a result nobody will look at - relevant here specifically
+# because a fresh push mid-run leaves the ddev instance mid-boot for the
+# cancelled run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
