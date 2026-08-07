@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageSubtreeScopeService, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, MatchedPageRegistry, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -37,6 +37,11 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * and $searchUids during the same dispatch), overwrite $searchUids with our
  * intersection result and neutralize the core LIKE parts in $searchParts.
  *
+ * The intersection is also handed to MatchedPageRegistry, which is what lets
+ * SearchResultLabelListener mark the hits once the same request renders the
+ * tree - the core surrounds them with their rootline, and by then the raw
+ * search phrase is all that is left of this dispatch.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 #[AsEventListener(
@@ -57,6 +62,7 @@ final readonly class PageTreeFilterListener
         private SiteScopeService $siteScopeService,
         private PageSubtreeScopeService $pageSubtreeScopeService,
         private ContentQueryHelper $queryHelper,
+        private MatchedPageRegistry $matchedPages,
     ) {}
 
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void
@@ -98,6 +104,12 @@ final readonly class PageTreeFilterListener
         if (null !== $pageScope && [] !== $uids) {
             $uids = $this->pageSubtreeScopeService->filterUidsUnderPage($uids, $pageScope);
         }
+
+        // Hand the hit list to the rendering phase before the no-match
+        // substitution below turns it into something the tree can query but
+        // nobody should see marked. SearchResultLabelListener picks it up from
+        // there to tell hits apart from the rootline rendered around them.
+        $this->matchedPages->record($uids);
 
         $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
     }

@@ -15,7 +15,7 @@ namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, PageAncestryService, PageSubtreeScopeService, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, MatchedPageRegistry, PageAncestryService, PageSubtreeScopeService, SiteScopeService, TabRegistry};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use PHPUnit\Framework\Attributes\Test;
@@ -244,12 +244,79 @@ final class PageTreeFilterListenerTest extends TestCase
         self::assertSame([10, 20, 30, 40], $event->searchUids);
     }
 
+    #[Test]
+    public function theResolvedHitsAreRecordedForTheSearchResultLabel(): void
+    {
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(matchedPages: $matchedPages)($this->createEvent('doktype:1 is:empty'));
+
+        self::assertTrue($matchedPages->isActive());
+        self::assertTrue($matchedPages->matches(20));
+        self::assertTrue($matchedPages->matches(40));
+        // A page the intersection dropped is a rootline ancestor at best, and
+        // the tree may well still render it - it must not be marked as a hit.
+        self::assertFalse($matchedPages->matches(10));
+    }
+
+    #[Test]
+    public function theRecordedHitsAreScopedLikeTheResult(): void
+    {
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(siteMap: ['main' => [20, 30]], matchedPages: $matchedPages)($this->createEvent('doktype:1 site:main'));
+
+        self::assertTrue($matchedPages->matches(20));
+        self::assertFalse($matchedPages->matches(10));
+    }
+
+    #[Test]
+    public function anEmptyResultRecordsNoHitsRatherThanTheForcedNoMatchUid(): void
+    {
+        // applyResult() substitutes the impossible uid 0 to express "no matches"
+        // to the core. Recording that substitution would label the tree root.
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(matchedPages: $matchedPages)($this->createEvent('is:hidden is:empty'));
+
+        self::assertTrue($matchedPages->isActive());
+        self::assertFalse($matchedPages->matches(0));
+    }
+
+    #[Test]
+    public function aFreetextOnlyPhraseRecordsNothing(): void
+    {
+        // The core's own search-result label already covers that case.
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(matchedPages: $matchedPages)($this->createEvent('solar park'));
+
+        self::assertFalse($matchedPages->isActive());
+    }
+
+    #[Test]
+    public function nothingIsRecordedWhileTheExtensionIsDisabledForTheUser(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(matchedPages: $matchedPages)($this->createEvent('doktype:1'));
+
+        self::assertFalse($matchedPages->isActive());
+    }
+
+    #[Test]
+    public function aPhraseOfOnlyUnknownTokensRecordsNothing(): void
+    {
+        // The engine bows out and leaves the phrase to the core, so there is no
+        // hit list of ours to mark.
+        $matchedPages = new MatchedPageRegistry();
+        $this->createListener(matchedPages: $matchedPages)($this->createEvent('status:3'));
+
+        self::assertFalse($matchedPages->isActive());
+    }
+
     /**
      * @param array<string, list<int>> $siteMap
      * @param array<string, string>    $extensionConfiguration
      * @param array<string, list<int>> $freetextUids
      */
-    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = [], ?FilterTabInterface $doktypeTab = null): PageTreeFilterListener
+    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = [], ?FilterTabInterface $doktypeTab = null, ?MatchedPageRegistry $matchedPages = null): PageTreeFilterListener
     {
         $doktypeTab ??= new StubFilterTab('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
         $stateTab = new StubFilterTab('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
@@ -274,6 +341,7 @@ final class PageTreeFilterListenerTest extends TestCase
             new SiteScopeService($this->createSiteFinder($siteMap), $this->createAncestry($siteMap)),
             new PageSubtreeScopeService(self::createStub(PageAncestryService::class)),
             $queryHelper,
+            $matchedPages ?? new MatchedPageRegistry(),
         );
     }
 
