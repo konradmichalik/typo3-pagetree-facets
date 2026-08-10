@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { clearable } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * Typeahead over be_users, backed by a small debounced AJAX search - one single
@@ -12,13 +12,16 @@ import { clearable } from '@konradmichalik/pagetree-facets/Filter/form-controls.
  * redundant, unstyled "Me"/"Me" text next to each other with no indication which
  * one was actually selected). "Me" is pinned as the first suggestion whenever the
  * dropdown opens, using the current user's own record the server already has in
- * memory (no round trip).
+ * memory (no round trip). `field.pinned` extends the same pin above the search
+ * results with declarative pseudo-values that are not be_users records at all
+ * (e.g. "Unassigned") - the owning tab is free to give that value whatever
+ * meaning it likes in resolvePageUids().
  *
  * The input's visible value is a display label ("Me (admin)" or a picked user's
- * own label); the value actually serialized lives in `input.dataset.value` (uid or
- * "me"), flagged by `dataset.picker`. That dataset pair is the entire contract with
- * the modal: its generic collectors read it instead of the visible text, so
- * mid-typing input never counts as a criterion.
+ * own label); the value actually serialized lives in `input.dataset.value` (uid,
+ * "me", or a pinned value), flagged by `dataset.picker`. That dataset pair is the
+ * entire contract with the modal: its generic collectors read it instead of the
+ * visible text, so mid-typing input never counts as a criterion.
  *
  * ARIA "combobox with list autocomplete" pattern (WAI-ARIA APG): the input keeps
  * real DOM focus at all times, arrow keys move a highlighted suggestion via
@@ -56,8 +59,10 @@ export function closeOpenUserDropdowns() {
 
 /**
  * @param {object} tab - the owning tab, for the control's name
- * @param {object} field - field descriptor; `field.currentUser` pins the "Me" entry
- * @param {string|string[]|undefined} state - hydrated value ("me" or a uid)
+ * @param {object} field - field descriptor; `field.currentUser` pins the "Me" entry,
+ *   `field.pinned` pins declarative pseudo-values (e.g. "Unassigned") above the search
+ *   results, selected through the same dataset.value contract as a real user
+ * @param {string|string[]|undefined} state - hydrated value ("me", a uid, or a pinned value)
  * @param {{getRoot: () => HTMLElement, onLabelResolved: () => void}} deps
  * @returns {HTMLElement} the control, ready to append
  */
@@ -71,6 +76,7 @@ class UserPicker {
   #resultsId;
   #currentUser;
   #currentUserLabel;
+  #pinned;
   #deps;
   #element;
   #highlighted = -1;
@@ -93,6 +99,7 @@ class UserPicker {
     const meLabel = TYPO3.lang?.['pagetreeFacets.modal.me'] ?? 'Me';
     this.#currentUser = field.currentUser?.uid ? field.currentUser : null;
     this.#currentUserLabel = this.#currentUser ? `${meLabel} (${this.#currentUser.username})` : meLabel;
+    this.#pinned = field.pinned ?? [];
 
     this.#input = this.#buildInput(tab, field);
     this.#results = this.#buildResults();
@@ -139,16 +146,17 @@ class UserPicker {
   }
 
   /**
-   * "me" resolves from the record already at hand; a bare uid needs a round trip
-   * for its label, and the re-check guards against the user having moved on to
-   * another value while that was in flight.
+   * "me" and a pinned value resolve from data already at hand; a bare uid needs a
+   * round trip for its label, and the re-check guards against the user having
+   * moved on to another value while that was in flight.
    */
   #seedFromState(state) {
     const existing = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
-    if ('me' === existing && this.#currentUser) {
-      this.#input.value = this.#currentUserLabel;
-      this.#input.dataset.value = 'me';
-      this.#input.dataset.label = this.#currentUserLabel;
+    const pinnedLabel = this.#pinnedLabel(existing);
+    if (undefined !== pinnedLabel) {
+      this.#input.value = pinnedLabel;
+      this.#input.dataset.value = existing;
+      this.#input.dataset.label = pinnedLabel;
 
       return;
     }
@@ -164,6 +172,18 @@ class UserPicker {
         this.#deps.onLabelResolved();
       }
     });
+  }
+
+  /**
+   * The label for "me" or a declared pinned value, or undefined for anything
+   * that needs the real be_users lookup.
+   */
+  #pinnedLabel(value) {
+    if ('me' === value) {
+      return this.#currentUser ? this.#currentUserLabel : undefined;
+    }
+
+    return this.#pinned.find((entry) => entry.value === value)?.label;
   }
 
   #bindInputEvents() {
@@ -256,7 +276,8 @@ class UserPicker {
 
   #renderSuggestions(users) {
     this.#results.replaceChildren();
-    const items = this.#currentUser ? [{ value: 'me', label: this.#currentUserLabel }, ...users] : users;
+    const meEntry = this.#currentUser ? [{ value: 'me', label: this.#currentUserLabel }] : [];
+    const items = [...meEntry, ...this.#pinned, ...users];
     items.forEach((item, index) => {
       const li = document.createElement('li');
       li.append(this.#buildOption(item, index));
@@ -280,7 +301,10 @@ class UserPicker {
     // would put it back in the same broken position as before.
     button.tabIndex = -1;
     button.className = 'pagetree-facets__user-result';
-    button.textContent = item.label;
+    if (item.icon) {
+      button.append(decorativeIcon(item.icon));
+    }
+    button.append(document.createTextNode(item.label));
     // Keeps focus on the input for mouse clicks too, so selecting a suggestion
     // never needs the blur/setTimeout dance to "just work".
     button.addEventListener('mousedown', (event) => event.preventDefault());

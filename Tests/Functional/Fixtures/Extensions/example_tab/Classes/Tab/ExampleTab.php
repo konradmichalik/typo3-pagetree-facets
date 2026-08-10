@@ -118,7 +118,7 @@ final class ExampleTab extends AbstractPagesQueryTab
      * third-party facet visually identical to a built-in one.
      *
      * Field types available: checkbox-group, radio-presets, select,
-     * record-search, text and user-picker. A field's "name" is its key in the
+     * text and user-picker. A field's "name" is its key in the
      * serialize()/hydrate() state array; several fields may share one name when
      * they are facets of a single criterion (the content element tab does this
      * to get one fieldset per wizard group). Option "description" becomes

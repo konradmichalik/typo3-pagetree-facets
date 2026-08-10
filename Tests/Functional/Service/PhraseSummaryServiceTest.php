@@ -92,6 +92,17 @@ final class PhraseSummaryServiceTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function resolvesAUserPickersPinnedPseudoValueToItsLabel(): void
+    {
+        // Single-field tab, so the criterion is named after the tab (see
+        // pageStateTab()'s comment) rather than the field.
+        self::assertSame(
+            ['Example: Unassigned'],
+            $this->subject->describe('assignee:none', [$this->userPickerTab()]),
+        );
+    }
+
+    #[Test]
     public function passesFreetextThroughAsItIs(): void
     {
         // The parser collects freetext into one token behind the keyed ones, so
@@ -196,6 +207,30 @@ final class PhraseSummaryServiceTest extends FunctionalTestCase
                 'fields' => [
                     ['type' => 'radio-presets', 'name' => 'updated', 'label' => 'Last updated', 'options' => $presets],
                     ['type' => 'radio-presets', 'name' => 'created', 'label' => 'Created', 'options' => $presets],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userPickerTab(): array
+    {
+        return [
+            'identifier' => 'example',
+            'label' => 'Example',
+            'configuration' => [
+                'fields' => [
+                    [
+                        'type' => 'user-picker',
+                        'name' => 'assignee',
+                        'label' => 'Assignee',
+                        'options' => [],
+                        'pinned' => [
+                            ['value' => 'none', 'label' => 'Unassigned'],
+                        ],
+                    ],
                 ],
             ],
         ];
