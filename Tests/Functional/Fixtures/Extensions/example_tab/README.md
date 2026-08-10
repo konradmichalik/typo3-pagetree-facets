@@ -73,6 +73,30 @@ navigation. Extending `AbstractPagesQueryTab` is optional and provides a default
 `serialize()`/`hydrate()` plus helpers such as `fetchPageUids()` and
 `excludeNonContentDoktypes()`.
 
+### `user-picker` pseudo-values
+
+A `user-picker` field normally offers real `be_users` records plus "Me" (via
+`currentUser`). `pinned` extends the same pin with declarative pseudo-values that
+are not be_users records at all — e.g. an "Unassigned" entry for a status/assignee
+criterion:
+
+```php
+[
+    'type' => 'user-picker',
+    'name' => 'assignee',
+    'label' => $lll.'assignee',
+    'currentUser' => $currentUser,
+    'pinned' => [
+        ['value' => 'none', 'label' => $lll.'assignee.none', 'icon' => 'actions-user'],
+    ],
+]
+```
+
+Selected through the same `input.dataset.value` contract as a real user, so the
+modal's generic collectors and `PhraseSummaryService` need no special case — the
+owning tab is free to give `assignee:none` whatever meaning it likes in
+`resolvePageUids()`, exactly like any other value.
+
 ## Trying it out
 
 ```bash

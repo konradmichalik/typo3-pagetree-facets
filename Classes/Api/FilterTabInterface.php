@@ -68,7 +68,7 @@ interface FilterTabInterface
      * [
      *   'fields' => [
      *     [
-     *       'type' => 'checkbox-group'|'select'|'radio-presets'|'record-search'|'text'|'user-picker',
+     *       'type' => 'checkbox-group'|'select'|'radio-presets'|'text'|'user-picker',
      *       'name' => string,                    // maps into serialize()/hydrate() state
      *       'label' => string,
      *       'options' => [                       // for choice types
@@ -79,6 +79,12 @@ interface FilterTabInterface
      *                                             //   for when the label alone isn't enough
      *       'currentUser' => ['uid' => int, 'username' => string], // user-picker only: pins
      *                                             //   "Me" as a suggestion without a search round trip
+     *       'pinned' => [                         // user-picker only: pseudo-values pinned above the
+     *         ['value' => string, 'label' => string, 'icon' => ?string],
+     *       ],                                   //   search results, next to "Me" - e.g. "Unassigned".
+     *                                             //   Selected through the same dataset.value contract
+     *                                             //   as a real user, so nothing else has to know they
+     *                                             //   are not be_users records.
      *     ],
      *   ],
      * ]
