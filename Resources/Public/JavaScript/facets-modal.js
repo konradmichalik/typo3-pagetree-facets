@@ -67,8 +67,26 @@ class FacetsModal {
   #favoritesTabId = '__favorites';
   #favoritesNavItem = null;
   #refreshDebounce = null;
+  // Guards the async gap between the open request and the modal appearing: on a
+  // slow instance a second click arrives while the configuration is still in
+  // flight, and would build a second modal.
+  #opened = false;
 
   async open(currentPhrase, currentPageId, onApply) {
+    if (this.#opened) {
+      return;
+    }
+    this.#opened = true;
+
+    try {
+      await this.#build(currentPhrase, currentPageId, onApply);
+    } catch (error) {
+      this.#opened = false;
+      throw error;
+    }
+  }
+
+  async #build(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
     this.#currentPageId = currentPageId;
     this.#currentPhrase = currentPhrase ?? '';
@@ -87,6 +105,7 @@ class FacetsModal {
     this.#tokenMode = false;
     this.#configuration = await this.#requestConfiguration(this.#currentPhrase);
     if (!this.#configuration.tabs.length) {
+      this.#opened = false;
       return;
     }
     this.#activeTab = (this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
@@ -181,6 +200,7 @@ class FacetsModal {
   // the token view's reflect/sync timers and the document-level scroll
   // listeners of open user dropdowns.
   #teardown() {
+    this.#opened = false;
     clearTimeout(this.#refreshDebounce);
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();

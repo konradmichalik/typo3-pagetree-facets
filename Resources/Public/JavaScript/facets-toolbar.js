@@ -35,6 +35,7 @@ class FacetsToolbar {
   #persistEnabled = false;
   #pendingPersistedFilter = '';
   #persistTimer = null;
+  #opening = false;
 
   constructor() {
     document.addEventListener('DOMContentLoaded', () => this.#initialize());
@@ -348,15 +349,29 @@ class FacetsToolbar {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  #openModal() {
+  // Busy rather than `disabled`: disabling moves focus to the body before the
+  // dialog opens, so ESC would return a keyboard user nowhere. FacetsModal
+  // guards the second modal; #opening only protects the busy state.
+  async #openModal() {
+    if (this.#opening) {
+      return;
+    }
+    this.#opening = true;
     const input = this.#findFilterInput();
-    FacetsModal.open(input?.value ?? '', this.#currentPageId(), (phrase) => {
-      if (input) {
-        input.value = phrase;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      this.#updateBadge();
-    });
+    const button = document.querySelector('.pagetree-facets-toggle');
+    button?.setAttribute('aria-busy', 'true');
+    try {
+      await FacetsModal.open(input?.value ?? '', this.#currentPageId(), (phrase) => {
+        if (input) {
+          input.value = phrase;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        this.#updateBadge();
+      });
+    } finally {
+      this.#opening = false;
+      button?.removeAttribute('aria-busy');
+    }
   }
 
   #updateBadge() {

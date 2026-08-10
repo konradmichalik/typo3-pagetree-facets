@@ -292,6 +292,47 @@ describe('opening the modal', () => {
     expect(modal.open).toHaveBeenCalled();
   });
 
+  it('marks the toggle busy while the modal is being built, without disabling it', async () => {
+    // Never `disabled`: focus would leave the button before the dialog opens, so
+    // the dialog has nothing to restore focus to and ESC drops the user in the body.
+    await loadToolbarAt('/typo3/module/web/layout');
+    const modal = await facetsModal();
+    let release;
+    modal.open.mockReturnValueOnce(new Promise((resolve) => { release = resolve; }));
+
+    toggleButton().click();
+
+    expect(toggleButton().getAttribute('aria-busy')).toBe('true');
+    expect(toggleButton().disabled).toBe(false);
+
+    release();
+    await Promise.resolve();
+
+    expect(toggleButton().hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('keeps the busy state until the pending open finishes, hotkey or not', async () => {
+    await loadToolbarAt('/typo3/module/web/layout');
+    const modal = await facetsModal();
+    const [hotkey] = await hotkeyRegistrations();
+    let release;
+    modal.open.mockReturnValueOnce(new Promise((resolve) => { release = resolve; }));
+
+    toggleButton().click();
+    // Second attempt while the first is still in flight: FacetsModal guards the
+    // modal itself, and this must not clear the first request's busy state.
+    hotkey.callback();
+    await Promise.resolve();
+
+    expect(modal.open).toHaveBeenCalledTimes(1);
+    expect(toggleButton().getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await Promise.resolve();
+
+    expect(toggleButton().hasAttribute('aria-busy')).toBe(false);
+  });
+
   it('writes an applied phrase into the tree search field and rebadges', async () => {
     await loadToolbarAt('/typo3/module/web/layout');
     const modal = await facetsModal();

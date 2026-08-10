@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Modal from '@typo3/backend/modal.js';
+import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
+import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import {
   applyButton,
   chipLabels,
@@ -93,6 +96,49 @@ describe('opening', () => {
     const { modal } = await openModal({ configuration });
 
     expect(navItem(modal, 'example').disabled).toBe(true);
+  });
+
+  it('opens once when clicked again while the configuration is still in flight', async () => {
+    // The bug this covers: on a slow instance the request outlasts the user's
+    // patience, the second click gets past open() and builds its own modal.
+    let release;
+    const pending = new Promise((resolve) => { release = resolve; });
+    const opening = openModal({ configuration: () => pending });
+    const second = FacetsModal.open('', 5, vi.fn());
+    release(configurationFixture());
+    await Promise.all([opening, second]);
+
+    expect(openedModals()).toHaveLength(1);
+  });
+
+  it('opens again once the modal was closed', async () => {
+    const { modal } = await openModal();
+    modal.hideModal();
+
+    await openModal();
+
+    expect(openedModals()).toHaveLength(2);
+  });
+
+  it('stays openable when building the modal throws after the configuration arrived', async () => {
+    // The guard is only released by the 'typo3-modal-hidden' listener, which is
+    // registered last - so everything before it has to be inside the reset.
+    const advanced = vi.spyOn(Modal, 'advanced').mockImplementationOnce(() => { throw new Error('boom'); });
+    await expect(openModal()).rejects.toThrow('boom');
+    advanced.mockRestore();
+
+    const { modal } = await openModal();
+
+    expect(modal).not.toBeNull();
+  });
+
+  it('stays openable after a failed configuration request', async () => {
+    respondWith(() => { throw new Error('boom'); });
+    await expect(FacetsModal.open('', 5, vi.fn())).rejects.toThrow('boom');
+
+    const { modal } = await openModal();
+
+    expect(modal).not.toBeNull();
   });
 });
 

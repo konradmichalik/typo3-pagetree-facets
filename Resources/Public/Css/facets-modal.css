@@ -933,6 +933,17 @@
      * (an explicit --bs-secondary-color here resolved to the light-theme value). */
 }
 
+/* While the configuration request is in flight. The icon fades rather than the
+ * button being disabled, which would cost the dialog the element to restore
+ * focus to on close. */
+.pagetree-facets-toggle[aria-busy="true"] {
+    cursor: progress;
+}
+
+.pagetree-facets-toggle[aria-busy="true"] typo3-backend-icon {
+    opacity: 0.5;
+}
+
 .pagetree-facets-toggle .badge {
     position: absolute;
     top: -0.15rem;
