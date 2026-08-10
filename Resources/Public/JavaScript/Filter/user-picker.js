@@ -153,7 +153,7 @@ class UserPicker {
   #seedFromState(state) {
     const existing = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
     const pinnedLabel = this.#pinnedLabel(existing);
-    if (pinnedLabel) {
+    if (undefined !== pinnedLabel) {
       this.#input.value = pinnedLabel;
       this.#input.dataset.value = existing;
       this.#input.dataset.label = pinnedLabel;

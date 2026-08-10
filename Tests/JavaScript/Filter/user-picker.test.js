@@ -257,6 +257,15 @@ describe('renderUserPicker', () => {
     expect(requests()).toHaveLength(0);
   });
 
+  it('seeds a pinned value even with an empty-string label, rather than falling through to a uid lookup', () => {
+    const { input } = mount('none', { pinned: [{ value: 'none', label: '' }] });
+
+    expect(input.value).toBe('');
+    expect(input.dataset.value).toBe('none');
+    expect(input.dataset.label).toBe('');
+    expect(requests()).toHaveLength(0);
+  });
+
   it('selects a pinned entry through the same dataset.value contract as a real user', () => {
     const { input, results } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned' }] });
     input.dispatchEvent(new Event('focus'));
