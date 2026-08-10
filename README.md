@@ -37,7 +37,7 @@ a public facet API.
 ## ✨ Features
 
 - **Filterable page tree**: type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
-- **Eight built-in filter facets**: content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scopes
+- **Eight built-in filter facets** (SEO requires EXT:seo): content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scope tokens
 - **Sharable links, session persistence and favorites**: hand a filter to a colleague, keep it across a reload, or save it under a name
 - **Extensible**: add a single option to an existing facet, or a whole facet of your own
 - **Per-user/group control**: disable facets installation-wide or via User TSconfig
@@ -106,7 +106,10 @@ Every built-in facet and the token keys it owns:
 | Page state | `is:` | flags such as hidden, empty or editlocked |
 | Translations | `untranslated:` `translated:` | translation completeness |
 | SEO (requires EXT:seo) | `seo:` | SEO metadata issues, e.g. a missing description |
-| Scopes | `site:<identifier>` `under:<uid>` | restricts any of the above to one site or subtree |
+| Raw query (opt-in, see [Configuration](docs/CONFIGURATION.md)) | `raw:` | arbitrary `field=value` conditions on any TCA table |
+
+`site:<identifier>` and `under:<uid>` are not facets: they are special scope
+tokens that restrict any of the above to one site or subtree.
 
 Need a criterion that isn't listed? Third parties can register their own facet,
 or add a value to an existing one; see [Extending](docs/EXTENDING.md).
@@ -116,6 +119,8 @@ or add a value to an existing one; see [Extending](docs/EXTENDING.md).
 > `table:tx_news_domain_model_news` do not list content elements or news records;
 > they narrow the tree to the pages those records live on. The result of a filter
 > is always a set of pages.
+
+<!-- -->
 
 > [!NOTE]
 > This is not the global backend search (the toolbar magnifier / <kbd>Cmd</kbd>/<kbd>Ctrl</kbd>+<kbd>K</kbd>).

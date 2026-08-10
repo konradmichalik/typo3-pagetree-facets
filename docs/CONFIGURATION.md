@@ -20,6 +20,8 @@ Built-in facet identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `s
 > Disabling a facet also makes its token keys unknown to the filter engine, so the
 > restriction cannot be bypassed by typing the token into the search field manually.
 
+<!-- -->
+
 > [!NOTE]
 > The Activity facet's "Edited by" / "Created by" picker searches backend user
 > names. For non-admins this requires `be_users` among the group's allowed
