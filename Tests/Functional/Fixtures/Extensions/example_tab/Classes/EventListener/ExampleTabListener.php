@@ -30,7 +30,7 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
  * class is autowired in your Configuration/Services.yaml.
  *
  * No priority argument, so it defaults to 0 - which places the facet after every
- * built-in (they occupy 100 down to 40, plus 10 for the opt-in raw facet), and with
+ * built-in (they occupy 100 down to 40, plus 10 for the opt-in raw query tab), and with
  * it the "custom" group heading at the bottom of the navigation. That is the
  * polite default for a third party and what this example should show. Facets sort by
  * priority descending with registration order breaking ties, so passing a number
