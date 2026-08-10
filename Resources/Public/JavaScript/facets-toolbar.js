@@ -348,15 +348,28 @@ class FacetsToolbar {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  #openModal() {
+  // Disabling the toggle for the duration makes the wait visible; FacetsModal
+  // holds the actual guard against a second modal (the hotkey bypasses the
+  // button entirely).
+  async #openModal() {
     const input = this.#findFilterInput();
-    FacetsModal.open(input?.value ?? '', this.#currentPageId(), (phrase) => {
-      if (input) {
-        input.value = phrase;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+    const button = document.querySelector('.pagetree-facets-toggle');
+    if (button) {
+      button.disabled = true;
+    }
+    try {
+      await FacetsModal.open(input?.value ?? '', this.#currentPageId(), (phrase) => {
+        if (input) {
+          input.value = phrase;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        this.#updateBadge();
+      });
+    } finally {
+      if (button) {
+        button.disabled = false;
       }
-      this.#updateBadge();
-    });
+    }
   }
 
   #updateBadge() {
