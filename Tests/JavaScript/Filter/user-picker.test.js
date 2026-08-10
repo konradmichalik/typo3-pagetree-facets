@@ -29,8 +29,8 @@ afterEach(() => {
   root.remove();
 });
 
-const mount = (state) => {
-  const element = renderUserPicker(tab, field, state, {
+const mount = (state, fieldOverrides = {}) => {
+  const element = renderUserPicker(tab, { ...field, ...fieldOverrides }, state, {
     getRoot: () => root,
     clearable: (input) => {
       const wrap = document.createElement('div');
@@ -239,6 +239,43 @@ describe('renderUserPicker', () => {
     closeOpenUserDropdowns();
 
     expect(results().hidden).toBe(true);
+  });
+
+  it('pins declarative pseudo-values above the search results, after "Me"', () => {
+    const { input, results } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned' }] });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(options(results)).toEqual(['Me (admin)', 'Unassigned']);
+  });
+
+  it('seeds a pinned value from state without a request', () => {
+    const { input } = mount('none', { pinned: [{ value: 'none', label: 'Unassigned' }] });
+
+    expect(input.value).toBe('Unassigned');
+    expect(input.dataset.value).toBe('none');
+    expect(requests()).toHaveLength(0);
+  });
+
+  it('selects a pinned entry through the same dataset.value contract as a real user', () => {
+    const { input, results } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned' }] });
+    input.dispatchEvent(new Event('focus'));
+    const [, pinnedOption] = [...results().querySelectorAll('[role="option"]')];
+
+    pinnedOption.click();
+
+    expect(input.dataset.value).toBe('none');
+    expect(input.value).toBe('Unassigned');
+  });
+
+  it('renders a pinned entry\'s icon decoratively', () => {
+    const { input, results } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned', icon: 'actions-user' }] });
+
+    input.dispatchEvent(new Event('focus'));
+
+    const icon = results().querySelector('[role="option"] typo3-backend-icon');
+    expect(icon.getAttribute('identifier')).toBe('actions-user');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('offers no "Me" entry when the server sent no current user', async () => {

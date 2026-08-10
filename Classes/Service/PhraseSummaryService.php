@@ -180,7 +180,10 @@ final readonly class PhraseSummaryService
 
     /**
      * A bucketed field's options belong to one criterion, so they are searched
-     * as one list.
+     * as one list. A user-picker's declarative `pinned` pseudo-values (e.g.
+     * "Unassigned") are merged in the same way - they resolve to a readable
+     * label here exactly like a real checkbox option would, even though they
+     * are not part of `options`.
      *
      * @param list<array<string, mixed>> $matching
      *
@@ -190,7 +193,7 @@ final readonly class PhraseSummaryService
     {
         $options = [];
         foreach ($matching as $field) {
-            $options = [...$options, ...(array) ($field['options'] ?? [])];
+            $options = [...$options, ...(array) ($field['options'] ?? []), ...(array) ($field['pinned'] ?? [])];
         }
 
         return array_values($options);
