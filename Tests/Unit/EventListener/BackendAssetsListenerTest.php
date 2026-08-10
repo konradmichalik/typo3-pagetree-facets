@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\EventListener\BackendAssetsListener;
-use KonradMichalik\PagetreeFacets\Service\{SessionFilterService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, SessionFilterService};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\CollectingEventDispatcher;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -108,7 +108,7 @@ final class BackendAssetsListenerTest extends TestCase
 
         (new BackendAssetsListener(
             $pageRenderer,
-            $this->createTabRegistry(),
+            $this->createFacetRegistry(),
             $this->createSessionFilterService(),
             $extensionConfiguration,
         ))($this->createEvent());
@@ -146,7 +146,7 @@ final class BackendAssetsListenerTest extends TestCase
 
         return new BackendAssetsListener(
             $pageRenderer,
-            $this->createTabRegistry(),
+            $this->createFacetRegistry(),
             $this->createSessionFilterService($persistFilter),
             $extensionConfiguration,
         );
@@ -157,12 +157,12 @@ final class BackendAssetsListenerTest extends TestCase
         return new AfterBackendPageRenderEvent('', self::createStub(ViewInterface::class));
     }
 
-    private function createTabRegistry(): TabRegistry
+    private function createFacetRegistry(): FacetRegistry
     {
         $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
         $extensionConfiguration->method('get')->willReturn('');
 
-        return new TabRegistry(new CollectingEventDispatcher([]), $extensionConfiguration);
+        return new FacetRegistry(new CollectingEventDispatcher([]), $extensionConfiguration);
     }
 
     private function createSessionFilterService(string $persistFilter = '0'): SessionFilterService

@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe('opening', () => {
   it('opens no modal at all when every tab is disabled away', async () => {
-    // TabRegistry can disable every tab (extension configuration, User TSconfig),
+    // FacetRegistry can disable every tab (extension configuration, User TSconfig),
     // and a modal with no criteria to offer is worse than none.
     const { modal } = await openModal({ configuration: configurationFixture({ tabs: [] }) });
 

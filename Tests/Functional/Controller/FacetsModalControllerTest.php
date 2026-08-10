@@ -216,7 +216,7 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     {
         // Feature stays on, but the tab that owns the "by" key is disabled - the
         // endpoint backing its picker must not enumerate be_users regardless.
-        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['disabledTabs'] = 'activity';
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['disabledFacets'] = 'activity';
 
         $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
 
@@ -235,7 +235,7 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     public function rawQueryTabIsPresentWhenExplicitlyEnabled(): void
     {
         // Must be enabled before the first configuration() call on this subject -
-        // TabRegistry resolves and caches the tab list per instance.
+        // FacetRegistry resolves and caches the facet list per instance.
         $this->enableRawQueryTab();
 
         $identifiers = array_column($this->decode($this->subject->configuration(new ServerRequest()))['tabs'], 'identifier');

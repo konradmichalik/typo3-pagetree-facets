@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, MatchedPageRegistry, PageSubtreeScopeService, SiteScopeService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, FacetRegistry, MatchedPageRegistry, PageSubtreeScopeService, SiteScopeService};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -25,7 +25,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * PageTreeFilterListener.
  *
  * The filter engine: parses the tree search phrase, resolves each keyed token
- * through its owning tab, intersects the UID sets (AND semantics) and feeds
+ * through its owning facet, intersects the UID sets (AND semantics) and feeds
  * the result into the core event.
  *
  * Verified against TYPO3 v14 (cms-backend 14.3): the core dispatches
@@ -58,7 +58,7 @@ final readonly class PageTreeFilterListener
 
     public function __construct(
         private TokenParser $tokenParser,
-        private TabRegistry $tabRegistry,
+        private FacetRegistry $facetRegistry,
         private SiteScopeService $siteScopeService,
         private PageSubtreeScopeService $pageSubtreeScopeService,
         private ContentQueryHelper $queryHelper,
@@ -68,7 +68,7 @@ final readonly class PageTreeFilterListener
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void
     {
         $backendUser = $this->getBackendUser();
-        if (null === $backendUser || $this->tabRegistry->isDisabledForUser($backendUser)) {
+        if (null === $backendUser || $this->facetRegistry->isDisabledForUser($backendUser)) {
             return;
         }
 
@@ -139,7 +139,7 @@ final readonly class PageTreeFilterListener
     }
 
     /**
-     * Resolve each keyed token to its page-UID set via the owning tab; freetext
+     * Resolve each keyed token to its page-UID set via the owning facet; freetext
      * is resolved by us (pages searchFields LIKE + numeric uid) and intersected
      * like any other criterion, rather than relying on the core's searchParts
      * whose combined OR/AND semantics with our result would be unverified.
@@ -150,14 +150,14 @@ final readonly class PageTreeFilterListener
      */
     private function resolveUidSets(array $tokens, FilterContext $context, BackendUserAuthentication $backendUser): array
     {
-        // Resolve the (per-user config-filtered) tab set once for the whole
-        // phrase and index it by token key, instead of re-running getTabs() via
-        // findTabForToken() for every token. First-seen wins, mirroring the
-        // priority order findTabForToken() would return.
-        $tabByKey = [];
-        foreach ($this->tabRegistry->getTabs($backendUser) as $tab) {
-            foreach ($tab->getTokenKeys() as $key) {
-                $tabByKey[$key] ??= $tab;
+        // Resolve the (per-user config-filtered) facet set once for the whole
+        // phrase and index it by token key, instead of re-running getFacets() via
+        // findFacetForToken() for every token. First-seen wins, mirroring the
+        // priority order findFacetForToken() would return.
+        $facetByKey = [];
+        foreach ($this->facetRegistry->getFacets($backendUser) as $facet) {
+            foreach ($facet->getTokenKeys() as $key) {
+                $facetByKey[$key] ??= $facet;
             }
         }
 
@@ -178,11 +178,11 @@ final readonly class PageTreeFilterListener
             if ('site' === $token->key || 'under' === $token->key) {
                 continue; // scope, not a criterion - handled separately
             }
-            $tab = $tabByKey[$token->key] ?? null;
-            if (null === $tab) {
+            $facet = $facetByKey[$token->key] ?? null;
+            if (null === $facet) {
                 continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
             }
-            $uidSets[] = $tab->resolvePageUids($token, $context);
+            $uidSets[] = $facet->resolvePageUids($token, $context);
         }
 
         return $uidSets;

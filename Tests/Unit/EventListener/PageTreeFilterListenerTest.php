@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
-use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, MatchedPageRegistry, PageAncestryService, PageSubtreeScopeService, SiteScopeService, TabRegistry};
-use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, FacetRegistry, MatchedPageRegistry, PageAncestryService, PageSubtreeScopeService, SiteScopeService};
+use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFacet};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -110,7 +110,7 @@ final class PageTreeFilterListenerTest extends TestCase
     #[Test]
     public function aLiterallyRepeatedTokenIsResolvedOnlyOnce(): void
     {
-        $countingTab = new class implements FilterTabInterface {
+        $countingTab = new class implements FacetInterface {
             public int $resolveCalls = 0;
 
             public function getIdentifier(): string
@@ -239,7 +239,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function tokensOfTabsDisabledViaExtensionConfigurationAreIgnored(): void
     {
         $event = $this->createEvent('doktype:1 is:empty');
-        $this->createListener(extensionConfiguration: ['disabledTabs' => 'state'])($event);
+        $this->createListener(extensionConfiguration: ['disabledFacets' => 'state'])($event);
 
         self::assertSame([10, 20, 30, 40], $event->searchUids);
     }
@@ -316,16 +316,16 @@ final class PageTreeFilterListenerTest extends TestCase
      * @param array<string, string>    $extensionConfiguration
      * @param array<string, list<int>> $freetextUids
      */
-    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = [], ?FilterTabInterface $doktypeTab = null, ?MatchedPageRegistry $matchedPages = null): PageTreeFilterListener
+    private function createListener(array $siteMap = [], array $extensionConfiguration = [], array $freetextUids = [], ?FacetInterface $doktypeTab = null, ?MatchedPageRegistry $matchedPages = null): PageTreeFilterListener
     {
-        $doktypeTab ??= new StubFilterTab('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
-        $stateTab = new StubFilterTab('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
+        $doktypeTab ??= new StubFacet('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
+        $stateTab = new StubFacet('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
 
         $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
         $extensionConfigurationMock->method('get')->willReturnCallback(
             static fn (string $extension, string $path = ''): string => $extensionConfiguration[$path] ?? '',
         );
-        $registry = new TabRegistry(
+        $registry = new FacetRegistry(
             new CollectingEventDispatcher([[$doktypeTab, 70], [$stateTab, 60]]),
             $extensionConfigurationMock,
         );

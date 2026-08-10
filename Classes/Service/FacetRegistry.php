@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Service;
 
-use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
-use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
+use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Throwable;
@@ -24,19 +24,19 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use function in_array;
 
 /**
- * TabRegistry.
+ * FacetRegistry.
  *
- * Collects tabs via RegisterFilterTabsEvent and applies the two configuration
+ * Collects facets via RegisterFacetsEvent and applies the two configuration
  * layers: ext conf (global) and User TSconfig (per group/user). A disabled
- * tab's tokens become unknown -> ignored, so config cannot be bypassed by
+ * facet's tokens become unknown -> ignored, so config cannot be bypassed by
  * typing tokens manually.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class TabRegistry
+final class FacetRegistry
 {
-    /** @var list<FilterTabInterface>|null */
-    private ?array $resolvedTabs = null;
+    /** @var list<FacetInterface>|null */
+    private ?array $resolvedFacets = null;
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
@@ -44,14 +44,14 @@ final class TabRegistry
     ) {}
 
     /**
-     * @return list<FilterTabInterface>
+     * @return list<FacetInterface>
      */
-    public function getTabs(BackendUserAuthentication $backendUser): array
+    public function getFacets(BackendUserAuthentication $backendUser): array
     {
-        if (null === $this->resolvedTabs) {
-            $event = new RegisterFilterTabsEvent();
+        if (null === $this->resolvedFacets) {
+            $event = new RegisterFacetsEvent();
             $this->eventDispatcher->dispatch($event);
-            $this->resolvedTabs = $event->getTabs();
+            $this->resolvedFacets = $event->getFacets();
         }
 
         $disabled = $this->getDisabledIdentifiers($backendUser);
@@ -60,16 +60,16 @@ final class TabRegistry
         }
 
         return array_values(array_filter(
-            $this->resolvedTabs,
-            static fn (FilterTabInterface $tab): bool => !in_array($tab->getIdentifier(), $disabled, true),
+            $this->resolvedFacets,
+            static fn (FacetInterface $facet): bool => !in_array($facet->getIdentifier(), $disabled, true),
         ));
     }
 
-    public function findTabForToken(Token $token, BackendUserAuthentication $backendUser): ?FilterTabInterface
+    public function findFacetForToken(Token $token, BackendUserAuthentication $backendUser): ?FacetInterface
     {
-        foreach ($this->getTabs($backendUser) as $tab) {
-            if (in_array($token->key, $tab->getTokenKeys(), true)) {
-                return $tab;
+        foreach ($this->getFacets($backendUser) as $facet) {
+            if (in_array($token->key, $facet->getTokenKeys(), true)) {
+                return $facet;
             }
         }
 
@@ -97,10 +97,10 @@ final class TabRegistry
     {
         $fromExtConf = '';
         try {
-            $fromExtConf = (string) $this->extensionConfiguration->get('typo3_pagetree_facets', 'disabledTabs');
+            $fromExtConf = (string) $this->extensionConfiguration->get('typo3_pagetree_facets', 'disabledFacets');
         } catch (Throwable) {
         }
-        $fromTsConfig = (string) ($backendUser->getTSConfig()['tx_typo3pagetreefacets.']['disableTabs'] ?? '');
+        $fromTsConfig = (string) ($backendUser->getTSConfig()['tx_typo3pagetreefacets.']['disableFacets'] ?? '');
 
         return array_values(array_filter(array_map(
             trim(...),

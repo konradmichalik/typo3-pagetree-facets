@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FavoriteService, PhraseSummaryService, SessionFilterService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, PhraseSummaryService, SessionFilterService};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -38,7 +38,7 @@ use function sprintf;
 final readonly class FacetsModalController
 {
     public function __construct(
-        private TabRegistry $tabRegistry,
+        private FacetRegistry $facetRegistry,
         private TokenParser $tokenParser,
         private TokenSerializer $tokenSerializer,
         private FavoriteService $favoriteService,
@@ -90,10 +90,10 @@ final readonly class FacetsModalController
         $freetext = trim((string) ($body['freetext'] ?? ''));
 
         $tokens = [];
-        foreach ($this->tabRegistry->getTabs($backendUser) as $tab) {
-            $state = (array) ($states[$tab->getIdentifier()] ?? []);
+        foreach ($this->facetRegistry->getFacets($backendUser) as $facet) {
+            $state = (array) ($states[$facet->getIdentifier()] ?? []);
             if ([] !== $state) {
-                $tokens = array_merge($tokens, $tab->serialize($state));
+                $tokens = array_merge($tokens, $facet->serialize($state));
             }
         }
         if ('' !== $siteIdentifier) {
@@ -169,8 +169,8 @@ final readonly class FacetsModalController
         // be_users listing permission (admins always pass): filtering by editor
         // is a page-tree concern, but *which accounts exist* is be_users data -
         // without the grant, any editor could enumerate all account names here.
-        if ($this->tabRegistry->isDisabledForUser($backendUser)
-            || null === $this->tabRegistry->findTabForToken(new Token('by', ['0'], 'by:0'), $backendUser)
+        if ($this->facetRegistry->isDisabledForUser($backendUser)
+            || null === $this->facetRegistry->findFacetForToken(new Token('by', ['0'], 'by:0'), $backendUser)
             || !$backendUser->check('tables_select', 'be_users')
         ) {
             return new JsonResponse(['users' => []]);
@@ -248,13 +248,13 @@ final readonly class FacetsModalController
     {
         $languageService = $this->getLanguageService();
         $tabs = [];
-        foreach ($this->tabRegistry->getTabs($context->backendUser) as $tab) {
+        foreach ($this->facetRegistry->getFacets($context->backendUser) as $facet) {
             $tabs[] = [
-                'identifier' => $tab->getIdentifier(),
-                'label' => $this->translate($languageService, $tab->getLabel()),
-                'group' => null !== $tab->getGroup() ? $this->translate($languageService, $tab->getGroup()) : null,
-                'configuration' => $this->translateConfiguration($tab->getModalConfiguration($context)),
-                'state' => $tab->hydrate($tokens),
+                'identifier' => $facet->getIdentifier(),
+                'label' => $this->translate($languageService, $facet->getLabel()),
+                'group' => null !== $facet->getGroup() ? $this->translate($languageService, $facet->getGroup()) : null,
+                'configuration' => $this->translateConfiguration($facet->getModalConfiguration($context)),
+                'state' => $facet->hydrate($tokens),
             ];
         }
 
@@ -382,7 +382,7 @@ final readonly class FacetsModalController
     private function requireEnabledUser(): BackendUserAuthentication
     {
         $backendUser = $this->getBackendUser();
-        if ($this->tabRegistry->isDisabledForUser($backendUser)) {
+        if ($this->facetRegistry->isDisabledForUser($backendUser)) {
             throw new PropagateResponseException($this->forbidden(), 1785888000);
         }
 

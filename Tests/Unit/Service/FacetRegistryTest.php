@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Service;
 
-use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
-use KonradMichalik\PagetreeFacets\Service\TabRegistry;
-use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFilterTab};
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
+use KonradMichalik\PagetreeFacets\Service\FacetRegistry;
+use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFacet};
 use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -25,77 +25,77 @@ use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExis
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 /**
- * TabRegistryTest.
+ * FacetRegistryTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class TabRegistryTest extends TestCase
+final class FacetRegistryTest extends TestCase
 {
     #[Test]
-    public function returnsTabsInPriorityOrder(): void
+    public function returnsFacetsInPriorityOrder(): void
     {
         $registry = $this->createRegistry([
-            [new StubFilterTab('low', ['a']), 0],
-            [new StubFilterTab('high', ['b']), 100],
+            [new StubFacet('low', ['a']), 0],
+            [new StubFacet('high', ['b']), 100],
         ]);
 
         self::assertSame(
             ['high', 'low'],
-            array_map(static fn (FilterTabInterface $tab): string => $tab->getIdentifier(), $registry->getTabs($this->createBackendUser())),
+            array_map(static fn (FacetInterface $facet): string => $facet->getIdentifier(), $registry->getFacets($this->createBackendUser())),
         );
     }
 
     #[Test]
-    public function disabledTabsFromExtensionConfigurationAreRemoved(): void
+    public function disabledFacetsFromExtensionConfigurationAreRemoved(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFilterTab('doktype', ['doktype']), 70], [new StubFilterTab('state', ['is']), 60]],
-            ['disabledTabs' => 'state'],
+            [[new StubFacet('doktype', ['doktype']), 70], [new StubFacet('state', ['is']), 60]],
+            ['disabledFacets' => 'state'],
         );
 
-        $tabs = $registry->getTabs($this->createBackendUser());
-        self::assertCount(1, $tabs);
-        self::assertSame('doktype', $tabs[0]->getIdentifier());
+        $facets = $registry->getFacets($this->createBackendUser());
+        self::assertCount(1, $facets);
+        self::assertSame('doktype', $facets[0]->getIdentifier());
     }
 
     #[Test]
-    public function disabledTabsFromUserTsConfigAreRemoved(): void
+    public function disabledFacetsFromUserTsConfigAreRemoved(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFilterTab('doktype', ['doktype']), 70], [new StubFilterTab('state', ['is']), 60]],
+            [[new StubFacet('doktype', ['doktype']), 70], [new StubFacet('state', ['is']), 60]],
         );
-        $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disableTabs' => 'doktype']]);
+        $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disableFacets' => 'doktype']]);
 
-        $tabs = $registry->getTabs($backendUser);
-        self::assertCount(1, $tabs);
-        self::assertSame('state', $tabs[0]->getIdentifier());
+        $facets = $registry->getFacets($backendUser);
+        self::assertCount(1, $facets);
+        self::assertSame('state', $facets[0]->getIdentifier());
     }
 
     #[Test]
-    public function tokensOfDisabledTabsBecomeUnknown(): void
+    public function tokensOfDisabledFacetsBecomeUnknown(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFilterTab('state', ['is']), 60]],
-            ['disabledTabs' => 'state'],
+            [[new StubFacet('state', ['is']), 60]],
+            ['disabledFacets' => 'state'],
         );
 
-        self::assertNull($registry->findTabForToken(new Token('is', ['empty'], 'is:empty'), $this->createBackendUser()));
+        self::assertNull($registry->findFacetForToken(new Token('is', ['empty'], 'is:empty'), $this->createBackendUser()));
     }
 
     #[Test]
     public function userTsConfigDisableSwitchesTheFeatureOff(): void
     {
-        $registry = $this->createRegistry([[new StubFilterTab('doktype', ['doktype']), 70]]);
+        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype']), 70]]);
         $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
 
         self::assertTrue($registry->isDisabledForUser($backendUser));
-        self::assertSame([], $registry->getTabs($backendUser));
+        self::assertSame([], $registry->getFacets($backendUser));
     }
 
     #[Test]
     public function adminOnlyModeLocksOutNonAdmins(): void
     {
-        $registry = $this->createRegistry([[new StubFilterTab('doktype', ['doktype']), 70]], ['adminOnly' => '1']);
+        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype']), 70]], ['adminOnly' => '1']);
 
         self::assertTrue($registry->isDisabledForUser($this->createBackendUser(admin: false)));
         self::assertFalse($registry->isDisabledForUser($this->createBackendUser(admin: true)));
@@ -106,36 +106,36 @@ final class TabRegistryTest extends TestCase
     {
         // Extension configuration paths do not exist before the extension has
         // ever been saved through the Settings module - get() throws in that
-        // case; both isDisabledForUser() and the disabled-tabs lookup must
+        // case; both isDisabledForUser() and the disabled-facets lookup must
         // degrade to "nothing configured" rather than propagate the exception.
         $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
         $extensionConfigurationMock->method('get')->willThrowException(
             new ExtensionConfigurationPathDoesNotExistException('not configured', 1668941190),
         );
-        $registry = new TabRegistry(
-            new CollectingEventDispatcher([[new StubFilterTab('doktype', ['doktype']), 70]]),
+        $registry = new FacetRegistry(
+            new CollectingEventDispatcher([[new StubFacet('doktype', ['doktype']), 70]]),
             $extensionConfigurationMock,
         );
 
         self::assertFalse($registry->isDisabledForUser($this->createBackendUser()));
-        self::assertCount(1, $registry->getTabs($this->createBackendUser()));
+        self::assertCount(1, $registry->getFacets($this->createBackendUser()));
     }
 
     #[Test]
-    public function findsOwningTabForToken(): void
+    public function findsOwningFacetForToken(): void
     {
-        $registry = $this->createRegistry([[new StubFilterTab('records', ['table', 'record', 'text']), 100]]);
+        $registry = $this->createRegistry([[new StubFacet('records', ['table', 'record', 'text']), 100]]);
 
-        $tab = $registry->findTabForToken(new Token('text', ['foo'], 'text:foo'), $this->createBackendUser());
-        self::assertSame('records', $tab?->getIdentifier());
-        self::assertNull($registry->findTabForToken(new Token('nope', ['x'], 'nope:x'), $this->createBackendUser()));
+        $facet = $registry->findFacetForToken(new Token('text', ['foo'], 'text:foo'), $this->createBackendUser());
+        self::assertSame('records', $facet?->getIdentifier());
+        self::assertNull($registry->findFacetForToken(new Token('nope', ['x'], 'nope:x'), $this->createBackendUser()));
     }
 
     /**
-     * @param list<array{0: FilterTabInterface, 1: int}> $registrations
-     * @param array<string, string>                      $extensionConfiguration
+     * @param list<array{0: FacetInterface, 1: int}> $registrations
+     * @param array<string, string>                  $extensionConfiguration
      */
-    private function createRegistry(array $registrations, array $extensionConfiguration = []): TabRegistry
+    private function createRegistry(array $registrations, array $extensionConfiguration = []): FacetRegistry
     {
         $extensionConfigurationMock = self::createStub(ExtensionConfiguration::class);
         $extensionConfigurationMock
@@ -144,7 +144,7 @@ final class TabRegistryTest extends TestCase
                 static fn (string $extension, string $path = ''): string => $extensionConfiguration[$path] ?? '',
             );
 
-        return new TabRegistry(new CollectingEventDispatcher($registrations), $extensionConfigurationMock);
+        return new FacetRegistry(new CollectingEventDispatcher($registrations), $extensionConfigurationMock);
     }
 
     /**

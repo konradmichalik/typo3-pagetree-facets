@@ -16,20 +16,20 @@ namespace KonradMichalik\PagetreeFacets\Api;
 use KonradMichalik\PagetreeFacets\Token\Token;
 
 /**
- * FilterTabInterface.
+ * FacetInterface.
  *
- * A filter tab: owns one or more token keys, resolves them to page UID sets
+ * A filter facet: owns one or more token keys, resolves them to page UID sets
  * (engine side) and describes its modal UI declaratively (UI side).
  *
- * Built-in tabs register through the same RegisterFilterTabsEvent as third
+ * Built-in facets register through the same RegisterFacetsEvent as third
  * parties - there is no private shortcut.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-interface FilterTabInterface
+interface FacetInterface
 {
     /**
-     * Stable identifier, also used for User TSconfig disableTabs.
+     * Stable identifier, also used for User TSconfig disableFacets.
      */
     public function getIdentifier(): string;
 
@@ -47,7 +47,7 @@ interface FilterTabInterface
     public function getGroup(): ?string;
 
     /**
-     * Token keys this tab owns, e.g. ['doktype'] or ['table', 'record', 'text'].
+     * Token keys this facet owns, e.g. ['doktype'] or ['table', 'record', 'text'].
      *
      * @return list<non-empty-string>
      */

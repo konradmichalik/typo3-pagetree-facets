@@ -22,13 +22,13 @@ namespace KonradMichalik\PagetreeFacets\Api;
  * to a set of page UIDs - exactly the two halves of a checkbox in a vocabulary
  * tab, but pluggable.
  *
- * Options register through RegisterFilterOptionsEvent the same way tabs
- * register through RegisterFilterTabsEvent. The built-in page-state and SEO
+ * Options register through RegisterFilterOptionsEvent the same way facets
+ * register through RegisterFacetsEvent. The built-in page-state and SEO
  * values dogfood this event too - there is no private shortcut, matching how
- * FilterTabInterface is handled.
+ * FacetInterface is handled.
  *
- * Only vocabulary tabs (a checkbox-group whose values map to a match) surface
- * options; TCA-derived tabs (doktype, records, ...) build their options
+ * Only vocabulary facets (a checkbox-group whose values map to a match) surface
+ * options; TCA-derived facets (doktype, records, ...) build their options
  * dynamically and ignore this event.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>

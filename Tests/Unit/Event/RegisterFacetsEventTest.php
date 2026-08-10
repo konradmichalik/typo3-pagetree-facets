@@ -13,42 +13,42 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Event;
 
-use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
-use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
+use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * RegisterFilterTabsEventTest.
+ * RegisterFacetsEventTest.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class RegisterFilterTabsEventTest extends TestCase
+final class RegisterFacetsEventTest extends TestCase
 {
     #[Test]
     public function ordersByPriorityDescendingAndKeepsRegistrationOrderOnTie(): void
     {
-        $event = new RegisterFilterTabsEvent();
-        $event->addTab($this->createTab('third-party-a'));
-        $event->addTab($this->createTab('built-in'), 100);
-        $event->addTab($this->createTab('third-party-b'));
+        $event = new RegisterFacetsEvent();
+        $event->addFacet($this->createFacet('third-party-a'));
+        $event->addFacet($this->createFacet('built-in'), 100);
+        $event->addFacet($this->createFacet('third-party-b'));
 
         self::assertSame(
             ['built-in', 'third-party-a', 'third-party-b'],
-            array_map(static fn (FilterTabInterface $tab): string => $tab->getIdentifier(), $event->getTabs()),
+            array_map(static fn (FacetInterface $facet): string => $facet->getIdentifier(), $event->getFacets()),
         );
     }
 
     #[Test]
     public function returnsEmptyListWithoutRegistrations(): void
     {
-        self::assertSame([], (new RegisterFilterTabsEvent())->getTabs());
+        self::assertSame([], (new RegisterFacetsEvent())->getFacets());
     }
 
-    private function createTab(string $identifier): FilterTabInterface
+    private function createFacet(string $identifier): FacetInterface
     {
-        return new readonly class($identifier) implements FilterTabInterface {
+        return new readonly class($identifier) implements FacetInterface {
             public function __construct(private string $identifier) {}
 
             public function getIdentifier(): string

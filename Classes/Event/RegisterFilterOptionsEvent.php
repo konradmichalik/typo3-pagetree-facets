@@ -20,7 +20,7 @@ use KonradMichalik\PagetreeFacets\Api\FilterOptionInterface;
  *
  * PSR-14 event: register individual filter options (built-in and third-party
  * alike) that extend the vocabulary of an existing token key. The sibling of
- * RegisterFilterTabsEvent, with the same priority semantics.
+ * RegisterFacetsEvent, with the same priority semantics.
  *
  * Priority convention: built-ins occupy 100..20 (page-state values 100..50,
  * SEO values 40..20). Third-party options default to 0 but may position

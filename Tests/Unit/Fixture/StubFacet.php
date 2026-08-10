@@ -13,18 +13,18 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Fixture;
 
-use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\Token\Token;
 
 /**
- * StubFilterTab.
+ * StubFacet.
  *
- * Minimal tab double: resolves tokens via a static "key:value,value" => uids
+ * Minimal facet double: resolves tokens via a static "key:value,value" => uids
  * map. Shared by registry and engine unit tests.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final readonly class StubFilterTab implements FilterTabInterface
+final readonly class StubFacet implements FacetInterface
 {
     /**
      * @param list<non-empty-string>   $tokenKeys

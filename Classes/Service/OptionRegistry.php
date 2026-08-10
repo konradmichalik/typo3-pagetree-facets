@@ -28,13 +28,13 @@ use function in_array;
  * Collects filter options via RegisterFilterOptionsEvent (once, cached) and
  * applies the per-option disable layer: ext conf "disabledOptions" (global)
  * and User TSconfig "tx_typo3pagetreefacets.disableOptions" (per group/user),
- * identified as "tokenKey:value". The sibling of TabRegistry.
+ * identified as "tokenKey:value". The sibling of FacetRegistry.
  *
  * A disabled option disappears from both the modal (its checkbox is not merged
- * in) and resolution (the owning tab consults this registry for unknown
+ * in) and resolution (the owning facet consults this registry for unknown
  * values), so config cannot be bypassed by typing the token manually. The
- * feature-level and tab-level gates are enforced upstream by TabRegistry - an
- * option is only ever reached through a tab that survived that filtering.
+ * feature-level and facet-level gates are enforced upstream by FacetRegistry - an
+ * option is only ever reached through a facet that survived that filtering.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */

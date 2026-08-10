@@ -13,41 +13,41 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Event;
 
-use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
 
 /**
- * RegisterFilterTabsEvent.
+ * RegisterFacetsEvent.
  *
- * PSR-14 event: register filter tabs (built-in and third-party alike).
+ * PSR-14 event: register filter facets (built-in and third-party alike).
  *
  * Priority convention: built-ins occupy 100..40 (ce 100, records 90,
  * activity 80, doktype 70, state 60, translations 50, seo 40). Third-party
- * tabs default to 0 but may position themselves deliberately.
+ * facets default to 0 but may position themselves deliberately.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-final class RegisterFilterTabsEvent
+final class RegisterFacetsEvent
 {
-    /** @var list<array{tab: FilterTabInterface, priority: int}> */
-    private array $tabs = [];
+    /** @var list<array{facet: FacetInterface, priority: int}> */
+    private array $facets = [];
 
-    public function addTab(FilterTabInterface $tab, int $priority = 0): void
+    public function addFacet(FacetInterface $facet, int $priority = 0): void
     {
-        $this->tabs[] = ['tab' => $tab, 'priority' => $priority];
+        $this->facets[] = ['facet' => $facet, 'priority' => $priority];
     }
 
     /**
-     * @return list<FilterTabInterface> ordered by priority (desc), stable
+     * @return list<FacetInterface> ordered by priority (desc), stable
      */
-    public function getTabs(): array
+    public function getFacets(): array
     {
-        $entries = $this->tabs;
+        $entries = $this->facets;
         $index = 0;
         $decorated = array_map(static function (array $entry) use (&$index): array {
             return $entry + ['stable' => $index++];
         }, $entries);
         usort($decorated, static fn (array $a, array $b): int => [$b['priority'], $a['stable']] <=> [$a['priority'], $b['stable']]);
 
-        return array_map(static fn (array $entry): FilterTabInterface => $entry['tab'], $decorated);
+        return array_map(static fn (array $entry): FacetInterface => $entry['facet'], $decorated);
     }
 }

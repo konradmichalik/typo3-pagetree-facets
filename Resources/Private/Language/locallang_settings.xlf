@@ -14,8 +14,8 @@
 		-->
 		<body>
 			<trans-unit id="settings.adminOnly"><source>Restrict to admins: Only administrators can use the filter modal and tokens.</source></trans-unit>
-			<trans-unit id="settings.disabledTabs"><source>Disabled tabs: Comma-separated list of built-in tab identifiers to disable installation-wide (records, ce, activity, doktype, state, translations, seo).</source></trans-unit>
-			<trans-unit id="settings.disabledOptions"><source>Disabled options: Comma-separated list of individual option identifiers ("tokenKey:value") to disable installation-wide, e.g. "is:editlocked, seo:nofollow". Disables a single value inside a tab without disabling the whole tab.</source></trans-unit>
+			<trans-unit id="settings.disabledFacets"><source>Disabled facets: Comma-separated list of built-in facet identifiers to disable installation-wide (records, ce, activity, doktype, layout, state, translations, seo, raw).</source></trans-unit>
+			<trans-unit id="settings.disabledOptions"><source>Disabled options: Comma-separated list of individual option identifiers ("tokenKey:value") to disable installation-wide, e.g. "is:editlocked, seo:nofollow". Disables a single value inside a facet without disabling the whole facet.</source></trans-unit>
 			<trans-unit id="settings.persistFilter"><source>Persist filter for the session: Remember each backend user's current page tree filter for the duration of their session, so it survives a reload or module switch (cleared on logout).</source></trans-unit>
 			<trans-unit id="settings.emptyResultNotice"><source>Notice on empty results: Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it.</source></trans-unit>
 			<trans-unit id="settings.enableRawQueryTab"><source>Enable raw query tab (power users): Adds a "raw:&lt;table&gt;|&lt;field&gt;=&lt;value&gt;|..." token that matches arbitrary field values on any TCA table the current backend user has table-select access to. Off by default - review the security implications in the README before enabling.</source></trans-unit>

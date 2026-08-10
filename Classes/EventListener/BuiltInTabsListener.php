@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use Throwable;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -23,9 +23,9 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 /**
  * BuiltInTabsListener.
  *
- * Dogfooding: every built-in tab registers through the same public event a
+ * Dogfooding: every built-in facet registers through the same public event a
  * third party would use - no private shortcut. Priority ranges 100..40 are
- * reserved for built-ins; third-party tabs default to 0.
+ * reserved for built-ins; third-party facets default to 0.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -45,28 +45,28 @@ final readonly class BuiltInTabsListener
         private ExtensionConfiguration $extensionConfiguration,
     ) {}
 
-    public function __invoke(RegisterFilterTabsEvent $event): void
+    public function __invoke(RegisterFacetsEvent $event): void
     {
-        $event->addTab($this->contentElementTab, 100);
-        $event->addTab($this->recordsTab, 90);
-        $event->addTab($this->activityTab, 80);
-        $event->addTab($this->doktypeTab, 70);
+        $event->addFacet($this->contentElementTab, 100);
+        $event->addFacet($this->recordsTab, 90);
+        $event->addFacet($this->activityTab, 80);
+        $event->addFacet($this->doktypeTab, 70);
         // 65, not a fresh multiple of ten: layout belongs directly next to
         // doktype in the "content" group, and slotting it in beats renumbering
         // every built-in below it.
-        $event->addTab($this->layoutTab, 65);
-        $event->addTab($this->pageStateTab, 60);
-        $event->addTab($this->translationsTab, 50);
+        $event->addFacet($this->layoutTab, 65);
+        $event->addFacet($this->pageStateTab, 60);
+        $event->addFacet($this->translationsTab, 50);
         // Conditional registration: seo fields only exist with EXT:seo.
         if (ExtensionManagementUtility::isLoaded('seo')) {
-            $event->addTab($this->seoTab, 40);
+            $event->addFacet($this->seoTab, 40);
         }
         // Conditional registration: the raw:-token escape hatch is opt-in
         // and off by default - arbitrary field=value matching against any
         // TCA table is a deliberate power-user/security tradeoff, see the
         // extension setting's description.
         if ($this->isRawQueryTabEnabled()) {
-            $event->addTab($this->rawQueryTab, 10);
+            $event->addFacet($this->rawQueryTab, 10);
         }
     }
 
