@@ -35,6 +35,7 @@ class FacetsToolbar {
   #persistEnabled = false;
   #pendingPersistedFilter = '';
   #persistTimer = null;
+  #opening = false;
 
   constructor() {
     document.addEventListener('DOMContentLoaded', () => this.#initialize());
@@ -348,15 +349,17 @@ class FacetsToolbar {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  // Disabling the toggle for the duration makes the wait visible; FacetsModal
-  // holds the actual guard against a second modal (the hotkey bypasses the
-  // button entirely).
+  // Busy rather than `disabled`: disabling moves focus to the body before the
+  // dialog opens, so ESC would return a keyboard user nowhere. FacetsModal
+  // guards the second modal; #opening only protects the busy state.
   async #openModal() {
+    if (this.#opening) {
+      return;
+    }
+    this.#opening = true;
     const input = this.#findFilterInput();
     const button = document.querySelector('.pagetree-facets-toggle');
-    if (button) {
-      button.disabled = true;
-    }
+    button?.setAttribute('aria-busy', 'true');
     try {
       await FacetsModal.open(input?.value ?? '', this.#currentPageId(), (phrase) => {
         if (input) {
@@ -366,9 +369,8 @@ class FacetsToolbar {
         this.#updateBadge();
       });
     } finally {
-      if (button) {
-        button.disabled = false;
-      }
+      this.#opening = false;
+      button?.removeAttribute('aria-busy');
     }
   }
 

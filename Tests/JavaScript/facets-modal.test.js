@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Modal from '@typo3/backend/modal.js';
 import FacetsModal from '@konradmichalik/pagetree-facets/facets-modal.js';
 import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import {
@@ -117,6 +118,18 @@ describe('opening', () => {
     await openModal();
 
     expect(openedModals()).toHaveLength(2);
+  });
+
+  it('stays openable when building the modal throws after the configuration arrived', async () => {
+    // The guard is only released by the 'typo3-modal-hidden' listener, which is
+    // registered last - so everything before it has to be inside the reset.
+    const advanced = vi.spyOn(Modal, 'advanced').mockImplementationOnce(() => { throw new Error('boom'); });
+    await expect(openModal()).rejects.toThrow('boom');
+    advanced.mockRestore();
+
+    const { modal } = await openModal();
+
+    expect(modal).not.toBeNull();
   });
 
   it('stays openable after a failed configuration request', async () => {

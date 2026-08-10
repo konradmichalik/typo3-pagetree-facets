@@ -77,6 +77,16 @@ class FacetsModal {
       return;
     }
     this.#opened = true;
+
+    try {
+      await this.#build(currentPhrase, currentPageId, onApply);
+    } catch (error) {
+      this.#opened = false;
+      throw error;
+    }
+  }
+
+  async #build(currentPhrase, currentPageId, onApply) {
     this.#onApply = onApply;
     this.#currentPageId = currentPageId;
     this.#currentPhrase = currentPhrase ?? '';
@@ -93,12 +103,7 @@ class FacetsModal {
     // the flag on would describe a view that is not on screen - #computePhrase()
     // would hand Apply the fresh (empty) field's value and clear the tree filter.
     this.#tokenMode = false;
-    try {
-      this.#configuration = await this.#requestConfiguration(this.#currentPhrase);
-    } catch (error) {
-      this.#opened = false;
-      throw error;
-    }
+    this.#configuration = await this.#requestConfiguration(this.#currentPhrase);
     if (!this.#configuration.tabs.length) {
       this.#opened = false;
       return;
