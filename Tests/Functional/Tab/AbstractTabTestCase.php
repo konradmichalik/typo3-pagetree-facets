@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\Token\TokenParser;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -54,16 +54,16 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
     }
 
     /**
-     * Parses the token string, resolves the FIRST token through the tab and
+     * Parses the token string, resolves the FIRST token through the facet and
      * returns the sorted page UID list.
      *
      * @return list<int>
      */
-    protected function resolve(FilterTabInterface $tab, string $tokenString): array
+    protected function resolve(FacetInterface $facet, string $tokenString): array
     {
         $tokens = (new TokenParser())->parse($tokenString);
         self::assertNotSame([], $tokens, 'Token string did not parse: '.$tokenString);
-        $uids = $tab->resolvePageUids($tokens[0], $this->createContext());
+        $uids = $facet->resolvePageUids($tokens[0], $this->createContext());
         sort($uids);
 
         return $uids;

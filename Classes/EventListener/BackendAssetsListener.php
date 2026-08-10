@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeFacets\Service\{SessionFilterService, TabRegistry};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, SessionFilterService};
 use Throwable;
 use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -38,7 +38,7 @@ final readonly class BackendAssetsListener
 {
     public function __construct(
         private PageRenderer $pageRenderer,
-        private TabRegistry $tabRegistry,
+        private FacetRegistry $facetRegistry,
         private SessionFilterService $sessionFilterService,
         private ExtensionConfiguration $extensionConfiguration,
     ) {}
@@ -47,7 +47,7 @@ final readonly class BackendAssetsListener
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         if (!$backendUser instanceof BackendUserAuthentication
-            || $this->tabRegistry->isDisabledForUser($backendUser)
+            || $this->facetRegistry->isDisabledForUser($backendUser)
         ) {
             return;
         }

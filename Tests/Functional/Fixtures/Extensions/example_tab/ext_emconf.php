@@ -8,7 +8,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Pagetree Facets - Example Tab (dev fixture)',
-    'description' => 'Local-only example third-party filter tab demonstrating the FilterTabInterface extension point.',
+    'description' => 'Local-only example third-party filter tab demonstrating the FacetInterface extension point.',
     'category' => 'be',
     'author' => 'Konrad Michalik',
     'author_email' => 'hej@konradmichalik.dev',

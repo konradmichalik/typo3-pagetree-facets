@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tab;
 
-use KonradMichalik\PagetreeFacets\Api\{FilterContext, FilterTabInterface};
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
@@ -24,11 +24,11 @@ use function in_array;
 /**
  * AbstractPagesQueryTab.
  *
- * Base for tabs whose criteria are conditions on the pages table itself.
+ * Base for facets whose criteria are conditions on the pages table itself.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-abstract class AbstractPagesQueryTab implements FilterTabInterface
+abstract class AbstractPagesQueryTab implements FacetInterface
 {
     public function __construct(
         protected readonly ContentQueryHelper $queryHelper,
@@ -40,8 +40,8 @@ abstract class AbstractPagesQueryTab implements FilterTabInterface
     }
 
     /**
-     * Default: one field named after the tab, straightforward mapping.
-     * Tabs with richer UIs override serialize()/hydrate() themselves.
+     * Default: one field named after the facet, straightforward mapping.
+     * Facets with richer UIs override serialize()/hydrate() themselves.
      *
      * @param array<string, mixed> $modalState
      *

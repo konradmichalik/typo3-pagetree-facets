@@ -7,7 +7,7 @@ import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-
 import { renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
- * The generic renderer behind FilterTabInterface::getModalConfiguration().
+ * The generic renderer behind FacetInterface::getModalConfiguration().
  *
  * A tab describes its UI declaratively - a list of field descriptors - and this is
  * what turns each descriptor into controls. **This is the extension point: a new

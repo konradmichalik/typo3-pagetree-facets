@@ -5,18 +5,18 @@ A minimal extension that exercises **both** extension points of
 
 | Path | What this extension adds |
 |---|---|
-| `FilterOptionInterface` + `RegisterFilterOptionsEvent` | `is:no-nav-title` — one more value in the **built-in** Page state tab |
-| `FilterTabInterface` + `RegisterFilterTabsEvent` | `abstract:set` / `abstract:empty` — a tab of its own |
+| `FilterOptionInterface` + `RegisterFilterOptionsEvent` | `is:no-nav-title` — one more value in the **built-in** Page state facet |
+| `FacetInterface` + `RegisterFacetsEvent` | `abstract:set` / `abstract:empty` — a facet of its own |
 
 Every class here is commented method by method, including the priority semantics.
 This is a development fixture and **not part of the released package**, so copy it
 rather than depending on it. `ddev install` symlinks and sets it up automatically,
 so both additions show up in the modal of a freshly installed instance.
 
-## A single option in an existing tab
+## A single option in an existing facet
 
 This is the smaller extension point, and usually the one you want: it adds one more
-criterion to a token key that already exists, instead of a whole tab.
+criterion to a token key that already exists, instead of a whole facet.
 
 Implement `FilterOptionInterface` and register it via `RegisterFilterOptionsEvent`:
 
@@ -52,23 +52,23 @@ pages-table query.
 > administrators disable the option under, so treat it as public API. Renaming it
 > silently invalidates existing favorites and `disableOptions` settings.
 
-Only vocabulary tabs surface options — Page state (`is:`) and SEO (`seo:`).
-TCA-derived tabs such as Page type or Records build their options dynamically and
+Only vocabulary facets surface options — Page state (`is:`) and SEO (`seo:`).
+TCA-derived facets such as Page type or Records build their options dynamically and
 ignore the event.
 
-## A whole tab
+## A whole facet
 
-Register a `FilterTabInterface` implementation via `RegisterFilterTabsEvent`
-(`#[AsEventListener]`); the built-in tabs use the exact same path — there is no
-private shortcut. A tab owns one or more token keys, resolves them to page UIDs,
+Register a `FacetInterface` implementation via `RegisterFacetsEvent`
+(`#[AsEventListener]`); the built-in facets use the exact same path — there is no
+private shortcut. A facet owns one or more token keys, resolves them to page UIDs,
 and describes its modal UI declaratively, so the modal renders it without any
 JavaScript on your side.
 
 See [`Classes/EventListener/ExampleTabListener.php`](Classes/EventListener/ExampleTabListener.php)
 and [`Classes/Tab/ExampleTab.php`](Classes/Tab/ExampleTab.php).
 
-Built-in tabs occupy priorities 100 down to 40 in registration order; third-party
-tabs default to priority 0, which places them after the built-ins in the modal
+Built-in facets occupy priorities 100 down to 40 in registration order; third-party
+facets default to priority 0, which places them after the built-ins in the modal
 navigation. Extending `AbstractPagesQueryTab` is optional and provides a default
 `serialize()`/`hydrate()` plus helpers such as `fetchPageUids()` and
 `excludeNonContentDoktypes()`.

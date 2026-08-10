@@ -13,21 +13,21 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\Fixture;
 
-use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
-use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
+use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * CollectingEventDispatcher.
  *
- * Dispatcher double: registers the given tabs on RegisterFilterTabsEvent.
+ * Dispatcher double: registers the given facets on RegisterFacetsEvent.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
 final readonly class CollectingEventDispatcher implements EventDispatcherInterface
 {
     /**
-     * @param list<array{0: FilterTabInterface, 1: int}> $registrations
+     * @param list<array{0: FacetInterface, 1: int}> $registrations
      */
     public function __construct(
         private array $registrations,
@@ -35,9 +35,9 @@ final readonly class CollectingEventDispatcher implements EventDispatcherInterfa
 
     public function dispatch(object $event): object
     {
-        if ($event instanceof RegisterFilterTabsEvent) {
-            foreach ($this->registrations as [$tab, $priority]) {
-                $event->addTab($tab, $priority);
+        if ($event instanceof RegisterFacetsEvent) {
+            foreach ($this->registrations as [$facet, $priority]) {
+                $event->addFacet($facet, $priority);
             }
         }
 

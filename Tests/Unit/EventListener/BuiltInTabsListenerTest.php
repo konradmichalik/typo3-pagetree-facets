@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
-use KonradMichalik\PagetreeFacets\Api\FilterTabInterface;
-use KonradMichalik\PagetreeFacets\Event\RegisterFilterTabsEvent;
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
+use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\EventListener\BuiltInTabsListener;
 use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
 use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
@@ -117,9 +117,9 @@ final class BuiltInTabsListenerTest extends TestCase
             $extensionConfiguration,
         );
 
-        $event = new RegisterFilterTabsEvent();
+        $event = new RegisterFacetsEvent();
         $listener($event);
 
-        return array_map(static fn (FilterTabInterface $tab): string => $tab->getIdentifier(), $event->getTabs());
+        return array_map(static fn (FacetInterface $facet): string => $facet->getIdentifier(), $event->getFacets());
     }
 }

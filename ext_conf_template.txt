@@ -5,8 +5,8 @@
 # cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.adminOnly
 adminOnly = 0
 
-# cat=basic; type=string; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.disabledTabs
-disabledTabs =
+# cat=basic; type=string; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.disabledFacets
+disabledFacets =
 
 # cat=basic; type=string; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.disabledOptions
 disabledOptions =

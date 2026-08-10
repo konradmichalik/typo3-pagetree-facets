@@ -129,16 +129,16 @@ You can find the extension settings in the TYPO3 backend under
 | Setting | Default | Description |
 |---|---|---|
 | `adminOnly` | `0` | Only administrators can use the filter modal and tokens. |
-| `disabledTabs` | *(empty)* | Comma-separated list of built-in tab identifiers to disable installation-wide. |
+| `disabledFacets` | *(empty)* | Comma-separated list of built-in facet identifiers to disable installation-wide. |
 | `persistFilter` | `0` | Remember each backend user's current page tree filter for their session, so it survives a reload or module switch (cleared on logout). |
 | `emptyResultNotice` | `1` | Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it. |
 | `enableRawQueryTab` | `0` | Enable the `raw:` power-user token (see below). Off by default. |
 
-Built-in tab identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `state`,
+Built-in facet identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `state`,
 `translations`, `seo`, `raw` (only registered at all when `enableRawQueryTab` is on).
 
 > [!NOTE]
-> Disabling a tab also makes its token keys unknown to the filter engine, so the
+> Disabling a facet also makes its token keys unknown to the filter engine, so the
 > restriction cannot be bypassed by typing the token into the search field manually.
 
 > [!NOTE]
@@ -168,8 +168,8 @@ Both restrictions can also be applied per backend user or group:
 # Disable the extension entirely for this user/group
 tx_typo3pagetreefacets.disable = 1
 
-# Disable individual tabs (merged with the disabledTabs extension setting)
-tx_typo3pagetreefacets.disableTabs = seo, translations
+# Disable individual facets (merged with the disabledFacets extension setting)
+tx_typo3pagetreefacets.disableFacets = seo, translations
 ```
 
 ## ⚠️ Known limitations & assumptions
@@ -214,11 +214,11 @@ tx_typo3pagetreefacets.disableTabs = seo, translations
 
 There are two extension points, and the smaller one is usually the one you want:
 
-- **A single option in an existing tab** — one more value under a token key that
+- **A single option in an existing facet** — one more value under a token key that
   already exists, e.g. another checkbox in Page state's `is:` group:
   `FilterOptionInterface` + `RegisterFilterOptionsEvent`.
-- **A whole tab** — own token keys, own modal UI:
-  `FilterTabInterface` + `RegisterFilterTabsEvent`.
+- **A whole facet** — own token keys, own modal UI:
+  `FacetInterface` + `RegisterFacetsEvent`.
 
 The built-ins use the exact same two paths; there is no private shortcut.
 
@@ -226,6 +226,30 @@ The built-ins use the exact same two paths; there is no private shortcut.
 is a minimal extension in this repository that exercises both, commented method by
 method. Its README walks through the interfaces, the priority semantics and what
 counts as public API.
+
+## 🔒 Public API & stability
+
+This is a `0.x` release: **the public API surface below may still break between
+minor versions.** Pin an exact version (`konradmichalik/typo3-pagetree-facets:0.1.0`,
+not `^0.1`) if that matters to you; a `1.0.0` tag, once cut, is what switches this to
+semver-strict breaking-changes-only-on-major.
+
+Public (implement/consume freely, changes get a note in the release):
+
+- `FacetInterface`, `RegisterFacetsEvent` — a whole facet: own token keys, own modal UI
+- `FilterOptionInterface`, `RegisterFilterOptionsEvent` — a single value inside an
+  existing vocabulary facet's token key
+- `FilterContext`, `Token` — the value objects passed across both extension points
+- The modal field-descriptor shape returned by `getModalConfiguration()`
+- `getIdentifier()` (facets) and `getTokenKey()`+`getValue()` (options) as
+  administrator-facing identifiers — used in `disabledFacets`/`disableFacets`,
+  `disabledOptions`/`disableOptions` and favorites
+- The token grammar itself (`key:value`, comma-separated OR-alternatives, freetext)
+
+Explicitly **not** public — change without notice, do not depend on internals:
+
+- `Classes/Service/*`, `Classes/Tab/*`, `Classes/Option/*`, `Classes/EventListener/*`
+- The JavaScript modules under `Resources/Public/JavaScript/`
 
 ## 🙏 Acknowledgments
 
