@@ -106,13 +106,13 @@ Every built-in facet and the token keys it owns:
 | Page state | `is:` | flags such as hidden, empty or editlocked |
 | Translations | `untranslated:` `translated:` | translation completeness |
 | SEO (requires EXT:seo) | `seo:` | SEO metadata issues, e.g. a missing description |
-| Raw query (opt-in, see [Configuration](docs/CONFIGURATION.md)) | `raw:` | arbitrary `field=value` conditions on any TCA table |
+| Raw query (opt-in, see [Configuration](Documentation/CONFIGURATION.md)) | `raw:` | arbitrary `field=value` conditions on any TCA table |
 
 `site:<identifier>` and `under:<uid>` are not facets: they are special scope
 tokens that restrict any of the above to one site or subtree.
 
 Need a criterion that isn't listed? Third parties can register their own facet,
-or add a value to an existing one; see [Extending](docs/EXTENDING.md).
+or add a value to an existing one; see [Extending](Documentation/EXTENDING.md).
 
 > [!IMPORTANT]
 > Every criterion resolves to **pages**, whatever it matches on. `ce:uploads` or
@@ -133,9 +133,9 @@ or add a value to an existing one; see [Extending](docs/EXTENDING.md).
 
 | Topic | What's inside |
 |---|---|
-| [Configuration](docs/CONFIGURATION.md) | Extension settings, the `raw:` power-user token, and per-user/group control via User TSconfig |
-| [Known Limitations](docs/LIMITATIONS.md) | Scopes as a post-filter, layout inheritance, page permissions, and freetext-with-token search behaviour |
-| [Extending](docs/EXTENDING.md) | The two extension points, the `example_tab` fixture, and the public API / stability promise |
+| [Configuration](Documentation/CONFIGURATION.md) | Extension settings, the `raw:` power-user token, and per-user/group control via User TSconfig |
+| [Known Limitations](Documentation/LIMITATIONS.md) | Scopes as a post-filter, layout inheritance, page permissions, and freetext-with-token search behaviour |
+| [Extending](Documentation/EXTENDING.md) | The two extension points, the `example_tab` fixture, and the public API / stability promise |
 
 ## 🙏 Acknowledgments
 
