@@ -240,7 +240,23 @@ Public (implement/consume freely, changes get a note in the release):
 - `FilterOptionInterface`, `RegisterFilterOptionsEvent` — a single value inside an
   existing vocabulary facet's token key
 - `FilterContext`, `Token` — the value objects passed across both extension points
-- The modal field-descriptor shape returned by `getModalConfiguration()`
+- The modal field-descriptor shape returned by `getModalConfiguration()`:
+  ```php
+  [
+      'fields' => [
+          [
+              'type' => 'checkbox-group', // | 'select' | 'radio-presets' | 'text' | 'user-picker'
+              'name' => 'is',             // maps into serialize()/hydrate() state
+              'label' => 'Page state',
+              'options' => [              // for choice types
+                  ['value' => 'hidden', 'label' => 'Hidden', 'icon' => 'actions-eye-disabled', 'description' => null],
+              ],
+          ],
+      ],
+  ]
+  ```
+  See `FacetInterface::getModalConfiguration()`'s own docblock for the full shape,
+  including `currentUser` and `pinned` (both `user-picker`-only).
 - `getIdentifier()` (facets) and `getTokenKey()`+`getValue()` (options) as
   administrator-facing identifiers — used in `disabledFacets`/`disableFacets`,
   `disabledOptions`/`disableOptions` and favorites
