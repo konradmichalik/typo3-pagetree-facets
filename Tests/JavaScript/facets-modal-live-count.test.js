@@ -271,5 +271,4 @@ describe('when the setting is on', () => {
     expect(matchCount(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);
   });
-
 });
