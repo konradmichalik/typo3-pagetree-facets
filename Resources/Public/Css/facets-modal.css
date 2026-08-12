@@ -424,7 +424,7 @@
 
 .pagetree-facets__match-count-skeleton {
     display: inline-block;
-    width: 6em;
+    width: 9em;
     height: 0.85em;
     border-radius: 3px;
     /* Same backend-global token (with fallback) the match-count text itself
