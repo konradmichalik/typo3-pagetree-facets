@@ -234,10 +234,12 @@ class FacetsModal {
       this.#applyButton = this.#modal.querySelector('button[name="pagetree-facets-apply"]');
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
-      if (this.#countEnabled) {
+      if (this.#countEnabled && this.#hasSavableFilter()) {
         // #refreshActiveIndicators() above already armed a debounced refresh via
         // #scheduleCountRefresh() - cancel it so it cannot fire a second, redundant
-        // request moments after this immediate one.
+        // request moments after this immediate one. A criterion-less baseline
+        // needs neither: #hasSavableFilter() being false means #scheduleCountRefresh()
+        // already took its own "nothing active" branch and hid the notice.
         clearTimeout(this.#countDebounce);
         this.#refreshCount(); // populate immediately - no debounce for the very first value
       }
@@ -913,6 +915,21 @@ class FacetsModal {
   // rapid clicks/keystrokes settle before a request goes out at all.
   #scheduleCountRefresh(showLoadingImmediately = true) {
     if (!this.#countEnabled || this.#tokenMode) {
+      return;
+    }
+    if (!this.#hasSavableFilter()) {
+      // Nothing active - the endpoint would resolve this to null anyway (see
+      // FilterResolutionService), so skip the round trip rather than showing
+      // a skeleton just to hide it again once that null comes back. Also
+      // supersedes whatever request is still in flight from a criterion that
+      // was just cleared, so its (now irrelevant) response cannot land later
+      // and reopen the notice.
+      clearTimeout(this.#countDebounce);
+      clearTimeout(this.#countLoadingTimer);
+      ++this.#countSeq;
+      if (this.#countNotice) {
+        this.#countNotice.hidden = true;
+      }
       return;
     }
     // The previous count is stale the instant a criterion changes - showing it

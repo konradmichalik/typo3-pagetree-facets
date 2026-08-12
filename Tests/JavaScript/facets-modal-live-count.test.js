@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  configurationFixture, control, openModal, requests, resetHarness, urls,
+  configurationFixture, control, openModal, requests, resetButton, resetHarness, urls,
 } from './Support/modal-harness.js';
 
 function enableLivePreviewCount() {
@@ -81,6 +81,39 @@ describe('when the setting is on', () => {
     expect(skeleton(modal).hidden).toBe(true);
 
     await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+  });
+
+  it('never fires a count request or shows the skeleton when nothing is active on open', async () => {
+    enableLivePreviewCount();
+    const configuration = configurationFixture();
+    configuration.tabs[1].state = {}; // clear the fixture's default active "state:hidden" criterion too
+    let calls = 0;
+    const { modal } = await openModal({
+      configuration,
+      count: () => { calls += 1; return null; },
+    });
+
+    // Long enough to catch a stray request or a delayed-show skeleton if the
+    // guard were missing - #hasSavableFilter() being false must skip the
+    // round trip entirely, not just win a timing race against it.
+    await new Promise((resolve) => { setTimeout(resolve, 400); });
+    expect(calls).toBe(0);
+    expect(matchCount(modal).hidden).toBe(true);
+    expect(skeleton(modal).hidden).toBe(true);
+  });
+
+  it('does not show the skeleton when Reset clears the last active criterion', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
+    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+
+    resetButton(modal).click();
+
+    // Nothing is active anymore, so there is nothing to recompute -
+    // #scheduleCountRefresh() takes its "nothing active" branch and hides the
+    // notice directly, the same as the fresh-open case above.
+    expect(matchCount(modal).hidden).toBe(true);
+    expect(skeleton(modal).hidden).toBe(true);
   });
 
   it('uses the singular label for exactly one match', async () => {
