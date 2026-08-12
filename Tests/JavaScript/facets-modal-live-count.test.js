@@ -24,6 +24,10 @@ function text(modal) {
   return matchCount(modal)?.querySelector('.pagetree-facets__match-count-text');
 }
 
+function icon(modal) {
+  return matchCount(modal)?.querySelector('typo3-backend-icon');
+}
+
 /**
  * A configuration whose hydrated Page type state depends on the requested
  * phrase - mirrors `hydratingFixture` in facets-modal-token-view.test.js.
@@ -270,5 +274,41 @@ describe('when the setting is on', () => {
     await new Promise((resolve) => { setTimeout(resolve, 300); });
     expect(matchCount(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);
+  });
+
+  it('uses a filled circle icon for a real match and an outline circle for zero matches', async () => {
+    enableLivePreviewCount();
+    let calls = 0;
+    const { modal } = await openModal({
+      count: () => { calls += 1; return 1 === calls ? 4 : 0; },
+    });
+
+    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    expect(icon(modal).getAttribute('identifier')).toBe('actions-circle-full');
+
+    control(modal, 'doktype[doktype]', '1').click();
+
+    await expect.poll(() => text(modal)?.textContent).toBe('No matching pages');
+    expect(icon(modal).getAttribute('identifier')).toBe('actions-circle');
+  });
+
+  it('hides the icon while the skeleton is showing, then reveals it with the resolved count', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({
+      count: async () => {
+        await new Promise((resolve) => { setTimeout(resolve, 250); });
+        return 6;
+      },
+    });
+
+    // Past the 150ms threshold, before the response resolves: icon and text
+    // are both hidden behind the skeleton, same as the text-only assertion
+    // in the "shows the skeleton before a slow response arrives" test above.
+    await new Promise((resolve) => { setTimeout(resolve, 200); });
+    expect(icon(modal).hidden).toBe(true);
+
+    await expect.poll(() => text(modal)?.textContent).toBe('6 matching pages');
+    expect(icon(modal).hidden).toBe(false);
+    expect(icon(modal).getAttribute('identifier')).toBe('actions-circle-full');
   });
 });

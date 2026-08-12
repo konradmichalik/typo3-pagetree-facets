@@ -400,6 +400,7 @@
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
+    gap: 0.375rem;
     margin: 0;
     margin-inline-start: 0.75rem;
     font-size: 0.8125rem;

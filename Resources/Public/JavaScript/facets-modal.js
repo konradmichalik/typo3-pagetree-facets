@@ -74,8 +74,10 @@ class FacetsModal {
   // against a form the token field has not finished reflecting into yet.
   #countEnabled = false;
   #countNotice = null;
-  // The resolved-count text and the skeleton placeholder - exactly one of the
-  // two is ever visible; see #showCountLoading()/#hideCountLoading().
+  // The resolved-count icon and text, and the skeleton placeholder - the icon
+  // and text are always shown/hidden together (see #showCountLoading()/
+  // #hideCountLoading()); the skeleton replaces both while loading.
+  #countIcon = null;
   #countTextSpan = null;
   #countSkeletonSpan = null;
   #countDebounce = null;
@@ -116,6 +118,7 @@ class FacetsModal {
     // Points into the previous modal's (now detached) footer until re-created.
     this.#pendingNotice = null;
     this.#countNotice = null;
+    this.#countIcon = null;
     this.#countTextSpan = null;
     this.#countSkeletonSpan = null;
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
@@ -934,6 +937,7 @@ class FacetsModal {
       return;
     }
     this.#countNotice.hidden = false;
+    this.#countIcon.setAttribute('identifier', count > 0 ? 'actions-circle-full' : 'actions-circle');
     this.#countTextSpan.textContent = this.#matchCountLabel(count);
   }
 
@@ -947,17 +951,20 @@ class FacetsModal {
       return;
     }
     this.#countNotice.hidden = false;
+    this.#countIcon.hidden = true;
     this.#countTextSpan.hidden = true;
     this.#countSkeletonSpan.hidden = false;
   }
 
-  // Reverts to the text span - whatever it last held, never cleared by the
-  // skeleton toggle itself. A no-op when the skeleton was never shown.
+  // Reverts to the icon and text span - whatever they last held, never
+  // cleared by the skeleton toggle itself. A no-op when the skeleton was
+  // never shown.
   #hideCountLoading() {
     if (!this.#countNotice) {
       return;
     }
     this.#countSkeletonSpan.hidden = true;
+    this.#countIcon.hidden = false;
     this.#countTextSpan.hidden = false;
   }
 
@@ -1137,25 +1144,31 @@ class FacetsModal {
   // that often would be noise for screen reader users rather than useful
   // feedback - it stays reachable through normal navigation instead.
   //
-  // Two children, exactly one visible at a time: the resolved count text, and
-  // a skeleton placeholder shown only once a request has been in flight past
-  // the delay in #refreshCount(). The skeleton is aria-hidden and carries no
-  // text, so it never changes what a screen reader announces. The text
-  // span's own content is never cleared by the skeleton toggle, only hidden -
-  // so reverting from skeleton back to text (a stale/superseded response, a
-  // failed request) always restores the last known good count rather than an
-  // empty string.
+  // Three children: a decorative icon and the resolved count text, shown
+  // together, and a skeleton placeholder shown only once a request has been
+  // in flight past the delay in #refreshCount() - see #showCountLoading()/
+  // #hideCountLoading(). The icon and skeleton are both aria-hidden and carry
+  // no text, so neither changes what a screen reader announces. The icon and
+  // text spans' own state is never cleared by the skeleton toggle, only
+  // hidden - so reverting from skeleton back to text (a stale/superseded
+  // response, a failed request) always restores the last known good count
+  // (and its matching icon) rather than an empty/inconsistent state. The icon
+  // switches between a filled and an outline circle depending on whether the
+  // resolved count is a real match or zero - set in #refreshCount(), not
+  // here, since this method never sees an actual count.
   #renderCountNotice() {
     this.#countNotice = document.createElement('p');
     this.#countNotice.className = 'pagetree-facets__match-count';
     this.#countNotice.hidden = true;
+    this.#countIcon = decorativeIcon('actions-circle');
+    this.#countIcon.hidden = true;
     this.#countTextSpan = document.createElement('span');
     this.#countTextSpan.className = 'pagetree-facets__match-count-text';
     this.#countSkeletonSpan = document.createElement('span');
     this.#countSkeletonSpan.className = 'pagetree-facets__match-count-skeleton';
     this.#countSkeletonSpan.hidden = true;
     this.#countSkeletonSpan.setAttribute('aria-hidden', 'true');
-    this.#countNotice.append(this.#countTextSpan, this.#countSkeletonSpan);
+    this.#countNotice.append(this.#countIcon, this.#countTextSpan, this.#countSkeletonSpan);
     return this.#countNotice;
   }
 
