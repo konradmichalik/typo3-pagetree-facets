@@ -458,6 +458,12 @@
     }
 }
 
+.pagetree-facets__reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
 .pagetree-facets__hint {
     display: inline-flex;
     align-items: center;
@@ -495,8 +501,7 @@
  * reservation - with .btn-sm's default vertical padding they are taller, so
  * the row would grow (and shift everything below) when they appear. */
 .pagetree-facets__copy-link,
-.pagetree-facets__favorite-add,
-.pagetree-facets__reset {
+.pagetree-facets__favorite-add {
     flex: 0 0 auto;
     padding: 0;
     white-space: nowrap;

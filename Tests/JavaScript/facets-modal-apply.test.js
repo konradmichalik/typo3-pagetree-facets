@@ -11,6 +11,7 @@ import {
   openModal,
   openedModals,
   panel,
+  resetButton,
   resetHarness,
   type,
 } from './Support/modal-harness.js';
@@ -71,6 +72,26 @@ describe('the Apply button', () => {
     // under: token pointed at.
     await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden site:other under:5 contact']]);
     expect(document.body.contains(modal)).toBe(false);
+  });
+});
+
+describe('the Reset button', () => {
+  it('starts disabled when there is nothing to reset', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs[1].state = {};
+    const { modal } = await openModal({ configuration });
+
+    expect(resetButton(modal).disabled).toBe(true);
+  });
+
+  it('enables itself once a criterion is picked', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs[1].state = {};
+    const { modal } = await openModal({ configuration });
+
+    dirty(modal);
+
+    expect(resetButton(modal).disabled).toBe(false);
   });
 });
 

@@ -36,6 +36,7 @@ class FacetsModal {
   #utility = null;
   #actions = null;
   #applyButton = null;
+  #resetButton = null;
   #baselineState = null;
   // Shown while the selection differs from what the tree is actually filtered
   // by. Injected into the modal's own footer, so it lives outside our content
@@ -150,6 +151,15 @@ class FacetsModal {
           trigger: () => { this.#modal?.hideModal(); },
         },
         {
+          text: TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset',
+          btnClass: 'btn-default',
+          // Rendered as the button's name attribute, which is how we find it
+          // again to inject its icon/title and to enable/disable it (see
+          // #refreshActiveIndicators()) - same technique #applyButton uses.
+          name: 'pagetree-facets-reset',
+          trigger: () => { this.#resetAll(); },
+        },
+        {
           text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
           btnClass: 'btn-primary',
           // Rendered as the button's name attribute, which is how we find it
@@ -181,6 +191,19 @@ class FacetsModal {
       const brandIcon = decorativeIcon('pagetree-facets');
       brandIcon.className = 'pagetree-facets__brand';
       this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
+
+      // Same one-shot-injection technique as the brand icon above: the icon,
+      // extra class and title are not part of Modal.advanced()'s button
+      // config API, so they are added directly to the rendered <button> once,
+      // right after the footer exists - mirroring how #applyButton is looked
+      // up here too.
+      this.#resetButton = this.#modal.querySelector('button[name="pagetree-facets-reset"]');
+      if (this.#resetButton) {
+        this.#resetButton.classList.add('pagetree-facets__reset');
+        this.#resetButton.prepend(decorativeIcon('actions-refresh'));
+        this.#resetButton.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
+          ?? 'Removes every criterion here. The page tree keeps its current filter until you apply.';
+      }
 
       // The notice talks about the Apply button, so it belongs beside it, in the
       // modal's own footer rather than in our content. That footer is Lit-
@@ -336,14 +359,6 @@ class FacetsModal {
       ?? 'Copies a link to this view with the current filter attached.';
     copyLink.addEventListener('click', () => this.#copyLink());
 
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'pagetree-facets__reset btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-    reset.append(decorativeIcon('actions-refresh'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset'));
-    reset.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
-      ?? 'Removes every criterion here. The page tree keeps its current filter until you apply.';
-    reset.addEventListener('click', () => this.#resetAll());
-
     // "Save current filter" sits alongside "Copy link" - both export the phrase
     // currently configured.
     const { toggle: saveToggle, form: saveForm } = buildSaveFavoriteForm({
@@ -355,7 +370,7 @@ class FacetsModal {
     this.#actions = document.createElement('div');
     this.#actions.className = 'pagetree-facets__actions';
     this.#actions.hidden = true;
-    this.#actions.append(copyLink, saveToggle, reset);
+    this.#actions.append(copyLink, saveToggle);
     // The name form joins this row instead of opening one below it: as its own
     // row it pushed the chips and the whole body down by ~50px on every save.
     // While it is open the row's other occupants step aside (see the CSS), and
@@ -987,13 +1002,20 @@ class FacetsModal {
     const hasCriteria = criteria.length > 0;
     this.#chips.hidden = !hasCriteria;
     this.#hint.hidden = hasCriteria;
-    // The actions (Copy link / Save current filter / Reset) act on the whole
-    // phrase, so they follow whether anything is savable - freetext or a scope
-    // alone counts, not just tab-criteria chips. In token view the phrase can
-    // hold tokens the form cannot mirror, so the typed field decides instead.
-    this.#actions.hidden = this.#tokenMode
-      ? '' === this.#tokenField.value.trim()
-      : !this.#hasSavableFilter();
+    // The actions (Copy link / Save current filter) and the Reset button
+    // (now in the footer, see #build()) both act on the whole phrase, so they
+    // follow whether anything is savable - freetext or a scope alone counts,
+    // not just tab-criteria chips. In token view the phrase can hold tokens
+    // the form cannot mirror, so the typed field decides instead. Computed
+    // once here so the actions row's hidden state and Reset's disabled state
+    // can never disagree.
+    const savable = this.#tokenMode
+      ? '' !== this.#tokenField.value.trim()
+      : this.#hasSavableFilter();
+    this.#actions.hidden = !savable;
+    if (this.#resetButton) {
+      this.#resetButton.disabled = !savable;
+    }
     // The utility row always stays present, reserving its min-height. At the
     // root node there is no page-scope checkbox, so collapsing it here left the
     // header shorter than on a normal page - the whole modal sat higher and

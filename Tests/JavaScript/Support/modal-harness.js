@@ -217,6 +217,10 @@ export function applyButton(modal) {
   return modal.querySelector('button[name="pagetree-facets-apply"]');
 }
 
+export function resetButton(modal) {
+  return modal.querySelector('button[name="pagetree-facets-reset"]');
+}
+
 export function footerButton(modal, text) {
   return [...modal.querySelectorAll('.t3js-modal-footer button')].find((button) => button.textContent === text);
 }
