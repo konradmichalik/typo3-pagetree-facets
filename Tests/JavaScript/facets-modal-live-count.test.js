@@ -109,6 +109,22 @@ describe('when the setting is on', () => {
     expect(calls).toBe(2); // no further requests once the debounce window passed
   });
 
+  it('shows the skeleton immediately on a change, before the debounced request even fires', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ count: 4 });
+    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    expect(skeleton(modal).hidden).toBe(true);
+
+    control(modal, 'doktype[doktype]', '1').click();
+
+    // Synchronous, well before the 350ms debounce - the stale count must not
+    // still be showing while a fresher one is pending, and the skeleton
+    // doesn't wait for #refreshCount()'s own (much shorter) in-flight delay.
+    expect(matchCount(modal).hidden).toBe(false);
+    expect(skeleton(modal).hidden).toBe(false);
+    expect(text(modal).hidden).toBe(true);
+  });
+
   it('drops a response overtaken by a later change', async () => {
     enableLivePreviewCount();
     let releaseHung;
@@ -193,14 +209,12 @@ describe('when the setting is on', () => {
       },
     });
 
-    // Below the 150ms loading threshold: nothing shown yet, same as any
-    // other in-flight request before this feature existed.
-    await new Promise((resolve) => { setTimeout(resolve, 50); });
-    expect(skeleton(modal).hidden).toBe(true);
-
-    // Past the threshold, before the response itself resolves (~250ms): the
-    // skeleton is now the visible content, the text span is hidden.
-    await new Promise((resolve) => { setTimeout(resolve, 150); }); // total elapsed ~200ms
+    // The 10ms threshold is too short to assert a "nothing shown yet" instant
+    // against with real timers (see the "never shows the skeleton for a fast
+    // response" test above for that coverage) - so this test only asserts the
+    // states either side of it: past the threshold, before the response
+    // itself resolves (~250ms), the skeleton is the visible content.
+    await new Promise((resolve) => { setTimeout(resolve, 100); });
     expect(matchCount(modal).hidden).toBe(false);
     expect(skeleton(modal).hidden).toBe(false);
     expect(text(modal).hidden).toBe(true);
@@ -228,15 +242,15 @@ describe('when the setting is on', () => {
 
     control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, then fails
 
-    // ~550ms elapsed: past the 350ms debounce + 150ms threshold (~500ms),
+    // ~500ms elapsed: past the 350ms debounce + 10ms threshold (~360ms),
     // before the throw at ~600ms - the skeleton must be visible here, or the
     // "reverts" assertion below would be trivially true for the wrong reason.
-    await new Promise((resolve) => { setTimeout(resolve, 550); });
+    await new Promise((resolve) => { setTimeout(resolve, 500); });
     expect(skeleton(modal).hidden).toBe(false);
 
     // Past the throw (~600ms): reverted to the last known good count, not
     // stuck on the skeleton.
-    await new Promise((resolve) => { setTimeout(resolve, 150); }); // total ~700ms
+    await new Promise((resolve) => { setTimeout(resolve, 200); }); // total ~700ms
     expect(skeleton(modal).hidden).toBe(true);
     expect(text(modal).hidden).toBe(false);
     expect(text(modal).textContent).toBe('3 matching pages');
@@ -245,28 +259,31 @@ describe('when the setting is on', () => {
   it('cancels a pending skeleton show when entering token mode before it fires', async () => {
     enableLivePreviewCount();
     let calls = 0;
+    let modalRef;
+    // The 10ms delayed-show threshold is too short to race against with a
+    // real-timer wait chosen from outside (a 350ms debounce leaves only a
+    // 10ms window to land the toggle in). Instead, the toggle happens inside
+    // the mock itself, synchronously the moment the 2nd #refreshCount() call
+    // starts - before anything yields to the event loop, so the pending
+    // 10ms timer cannot have fired yet regardless of how short it is.
     const { modal } = await openModal({
       count: async () => {
         calls += 1;
         if (1 === calls) {
           return 3;
         }
+        modalRef.querySelector('.pagetree-facets__token-toggle').click();
         await new Promise((resolve) => { setTimeout(resolve, 250); });
         return 9;
       },
     });
+    modalRef = modal;
     await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
 
-    control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow
-
-    // ~400ms elapsed: past the 350ms debounce (the 2nd call has started),
-    // before its own +150ms threshold (~500ms) or its resolution (~600ms).
-    await new Promise((resolve) => { setTimeout(resolve, 400); });
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, toggles token mode itself
     await expect.poll(() => matchCount(modal)?.hidden).toBe(true); // token mode's existing behavior
 
-    // Let both the cancelled timer's original target time and the slow
-    // response's resolution pass - neither must reopen the notice.
+    // Let the slow response's resolution pass - it must not reopen the notice.
     await new Promise((resolve) => { setTimeout(resolve, 300); });
     expect(matchCount(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);

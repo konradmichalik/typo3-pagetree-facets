@@ -910,13 +910,19 @@ class FacetsModal {
     if (!this.#countEnabled || this.#tokenMode) {
       return;
     }
+    // The previous count is stale the instant a criterion changes - showing it
+    // while the debounce/request are still pending would misrepresent it as
+    // current. The skeleton reflects that immediately, rather than waiting on
+    // the debounced #refreshCount() and its own (much shorter) in-flight delay
+    // - which still runs too, but by then the skeleton is already showing.
+    this.#showCountLoading(this.#countSeq);
     clearTimeout(this.#countDebounce);
     this.#countDebounce = window.setTimeout(() => this.#refreshCount(), 350);
   }
 
   async #refreshCount() {
     const seq = ++this.#countSeq;
-    // Delayed-show, not immediate: a request that resolves within 150ms never
+    // Delayed-show, not immediate: a request that resolves within 10ms never
     // shows anything but its own result - only a request slow enough to cross
     // this mark becomes visible as the skeleton in the meantime. Clearing
     // whatever the previous call's own timer left pending is safe
@@ -928,7 +934,7 @@ class FacetsModal {
     // guarantee for free (time has passed, an await has happened), which is
     // why each of those is guarded by a seq check first.
     clearTimeout(this.#countLoadingTimer);
-    this.#countLoadingTimer = window.setTimeout(() => this.#showCountLoading(seq), 150);
+    this.#countLoadingTimer = window.setTimeout(() => this.#showCountLoading(seq), 10);
     let count;
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
@@ -961,11 +967,13 @@ class FacetsModal {
     this.#countTextSpan.textContent = this.#matchCountLabel(count);
   }
 
-  // Only reached once a request has been in flight past the delay in
-  // #refreshCount() - guarded the same way #refreshCount()'s own post-await
-  // checks are, since this fires from an independent timer that a newer
-  // request, a closed modal or a switch to token mode may have overtaken by
-  // the time it goes off.
+  // Two call sites: #scheduleCountRefresh() calls it immediately, synchronously
+  // with the change itself, so the seq check there is a no-op by construction
+  // (nothing can have superseded a call that just happened). #refreshCount()'s
+  // own delayed-show timer calls it again once its in-flight delay elapses -
+  // that one DOES need the check, since it fires from an independent timer
+  // that a newer request, a closed modal or a switch to token mode may have
+  // overtaken by the time it goes off.
   #showCountLoading(seq) {
     if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
       return;
@@ -1334,6 +1342,14 @@ class FacetsModal {
     // taken over, even though #showCountLoading()'s own guard would no-op it.
     clearTimeout(this.#countDebounce);
     clearTimeout(this.#countLoadingTimer);
+    // #scheduleCountRefresh() shows the skeleton the instant a criterion
+    // changes (see there), so a request already in flight when token mode
+    // takes over can leave it mid-loading - #refreshCount()'s own #tokenMode
+    // guard then skips its usual #hideCountLoading() call on return. Resetting
+    // it here keeps the notice's internal text/skeleton split consistent
+    // (not just its own outer hidden flag) for whenever it becomes visible
+    // again, even though neither is visible while the notice itself is hidden.
+    this.#hideCountLoading();
     if (this.#countNotice) {
       this.#countNotice.hidden = true; // token mode has its own authoritative source - see #scheduleCountRefresh's guard
     }
