@@ -302,7 +302,7 @@
    everything under it. */
 .pagetree-facets__utility {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.5rem;
     min-height: 1.875rem;
@@ -930,9 +930,9 @@
 
 /* Inline "name this filter" form: its own header line, unfolded by the "Save
  * current filter" action, so the actions row itself stays a single tidy line. */
-/* Shares the utility row with the page scope and the actions, and takes it over
- * while open - naming a filter is a moment of its own, and the two controls it
- * displaces (page scope, copy/reset) have nothing to contribute to it. */
+/* Shares the utility row with the page scope, the match count and the actions,
+ * and takes it over while open - naming a filter is a moment of its own, and
+ * the three controls it displaces have nothing to contribute to it. */
 .pagetree-facets__favorite-form {
     display: flex;
     align-items: center;
