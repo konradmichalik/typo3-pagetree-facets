@@ -74,7 +74,14 @@ class FacetsModal {
   // against a form the token field has not finished reflecting into yet.
   #countEnabled = false;
   #countNotice = null;
+  // The resolved-count text and the skeleton placeholder - exactly one of the
+  // two is ever visible; see #showCountLoading()/#hideCountLoading().
+  #countTextSpan = null;
+  #countSkeletonSpan = null;
   #countDebounce = null;
+  // Delayed-show timer for the skeleton - separate from #countDebounce
+  // (which gates whether a request is sent at all): see #refreshCount().
+  #countLoadingTimer = null;
   // Guards against out-of-order responses, same pattern as #reflectSeq below.
   #countSeq = 0;
   // Guards the async gap between the open request and the modal appearing: on a
@@ -109,9 +116,12 @@ class FacetsModal {
     // Points into the previous modal's (now detached) footer until re-created.
     this.#pendingNotice = null;
     this.#countNotice = null;
+    this.#countTextSpan = null;
+    this.#countSkeletonSpan = null;
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
-    // #countSeq and #countDebounce need no reset here: the counter is monotonic and
-    // the timer was already cleared by #teardown() on the previous close.
+    // #countSeq, #countDebounce and #countLoadingTimer need no reset here: the
+    // counter is monotonic and both timers were already cleared by
+    // #teardown() on the previous close.
     // Token view belongs to the modal instance, not to the singleton: the field
     // and the toggle are rebuilt hidden/unpressed by #render() below, so leaving
     // the flag on would describe a view that is not on screen - #computePhrase()
@@ -231,6 +241,7 @@ class FacetsModal {
     this.#opened = false;
     clearTimeout(this.#refreshDebounce);
     clearTimeout(this.#countDebounce);
+    clearTimeout(this.#countLoadingTimer);
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();
   }
@@ -881,23 +892,73 @@ class FacetsModal {
 
   async #refreshCount() {
     const seq = ++this.#countSeq;
+    // Delayed-show, not immediate: a request that resolves within 150ms never
+    // shows anything but its own result - only a request slow enough to cross
+    // this mark becomes visible as the skeleton in the meantime. Clearing
+    // whatever the previous call's own timer left pending is safe
+    // unconditionally right here: seq was just incremented, so this call is by
+    // definition the newest one, and the synchronous prefix of #refreshCount()
+    // (up to its first await) always runs to completion before any other call
+    // can touch #countLoadingTimer - so whatever this clears can only belong
+    // to a strictly older call. The two clears further down do NOT get that
+    // guarantee for free (time has passed, an await has happened), which is
+    // why each of those is guarded by a seq check first.
+    clearTimeout(this.#countLoadingTimer);
+    this.#countLoadingTimer = window.setTimeout(() => this.#showCountLoading(seq), 150);
     let count;
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
         .post(this.#collectFormState());
       ({ count } = await response.resolve());
     } catch {
-      return; // network/parse failure - keep the last known count on screen, no error surfaced
+      // network/parse failure - keep the last known count on screen, no error
+      // surfaced. Only touch the shared timer/notice if no newer call has
+      // superseded this one in the meantime - otherwise this failure would
+      // wrongly cancel a newer, still-legitimate call's own pending "show
+      // skeleton" timer. If the skeleton had already replaced the text (a
+      // slow request that then failed), revert back to it rather than
+      // leaving it shown forever.
+      if (seq === this.#countSeq) {
+        clearTimeout(this.#countLoadingTimer);
+        this.#hideCountLoading();
+      }
+      return;
     }
     if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
       return; // superseded by a newer request, the modal has moved on, or token view took over in the meantime
     }
+    clearTimeout(this.#countLoadingTimer);
+    this.#hideCountLoading(); // no-op if the skeleton was never shown (the common, fast-response case)
     if (null === count) {
       this.#countNotice.hidden = true;
       return;
     }
     this.#countNotice.hidden = false;
-    this.#countNotice.textContent = this.#matchCountLabel(count);
+    this.#countTextSpan.textContent = this.#matchCountLabel(count);
+  }
+
+  // Only reached once a request has been in flight past the delay in
+  // #refreshCount() - guarded the same way #refreshCount()'s own post-await
+  // checks are, since this fires from an independent timer that a newer
+  // request, a closed modal or a switch to token mode may have overtaken by
+  // the time it goes off.
+  #showCountLoading(seq) {
+    if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
+      return;
+    }
+    this.#countNotice.hidden = false;
+    this.#countTextSpan.hidden = true;
+    this.#countSkeletonSpan.hidden = false;
+  }
+
+  // Reverts to the text span - whatever it last held, never cleared by the
+  // skeleton toggle itself. A no-op when the skeleton was never shown.
+  #hideCountLoading() {
+    if (!this.#countNotice) {
+      return;
+    }
+    this.#countSkeletonSpan.hidden = true;
+    this.#countTextSpan.hidden = false;
   }
 
   #matchCountLabel(count) {
@@ -1075,10 +1136,26 @@ class FacetsModal {
   // this text updates on every debounced keystroke/click, and re-announcing it
   // that often would be noise for screen reader users rather than useful
   // feedback - it stays reachable through normal navigation instead.
+  //
+  // Two children, exactly one visible at a time: the resolved count text, and
+  // a skeleton placeholder shown only once a request has been in flight past
+  // the delay in #refreshCount(). The skeleton is aria-hidden and carries no
+  // text, so it never changes what a screen reader announces. The text
+  // span's own content is never cleared by the skeleton toggle, only hidden -
+  // so reverting from skeleton back to text (a stale/superseded response, a
+  // failed request) always restores the last known good count rather than an
+  // empty string.
   #renderCountNotice() {
     this.#countNotice = document.createElement('p');
     this.#countNotice.className = 'pagetree-facets__match-count';
     this.#countNotice.hidden = true;
+    this.#countTextSpan = document.createElement('span');
+    this.#countTextSpan.className = 'pagetree-facets__match-count-text';
+    this.#countSkeletonSpan = document.createElement('span');
+    this.#countSkeletonSpan.className = 'pagetree-facets__match-count-skeleton';
+    this.#countSkeletonSpan.hidden = true;
+    this.#countSkeletonSpan.setAttribute('aria-hidden', 'true');
+    this.#countNotice.append(this.#countTextSpan, this.#countSkeletonSpan);
     return this.#countNotice;
   }
 
@@ -1221,8 +1298,11 @@ class FacetsModal {
     this.#tokenField.focus();
     // A count refresh armed just before entering token mode (e.g. during the
     // #computePhrase() await above) must not land afterwards - #refreshCount()'s
-    // own guard also checks #tokenMode, this is belt-and-suspenders.
+    // own guard also checks #tokenMode, this is belt-and-suspenders. Same for a
+    // pending "show the skeleton" timer: it must not fire once token mode has
+    // taken over, even though #showCountLoading()'s own guard would no-op it.
     clearTimeout(this.#countDebounce);
+    clearTimeout(this.#countLoadingTimer);
     if (this.#countNotice) {
       this.#countNotice.hidden = true; // token mode has its own authoritative source - see #scheduleCountRefresh's guard
     }

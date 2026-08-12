@@ -16,6 +16,14 @@ function matchCount(modal) {
   return modal.querySelector('.pagetree-facets__match-count');
 }
 
+function skeleton(modal) {
+  return matchCount(modal)?.querySelector('.pagetree-facets__match-count-skeleton');
+}
+
+function text(modal) {
+  return matchCount(modal)?.querySelector('.pagetree-facets__match-count-text');
+}
+
 /**
  * A configuration whose hydrated Page type state depends on the requested
  * phrase - mirrors `hydratingFixture` in facets-modal-token-view.test.js.
@@ -166,5 +174,101 @@ describe('when the setting is on', () => {
     modal.querySelector('[data-role="freetext"]').dispatchEvent(new Event('change', { bubbles: true }));
 
     await expect.poll(() => seenPayloads.at(-1)?.freetext).toBe('solar');
+  });
+
+  it('never shows the skeleton for a response faster than the loading threshold', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ count: 5 });
+
+    await expect.poll(() => text(modal)?.textContent).toBe('5 matching pages');
+    expect(skeleton(modal).hidden).toBe(true);
+  });
+
+  it('shows the skeleton before a slow response arrives, then swaps to the real count', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({
+      count: async () => {
+        await new Promise((resolve) => { setTimeout(resolve, 250); });
+        return 9;
+      },
+    });
+
+    // Below the 150ms loading threshold: nothing shown yet, same as any
+    // other in-flight request before this feature existed.
+    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    expect(skeleton(modal).hidden).toBe(true);
+
+    // Past the threshold, before the response itself resolves (~250ms): the
+    // skeleton is now the visible content, the text span is hidden.
+    await new Promise((resolve) => { setTimeout(resolve, 150); }); // total elapsed ~200ms
+    expect(matchCount(modal).hidden).toBe(false);
+    expect(skeleton(modal).hidden).toBe(false);
+    expect(text(modal).hidden).toBe(true);
+
+    // The response lands - skeleton is replaced by the resolved count.
+    await expect.poll(() => text(modal)?.textContent).toBe('9 matching pages');
+    expect(skeleton(modal).hidden).toBe(true);
+    expect(text(modal).hidden).toBe(false);
+  });
+
+  it('reverts a shown skeleton instead of leaving it stuck when the request fails', async () => {
+    enableLivePreviewCount();
+    let calls = 0;
+    const { modal } = await openModal({
+      count: async () => {
+        calls += 1;
+        if (1 === calls) {
+          return 3; // initial population - fast, succeeds
+        }
+        await new Promise((resolve) => { setTimeout(resolve, 250); }); // slow enough to cross the threshold
+        throw new Error('simulated failure');
+      },
+    });
+    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+
+    control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, then fails
+
+    // ~550ms elapsed: past the 350ms debounce + 150ms threshold (~500ms),
+    // before the throw at ~600ms - the skeleton must be visible here, or the
+    // "reverts" assertion below would be trivially true for the wrong reason.
+    await new Promise((resolve) => { setTimeout(resolve, 550); });
+    expect(skeleton(modal).hidden).toBe(false);
+
+    // Past the throw (~600ms): reverted to the last known good count, not
+    // stuck on the skeleton.
+    await new Promise((resolve) => { setTimeout(resolve, 150); }); // total ~700ms
+    expect(skeleton(modal).hidden).toBe(true);
+    expect(text(modal).hidden).toBe(false);
+    expect(text(modal).textContent).toBe('3 matching pages');
+  });
+
+  it('cancels a pending skeleton show when entering token mode before it fires', async () => {
+    enableLivePreviewCount();
+    let calls = 0;
+    const { modal } = await openModal({
+      count: async () => {
+        calls += 1;
+        if (1 === calls) {
+          return 3;
+        }
+        await new Promise((resolve) => { setTimeout(resolve, 250); });
+        return 9;
+      },
+    });
+    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+
+    control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow
+
+    // ~400ms elapsed: past the 350ms debounce (the 2nd call has started),
+    // before its own +150ms threshold (~500ms) or its resolution (~600ms).
+    await new Promise((resolve) => { setTimeout(resolve, 400); });
+    modal.querySelector('.pagetree-facets__token-toggle').click();
+    await expect.poll(() => matchCount(modal)?.hidden).toBe(true); // token mode's existing behavior
+
+    // Let both the cancelled timer's original target time and the slow
+    // response's resolution pass - neither must reopen the notice.
+    await new Promise((resolve) => { setTimeout(resolve, 300); });
+    expect(matchCount(modal).hidden).toBe(true);
+    expect(skeleton(modal).hidden).toBe(true);
   });
 });

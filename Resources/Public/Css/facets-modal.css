@@ -415,6 +415,37 @@
     display: none;
 }
 
+.pagetree-facets__match-count-skeleton {
+    display: inline-block;
+    width: 6em;
+    height: 0.85em;
+    border-radius: 3px;
+    background: var(--pl-muted);
+    opacity: 0.3;
+    animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.pagetree-facets__match-count-skeleton[hidden] {
+    display: none;
+}
+
+@keyframes pagetree-facets-skeleton-pulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pagetree-facets__match-count-skeleton {
+        animation: none;
+        opacity: 0.4;
+    }
+}
+
 .pagetree-facets__hint {
     display: inline-flex;
     align-items: center;
