@@ -16,6 +16,21 @@ function matchCount(modal) {
   return modal.querySelector('.pagetree-facets__match-count');
 }
 
+/**
+ * A configuration whose hydrated Page type state depends on the requested
+ * phrase - mirrors `hydratingFixture` in facets-modal-token-view.test.js.
+ * Needed so "the modal opens with an already-active baseline" is represented
+ * honestly: the real endpoint would answer a `doktype:1` open with the
+ * `doktype` tab's state already containing `1`, not an empty form that
+ * happens to have a phrase string attached to it.
+ */
+function hydratingDoktypeFixture(phrase) {
+  const configuration = configurationFixture();
+  configuration.tabs[0].state = phrase.includes('doktype:1') ? { doktype: ['1'] } : {};
+
+  return configuration;
+}
+
 beforeEach(() => {
   resetHarness();
 });
@@ -34,9 +49,14 @@ describe('when the setting is off (default)', () => {
 });
 
 describe('when the setting is on', () => {
-  it('shows a count as soon as the modal opens, before any change', async () => {
+  it('shows a count as soon as the modal opens, when the baseline already has active criteria', async () => {
     enableLivePreviewCount();
-    const { modal } = await openModal({ count: 4 });
+    // A fresh, criterion-less open gets `count: null` from the real endpoint
+    // (FilterResolutionService::resolve()/count() return null when nothing is
+    // active) and the notice stays hidden - see the "count is null" test above.
+    // An immediate, non-debounced count is only realistic when the baseline
+    // reopens onto an already-filtered tree, so that's what this test opens with.
+    const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
 
     await expect.poll(() => matchCount(modal)?.textContent).toBe('4 matching pages');
     expect(matchCount(modal).hidden).toBe(false);
