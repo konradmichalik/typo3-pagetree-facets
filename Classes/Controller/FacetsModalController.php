@@ -14,12 +14,10 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, FilterResolutionService, PhraseSummaryService, SessionFilterService};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, FilterResolutionService, LivePreviewCountSettingService, PhraseSummaryService, SessionFilterService};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
-use Throwable;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Http\{JsonResponse, PropagateResponseException};
@@ -49,7 +47,7 @@ final readonly class FacetsModalController
         private SiteFinder $siteFinder,
         private ConnectionPool $connectionPool,
         private FilterResolutionService $filterResolutionService,
-        private ExtensionConfiguration $extensionConfiguration,
+        private LivePreviewCountSettingService $livePreviewCountSetting,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
@@ -102,7 +100,7 @@ final readonly class FacetsModalController
     public function count(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->requireEnabledUser();
-        if (!$this->isLivePreviewCountEnabled()) {
+        if (!$this->livePreviewCountSetting->isEnabled()) {
             return new JsonResponse(['count' => null]);
         }
 
@@ -252,15 +250,6 @@ final readonly class FacetsModalController
         }
 
         return $tokens;
-    }
-
-    private function isLivePreviewCountEnabled(): bool
-    {
-        try {
-            return (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'livePreviewCount');
-        } catch (Throwable) {
-            return true;
-        }
     }
 
     /**
