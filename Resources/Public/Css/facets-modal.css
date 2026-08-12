@@ -284,6 +284,8 @@
     /* Undo Bootstrap's .form-check float layout so the gap controls the spacing
      * between the checkbox and its label instead of a fixed indent. */
     padding-left: 0;
+    grid-column: 1;
+    justify-self: start;
 }
 
 .pagetree-facets__page-scope .form-check-input {
@@ -291,13 +293,16 @@
     margin: 0;
 }
 
-/* Page scope and the filter-wide actions share one row; the actions sit at the
-   trailing edge whether or not the scope checkbox is present. Its min-height is
-   the tallest thing the row can hold - the favorite name form further down - so
-   opening that form swaps the row's contents instead of adding a row and
-   shifting everything under it. */
+/* Page scope, the live match count and the filter-wide actions share one row -
+   a 3-column grid, each placed by an explicit grid-column below rather than
+   DOM order, so the centered count does not shift into column 1 when the
+   scope checkbox is absent (no page open). Its min-height is the tallest
+   thing the row can hold - the favorite name form further down - so opening
+   that form swaps the row's contents instead of adding a row and shifting
+   everything under it. */
 .pagetree-facets__utility {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 0.5rem;
     min-height: 1.875rem;
@@ -311,7 +316,8 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-inline-start: auto;
+    grid-column: 3;
+    justify-self: end;
 }
 
 .pagetree-facets__actions[hidden] {
@@ -398,14 +404,14 @@
 
 .pagetree-facets__match-count {
     display: inline-flex;
-    flex: 0 0 auto;
     align-items: center;
     gap: 0.375rem;
     margin: 0;
-    margin-inline-start: 0.75rem;
     font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.4;
+    grid-column: 2;
+    justify-self: center;
 }
 
 .pagetree-facets-modal .pagetree-facets__match-count {
@@ -421,11 +427,11 @@
     width: 6em;
     height: 0.85em;
     border-radius: 3px;
-    /* --pl-muted is scoped to .pagetree-facets (the modal body); this element
-     * lives in .t3js-modal-footer, a sibling region core renders itself, so
-     * that token never resolves here - same reason .pagetree-facets__pending
-     * and .pagetree-facets__match-count's own text use this backend-global
-     * token with an explicit fallback instead. */
+    /* Same backend-global token (with fallback) the match-count text itself
+     * uses, for consistency with the rest of this row - not a scoping
+     * requirement. --pl-muted would resolve here too now that this element
+     * lives inside .pagetree-facets, but there is no reason to switch a
+     * working, already-reviewed rule just because its surroundings moved. */
     background: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
     opacity: 0.3;
     animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
@@ -924,12 +930,13 @@
  * displaces (page scope, copy/reset) have nothing to contribute to it. */
 .pagetree-facets__favorite-form {
     display: flex;
-    flex: 1 1 auto;
     align-items: center;
     gap: 0.375rem;
+    grid-column: 1 / -1;
 }
 
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__page-scope,
+.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__match-count,
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__actions {
     display: none;
 }

@@ -194,13 +194,6 @@ class FacetsModal {
       // change, the optional chaining leaves #pendingNotice null and the notice
       // simply stays absent; the close guard, which is the actual safety net,
       // does not depend on it.
-      // Order matters: each prepend() lands before whatever is already first, so
-      // the count notice - meant to trail the pending notice, per its own
-      // margin-inline-start - must be prepended first, with the pending notice
-      // prepended after it to end up on the left.
-      if (this.#countEnabled) {
-        this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderCountNotice());
-      }
       this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
 
       // Populate the active-filter chips from the hydrated state once the modal
@@ -313,9 +306,11 @@ class FacetsModal {
     search.append(renderHelpToggle(help));
     header.append(search, help);
 
-    // Utility row: the page scope on the left, the filter-wide actions on the
-    // right. They share a row so the active-filter area below spends its height
-    // on chips only, instead of a full row on two links.
+    // Utility row: the page scope on the left, the live match count centered,
+    // the filter-wide actions on the right - a three-column grid (see the CSS)
+    // so the count stays centered regardless of whether the page-scope checkbox
+    // is present. They share a row so the active-filter area below spends its
+    // height on chips only, instead of a full row on two links.
     this.#utility = document.createElement('div');
     this.#utility.className = 'pagetree-facets__utility';
 
@@ -324,6 +319,14 @@ class FacetsModal {
     // entirely rather than show a checkbox that can never be checked.
     if (this.#currentPageId) {
       this.#utility.append(this.#renderPageScope());
+    }
+
+    // Built here (not in the typo3-modal-shown listener, unlike before) since
+    // it now lives in markup this class owns outright - no need to wait for
+    // core's own footer chrome to exist first. The "populate immediately
+    // after baseline capture" call in #build()'s shown listener is unchanged.
+    if (this.#countEnabled) {
+      this.#utility.append(this.#renderCountNotice());
     }
 
     const copyLink = document.createElement('button');
