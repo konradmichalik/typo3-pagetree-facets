@@ -67,6 +67,16 @@ class FacetsModal {
   #favoritesTabId = '__favorites';
   #favoritesNavItem = null;
   #refreshDebounce = null;
+  // Live match-count preview (opt-out via the livePreviewCount ext_conf
+  // setting - see BackendAssetsListener). Guarded the same way #tokenMode
+  // guards #scheduleTokenFieldSync(): the form stays the source of truth in
+  // token view too, but re-querying on every keystroke there would count
+  // against a form the token field has not finished reflecting into yet.
+  #countEnabled = false;
+  #countNotice = null;
+  #countDebounce = null;
+  // Guards against out-of-order responses, same pattern as #reflectSeq below.
+  #countSeq = 0;
   // Guards the async gap between the open request and the modal appearing: on a
   // slow instance a second click arrives while the configuration is still in
   // flight, and would build a second modal.
@@ -98,6 +108,8 @@ class FacetsModal {
     this.#skipCloseGuard = false;
     // Points into the previous modal's (now detached) footer until re-created.
     this.#pendingNotice = null;
+    this.#countNotice = null;
+    this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
     // Token view belongs to the modal instance, not to the singleton: the field
     // and the toggle are rebuilt hidden/unpressed by #render() below, so leaving
     // the flag on would describe a view that is not on screen - #computePhrase()
@@ -168,6 +180,9 @@ class FacetsModal {
       // simply stays absent; the close guard, which is the actual safety net,
       // does not depend on it.
       this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
+      if (this.#countEnabled) {
+        this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderCountNotice());
+      }
 
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
@@ -180,6 +195,9 @@ class FacetsModal {
       this.#applyButton = this.#modal.querySelector('button[name="pagetree-facets-apply"]');
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
+      if (this.#countEnabled) {
+        this.#refreshCount(); // populate immediately - no debounce for the very first value
+      }
     });
     // Core fires this cancelable (doHideModal() bails on defaultPrevented) and
     // routes every close through it - Close button, ESC, the X and a backdrop
@@ -202,6 +220,7 @@ class FacetsModal {
   #teardown() {
     this.#opened = false;
     clearTimeout(this.#refreshDebounce);
+    clearTimeout(this.#countDebounce);
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();
   }
@@ -215,7 +234,10 @@ class FacetsModal {
     // filter just as much. Text inputs fire per keystroke and get the full
     // (debounced) refresh; discrete controls refresh the apply state
     // immediately and are covered chip-wise by the body's change listener.
-    wrap.addEventListener('change', () => this.#refreshApplyState());
+    wrap.addEventListener('change', () => {
+      this.#refreshApplyState();
+      this.#scheduleCountRefresh();
+    });
     wrap.addEventListener('input', (event) => {
       if (event.target.matches('input[type="text"]')) {
         this.#scheduleRefresh();
@@ -836,6 +858,48 @@ class FacetsModal {
     this.#refreshDebounce = setTimeout(() => this.#refreshActiveIndicators(), 100);
   }
 
+  // Debounced separately from #scheduleRefresh() (chip refresh, 100ms): a
+  // network round trip needs a longer window than a local DOM re-render, so
+  // rapid clicks/keystrokes settle before a request goes out at all.
+  #scheduleCountRefresh() {
+    if (!this.#countEnabled || this.#tokenMode) {
+      return;
+    }
+    clearTimeout(this.#countDebounce);
+    this.#countDebounce = window.setTimeout(() => this.#refreshCount(), 350);
+  }
+
+  async #refreshCount() {
+    const seq = ++this.#countSeq;
+    let response;
+    try {
+      response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
+        .post(this.#collectFormState());
+    } catch {
+      return; // network failure - keep the last known count on screen, no error surfaced
+    }
+    if (seq !== this.#countSeq || !this.#countNotice) {
+      return; // superseded by a newer request, or the modal has moved on
+    }
+    const { count } = await response.resolve();
+    if (null === count) {
+      this.#countNotice.hidden = true;
+      return;
+    }
+    this.#countNotice.hidden = false;
+    this.#countNotice.textContent = this.#matchCountLabel(count);
+  }
+
+  #matchCountLabel(count) {
+    if (0 === count) {
+      return TYPO3.lang?.['pagetreeFacets.modal.matchCount.zero'] ?? 'No matching pages';
+    }
+    if (1 === count) {
+      return TYPO3.lang?.['pagetreeFacets.modal.matchCount.one'] ?? '1 matching page';
+    }
+    return (TYPO3.lang?.['pagetreeFacets.modal.matchCount.other'] ?? '%d matching pages').replace('%d', count);
+  }
+
   // Rebuild the active-filter chips and nav dots from the current control state.
   // Called on open and after every change so the header always mirrors reality.
   #refreshActiveIndicators() {
@@ -865,6 +929,7 @@ class FacetsModal {
     // Covers the programmatic paths (reset, chip removal, search-result proxies)
     // that change controls without firing events on the wrapper.
     this.#refreshApplyState();
+    this.#scheduleCountRefresh();
 
     const counts = new Map();
     for (const criterion of criteria) {
@@ -993,6 +1058,18 @@ class FacetsModal {
     );
 
     return this.#pendingNotice;
+  }
+
+  // Lives in the modal footer next to the pending notice. Deliberately not a
+  // role=status live region: unlike the pending notice (a rare state flip),
+  // this text updates on every debounced keystroke/click, and re-announcing it
+  // that often would be noise for screen reader users rather than useful
+  // feedback - it stays reachable through normal navigation instead.
+  #renderCountNotice() {
+    this.#countNotice = document.createElement('p');
+    this.#countNotice.className = 'pagetree-facets__match-count';
+    this.#countNotice.hidden = true;
+    return this.#countNotice;
   }
 
   // Does the current selection differ from the phrase the tree is actually
@@ -1132,6 +1209,9 @@ class FacetsModal {
     }
     this.#tokenField.hidden = false;
     this.#tokenField.focus();
+    if (this.#countNotice) {
+      this.#countNotice.hidden = true; // token mode has its own authoritative source - see #scheduleCountRefresh's guard
+    }
     this.#refreshActiveIndicators();
     this.#refreshApplyState();
   }

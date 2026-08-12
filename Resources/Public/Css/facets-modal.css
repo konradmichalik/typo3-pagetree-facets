@@ -396,6 +396,23 @@
     flex: 0 0 auto;
 }
 
+.pagetree-facets__match-count {
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin: 0;
+    margin-inline-start: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.pagetree-facets-modal .pagetree-facets__match-count {
+    color: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+}
+
+.pagetree-facets__match-count[hidden] {
+    display: none;
+}
+
 .pagetree-facets__hint {
     display: inline-flex;
     align-items: center;
