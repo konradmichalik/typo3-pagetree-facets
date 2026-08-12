@@ -70,6 +70,19 @@ describe('when the setting is on', () => {
     expect(matchCount(modal).hidden).toBe(false);
   });
 
+  it('does not flash the skeleton on open before the initial count settles', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
+
+    // #refreshActiveIndicators() runs ahead of the initial, non-debounced
+    // #refreshCount() call below it - nothing has changed yet at that point,
+    // just the baseline mirroring itself, so it must not show the skeleton
+    // synchronously before #refreshCount()'s own threshold logic gets to.
+    expect(skeleton(modal).hidden).toBe(true);
+
+    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+  });
+
   it('uses the singular label for exactly one match', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 1 });

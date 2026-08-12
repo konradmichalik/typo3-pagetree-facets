@@ -223,7 +223,9 @@ class FacetsModal {
 
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
-      this.#refreshActiveIndicators();
+      // Nothing has changed yet - this only mirrors the baseline - so the
+      // count's own immediate refresh below must not flash a skeleton first.
+      this.#refreshActiveIndicators(false);
 
       // Baseline for the Apply button: the state as hydrated from the phrase
       // already applied to the tree. Applying an unchanged filter is a no-op, so
@@ -705,7 +707,10 @@ class FacetsModal {
         // #root is read lazily: it is only assigned once #render() finished, which
         // is after every field has been built.
         getRoot: () => this.#root,
-        onLabelResolved: () => this.#refreshActiveIndicators(),
+        // A label resolving late (e.g. a be_user picker's uid -> name lookup)
+        // re-renders a chip's text, not a value - the count is unaffected, so
+        // its own immediate refresh must not flash a skeleton over it.
+        onLabelResolved: () => this.#refreshActiveIndicators(false),
       }));
     }
     return panel;
@@ -906,7 +911,7 @@ class FacetsModal {
   // Debounced separately from #scheduleRefresh() (chip refresh, 100ms): a
   // network round trip needs a longer window than a local DOM re-render, so
   // rapid clicks/keystrokes settle before a request goes out at all.
-  #scheduleCountRefresh() {
+  #scheduleCountRefresh(showLoadingImmediately = true) {
     if (!this.#countEnabled || this.#tokenMode) {
       return;
     }
@@ -915,7 +920,11 @@ class FacetsModal {
     // current. The skeleton reflects that immediately, rather than waiting on
     // the debounced #refreshCount() and its own (much shorter) in-flight delay
     // - which still runs too, but by then the skeleton is already showing.
-    this.#showCountLoading(this.#countSeq);
+    // showLoadingImmediately is false for #refreshActiveIndicators() callers
+    // where nothing actually changed - see its own doc comment.
+    if (showLoadingImmediately) {
+      this.#showCountLoading(this.#countSeq);
+    }
     clearTimeout(this.#countDebounce);
     this.#countDebounce = window.setTimeout(() => this.#refreshCount(), 350);
   }
@@ -1005,7 +1014,13 @@ class FacetsModal {
 
   // Rebuild the active-filter chips and nav dots from the current control state.
   // Called on open and after every change so the header always mirrors reality.
-  #refreshActiveIndicators() {
+  //
+  // @param {boolean} showLoadingImmediately - forwarded to #scheduleCountRefresh().
+  //   False for callers where nothing the count depends on actually changed
+  //   (the initial open, a field's label resolving late) - showing the
+  //   skeleton there would flash it on screen for no reason before the
+  //   caller's own real refresh (or nothing at all) replaces it.
+  #refreshActiveIndicators(showLoadingImmediately = true) {
     if (!this.#chips) {
       return;
     }
@@ -1039,7 +1054,7 @@ class FacetsModal {
     // Covers the programmatic paths (reset, chip removal, search-result proxies)
     // that change controls without firing events on the wrapper.
     this.#refreshApplyState();
-    this.#scheduleCountRefresh();
+    this.#scheduleCountRefresh(showLoadingImmediately);
 
     const counts = new Map();
     for (const criterion of criteria) {
