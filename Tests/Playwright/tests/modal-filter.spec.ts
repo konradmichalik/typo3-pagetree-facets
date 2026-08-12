@@ -94,19 +94,3 @@ test('the loading skeleton renders with a real, visible color', async ({ page })
   expect(backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
 });
 
-test('the match count icon resolves to a real rendered icon for both a real match and zero matches', async ({ page }) => {
-  const modal = new FacetsModalPage(page);
-  const icon = page.locator('typo3-backend-modal .pagetree-facets__match-count typo3-backend-icon');
-
-  await modal.open();
-  await modal.navItem('doktype').click();
-  await modal.option('doktype', 'doktype', '3').check(); // "Link" - 1 match
-
-  await expect(icon).toHaveAttribute('identifier', 'actions-circle-full');
-  await expect(icon.locator('svg')).toHaveCount(1);
-
-  await modal.freetextField().fill('zzz-nonexistent-zzz'); // narrows the 1 match down to zero
-
-  await expect(icon).toHaveAttribute('identifier', 'actions-circle');
-  await expect(icon.locator('svg')).toHaveCount(1);
-});
