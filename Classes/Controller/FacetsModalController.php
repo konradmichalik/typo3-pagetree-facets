@@ -15,7 +15,7 @@ namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, FilterResolutionService, LivePreviewCountSettingService, PhraseSummaryService, SessionFilterService};
-use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
+use KonradMichalik\PagetreeFacets\Token\{ModalStateTokenBuilder, Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
@@ -48,6 +48,7 @@ final readonly class FacetsModalController
         private ConnectionPool $connectionPool,
         private FilterResolutionService $filterResolutionService,
         private LivePreviewCountSettingService $livePreviewCountSetting,
+        private ModalStateTokenBuilder $modalStateTokenBuilder,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
@@ -85,7 +86,7 @@ final readonly class FacetsModalController
     public function serialize(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->requireEnabledUser();
-        $tokens = $this->tokensFromRequestBody((array) ($request->getParsedBody() ?? []), $backendUser);
+        $tokens = $this->modalStateTokenBuilder->build((array) ($request->getParsedBody() ?? []), $backendUser);
 
         return new JsonResponse(['phrase' => $this->tokenSerializer->serialize($tokens)]);
     }
@@ -105,7 +106,7 @@ final readonly class FacetsModalController
         }
 
         $body = (array) ($request->getParsedBody() ?? []);
-        $tokens = $this->tokensFromRequestBody($body, $backendUser);
+        $tokens = $this->modalStateTokenBuilder->build($body, $backendUser);
         $siteIdentifier = trim((string) ($body['site'] ?? ''));
         $context = new FilterContext(
             backendUser: $backendUser,
@@ -213,43 +214,6 @@ final readonly class FacetsModalController
             ],
             $queryBuilder->executeQuery()->fetchAllAssociative(),
         )]);
-    }
-
-    /**
-     * Everything serialize() and count() need from the modal's posted state: one
-     * facet-owned token per non-empty tab state, plus the site/page-scope/freetext
-     * tokens the engine treats as scope rather than criteria (see
-     * PageTreeFilterListener).
-     *
-     * @param array<string, mixed> $body
-     *
-     * @return list<Token>
-     */
-    private function tokensFromRequestBody(array $body, BackendUserAuthentication $backendUser): array
-    {
-        $states = (array) ($body['states'] ?? []);
-        $siteIdentifier = (string) ($body['site'] ?? '');
-        $pageScope = (int) ($body['pageScope'] ?? 0);
-        $freetext = trim((string) ($body['freetext'] ?? ''));
-
-        $tokens = [];
-        foreach ($this->facetRegistry->getFacets($backendUser) as $facet) {
-            $state = (array) ($states[$facet->getIdentifier()] ?? []);
-            if ([] !== $state) {
-                $tokens = array_merge($tokens, $facet->serialize($state));
-            }
-        }
-        if ('' !== $siteIdentifier) {
-            $tokens[] = new Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
-        }
-        if ($pageScope > 0) {
-            $tokens[] = new Token('under', [(string) $pageScope], 'under:'.$pageScope);
-        }
-        if ('' !== $freetext) {
-            $tokens[] = new Token(Token::FREETEXT, [$freetext], $freetext);
-        }
-
-        return $tokens;
     }
 
     /**
