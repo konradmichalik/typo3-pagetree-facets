@@ -95,6 +95,18 @@ test('the footer Reset button renders its icon, is gated like Apply, and clears 
   await expect(modal.resetButton()).toBeDisabled();
 });
 
+test('the match count renders its icon as a real, resolved icon', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  const icon = page.locator('typo3-backend-modal .pagetree-facets__match-count typo3-backend-icon');
+
+  await modal.open();
+  await modal.navItem('doktype').click();
+  await modal.option('doktype', 'doktype', '3').check(); // "Link" - 1 match
+
+  await expect(icon).toHaveAttribute('identifier', 'actions-search');
+  await expect(icon.locator('svg')).toHaveCount(1);
+});
+
 test('the loading skeleton renders with a real, visible color', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 

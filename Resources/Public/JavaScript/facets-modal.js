@@ -1208,18 +1208,22 @@ class FacetsModal {
   // that often would be noise for screen reader users rather than useful
   // feedback - it stays reachable through normal navigation instead.
   //
-  // Two children: the resolved count text, and a skeleton placeholder shown
-  // only once a request has been in flight past the delay in #refreshCount()
-  // - see #showCountLoading()/#hideCountLoading(). The skeleton is
-  // aria-hidden and carries no text, so it never changes what a screen
-  // reader announces. The text span's own content is never cleared by the
-  // skeleton toggle, only hidden - so reverting from skeleton back to text (a
-  // stale/superseded response, a failed request) always restores the last
-  // known good count rather than an empty string.
+  // Three children: a static decorative icon, the resolved count text, and a
+  // skeleton placeholder shown only once a request has been in flight past
+  // the delay in #refreshCount() - see #showCountLoading()/#hideCountLoading().
+  // The icon and skeleton are both aria-hidden and carry no text, so neither
+  // changes what a screen reader announces. The text span's own content is
+  // never cleared by the skeleton toggle, only hidden - so reverting from
+  // skeleton back to text (a stale/superseded response, a failed request)
+  // always restores the last known good count rather than an empty string.
   #renderCountNotice() {
     this.#countNotice = document.createElement('p');
     this.#countNotice.className = 'pagetree-facets__match-count';
     this.#countNotice.hidden = true;
+    // Static, not state-dependent (unlike the text/skeleton toggle below) -
+    // the magnifying glass reads as "search result count" regardless of
+    // whether the resolved text or the loading skeleton is showing next to it.
+    this.#countNotice.append(decorativeIcon('actions-search'));
     this.#countTextSpan = document.createElement('span');
     this.#countTextSpan.className = 'pagetree-facets__match-count-text';
     this.#countSkeletonSpan = document.createElement('span');
