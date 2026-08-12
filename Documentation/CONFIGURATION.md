@@ -11,6 +11,7 @@ You can find the extension settings in the TYPO3 backend under
 | `disabledFacets` | *(empty)* | Comma-separated list of built-in facet identifiers to disable installation-wide. |
 | `persistFilter` | `0` | Remember each backend user's current page tree filter for their session, so it survives a reload or module switch (cleared on logout). |
 | `emptyResultNotice` | `1` | Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it. |
+| `livePreviewCount` | `1` | Show a live count of matching pages in the filter modal's footer while criteria are being picked, before "Apply". |
 | `enableRawQueryTab` | `0` | Enable the `raw:` power-user token (see below). Off by default. |
 
 Built-in facet identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `state`,
