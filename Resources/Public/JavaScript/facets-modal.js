@@ -110,6 +110,8 @@ class FacetsModal {
     this.#pendingNotice = null;
     this.#countNotice = null;
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
+    // #countSeq and #countDebounce need no reset here: the counter is monotonic and
+    // the timer was already cleared by #teardown() on the previous close.
     // Token view belongs to the modal instance, not to the singleton: the field
     // and the toggle are rebuilt hidden/unpressed by #render() below, so leaving
     // the flag on would describe a view that is not on screen - #computePhrase()
@@ -871,17 +873,17 @@ class FacetsModal {
 
   async #refreshCount() {
     const seq = ++this.#countSeq;
-    let response;
+    let count;
     try {
-      response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
         .post(this.#collectFormState());
+      ({ count } = await response.resolve());
     } catch {
-      return; // network failure - keep the last known count on screen, no error surfaced
+      return; // network/parse failure - keep the last known count on screen, no error surfaced
     }
     if (seq !== this.#countSeq || !this.#countNotice) {
       return; // superseded by a newer request, or the modal has moved on
     }
-    const { count } = await response.resolve();
     if (null === count) {
       this.#countNotice.hidden = true;
       return;
