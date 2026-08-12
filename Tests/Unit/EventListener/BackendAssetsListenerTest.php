@@ -43,6 +43,7 @@ final class BackendAssetsListenerTest extends TestCase
     {
         $GLOBALS['BE_USER'] = $this->createBackendUser();
 
+        $inlineSettings = [];
         $pageRenderer = self::createMock(PageRenderer::class);
         $pageRenderer->expects(self::once())->method('loadJavaScriptModule')
             ->with('@konradmichalik/pagetree-facets/facets-toolbar.js');
@@ -50,12 +51,17 @@ final class BackendAssetsListenerTest extends TestCase
             ->with('EXT:typo3_pagetree_facets/Resources/Public/Css/facets-modal.css');
         $pageRenderer->expects(self::once())->method('addInlineLanguageLabelFile')
             ->with('EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf');
-        // Session persistence is off by default, the empty-result notice is on -
-        // so that flag is the only inline setting emitted.
-        $pageRenderer->expects(self::once())->method('addInlineSetting')
-            ->with('PagetreeFacets', 'emptyResultNotice', '1');
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
 
         ($this->createListener($pageRenderer))($this->createEvent());
+
+        // Session persistence is off by default; the empty-result notice and the
+        // live count preview are both on by default.
+        self::assertSame(['emptyResultNotice' => '1', 'livePreviewCount' => '1'], $inlineSettings);
     }
 
     #[Test]
@@ -82,19 +88,44 @@ final class BackendAssetsListenerTest extends TestCase
     {
         $GLOBALS['BE_USER'] = $this->createBackendUser();
 
-        $pageRenderer = self::createMock(PageRenderer::class);
-        $pageRenderer->expects(self::never())->method('addInlineSetting');
+        $inlineSettings = [];
+        $pageRenderer = self::createStub(PageRenderer::class);
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
 
         ($this->createListener($pageRenderer, emptyResultNotice: '0'))($this->createEvent());
+
+        self::assertArrayNotHasKey('emptyResultNotice', $inlineSettings);
+    }
+
+    #[Test]
+    public function announcesTheLivePreviewCountUnlessItIsTurnedOff(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser();
+
+        $inlineSettings = [];
+        $pageRenderer = self::createStub(PageRenderer::class);
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
+
+        ($this->createListener($pageRenderer, livePreviewCount: '0'))($this->createEvent());
+
+        self::assertArrayNotHasKey('livePreviewCount', $inlineSettings);
     }
 
     /**
-     * Guards the deliberately inverted default: unlike the other settings, a
-     * missing key must read as "on", so an upgrade from a version without the
-     * setting does not silently lose the notice.
+     * Guards the deliberately inverted default for both notice-style settings:
+     * unlike the other settings, a missing key must read as "on", so an upgrade
+     * from a version without the setting does not silently lose the feature.
      */
     #[Test]
-    public function keepsTheEmptyResultNoticeOnWhenTheSettingWasNeverWritten(): void
+    public function keepsBothNoticeSettingsOnWhenTheirExtensionConfigurationWasNeverWritten(): void
     {
         $GLOBALS['BE_USER'] = $this->createBackendUser();
 
@@ -102,9 +133,13 @@ final class BackendAssetsListenerTest extends TestCase
         $extensionConfiguration->method('get')
             ->willThrowException(new ExtensionConfigurationPathDoesNotExistException());
 
-        $pageRenderer = self::createMock(PageRenderer::class);
-        $pageRenderer->expects(self::once())->method('addInlineSetting')
-            ->with('PagetreeFacets', 'emptyResultNotice', '1');
+        $inlineSettings = [];
+        $pageRenderer = self::createStub(PageRenderer::class);
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
 
         (new BackendAssetsListener(
             $pageRenderer,
@@ -112,6 +147,8 @@ final class BackendAssetsListenerTest extends TestCase
             $this->createSessionFilterService(),
             $extensionConfiguration,
         ))($this->createEvent());
+
+        self::assertSame(['emptyResultNotice' => '1', 'livePreviewCount' => '1'], $inlineSettings);
     }
 
     #[Test]
@@ -140,9 +177,16 @@ final class BackendAssetsListenerTest extends TestCase
         PageRenderer $pageRenderer,
         string $persistFilter = '0',
         string $emptyResultNotice = '1',
+        string $livePreviewCount = '1',
     ): BackendAssetsListener {
         $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
-        $extensionConfiguration->method('get')->willReturn($emptyResultNotice);
+        $extensionConfiguration->method('get')->willReturnCallback(
+            static fn (string $extension, string $path = ''): string => match ($path) {
+                'emptyResultNotice' => $emptyResultNotice,
+                'livePreviewCount' => $livePreviewCount,
+                default => '',
+            },
+        );
 
         return new BackendAssetsListener(
             $pageRenderer,
