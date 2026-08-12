@@ -51,3 +51,26 @@ test('removing the chip clears the selection again', async ({ page }) => {
   await expect(modal.chips()).toHaveCount(0);
   await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
 });
+
+test('the live match count stays hidden until a criterion is picked, then updates as the selection changes', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  // No criteria yet - showing a count for an unfiltered tree isn't useful, so
+  // the notice stays hidden until the first facet is picked.
+  await expect(modal.matchCount()).toBeHidden();
+
+  await modal.navItem('doktype').click();
+  // doktype 3 ("Link") matches only the one external-link fixture page.
+  await modal.option('doktype', 'doktype', '3').check();
+
+  await expect(modal.matchCount()).toBeVisible();
+  const firstText = await modal.matchCount().textContent();
+
+  // doktype 1 ("Page") is the common type across the seeded demo content, so
+  // it necessarily produces a different (larger) count than doktype 3.
+  await modal.option('doktype', 'doktype', '3').uncheck();
+  await modal.option('doktype', 'doktype', '1').check();
+
+  await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
+});

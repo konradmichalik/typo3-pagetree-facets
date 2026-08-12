@@ -50,6 +50,11 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
+  /** The live match-count text in the modal footer (see facets-modal.js). */
+  matchCount(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__match-count`);
+  }
+
   /**
    * A checkbox-group / radio option.
    *
