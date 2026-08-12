@@ -149,6 +149,7 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close',
           btnClass: 'btn-default',
+          icon: 'actions-close',
           trigger: () => { this.#modal?.hideModal(); },
         },
         {
@@ -167,6 +168,7 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
           btnClass: 'btn-primary',
+          icon: 'actions-check',
           // Rendered as the button's name attribute, which is how we find it
           // again to enable/disable it (see #refreshApplyState).
           name: 'pagetree-facets-apply',
