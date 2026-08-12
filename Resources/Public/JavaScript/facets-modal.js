@@ -940,6 +940,11 @@ class FacetsModal {
     this.#countTextSpan.textContent = this.#matchCountLabel(count);
   }
 
+  // Only reached once a request has been in flight past the delay in
+  // #refreshCount() - guarded the same way #refreshCount()'s own post-await
+  // checks are, since this fires from an independent timer that a newer
+  // request, a closed modal or a switch to token mode may have overtaken by
+  // the time it goes off.
   #showCountLoading(seq) {
     if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
       return;
