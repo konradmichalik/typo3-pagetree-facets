@@ -74,3 +74,22 @@ test('the live match count stays hidden until a criterion is picked, then update
 
   await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
 });
+
+test('the loading skeleton renders with a real, visible color', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // The skeleton bar is normally revealed only once a count request has been
+  // in flight past its delay threshold - a real local backend usually
+  // resolves faster than that, so forcing it visible directly is the only
+  // way to test the CSS rule's own correctness deterministically (a jsdom
+  // unit test cannot: jsdom does not resolve CSS custom-property scoping the
+  // way a real browser does, which is exactly how this bug slipped past 236
+  // passing unit tests - the bar was fully transparent in the real backend).
+  const skeleton = page.locator('typo3-backend-modal .pagetree-facets__match-count-skeleton');
+  await skeleton.evaluate((el) => { el.hidden = false; });
+
+  const backgroundColor = await skeleton.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+  expect(backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+});

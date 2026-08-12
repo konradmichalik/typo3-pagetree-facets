@@ -420,7 +420,12 @@
     width: 6em;
     height: 0.85em;
     border-radius: 3px;
-    background: var(--pl-muted);
+    /* --pl-muted is scoped to .pagetree-facets (the modal body); this element
+     * lives in .t3js-modal-footer, a sibling region core renders itself, so
+     * that token never resolves here - same reason .pagetree-facets__pending
+     * and .pagetree-facets__match-count's own text use this backend-global
+     * token with an explicit fallback instead. */
+    background: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
     opacity: 0.3;
     animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
 }
