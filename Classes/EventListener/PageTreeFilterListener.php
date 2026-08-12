@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, FacetRegistry, MatchedPageRegistry, PageSubtreeScopeService, SiteScopeService};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FilterResolutionService, MatchedPageRegistry};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -24,9 +24,12 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 /**
  * PageTreeFilterListener.
  *
- * The filter engine: parses the tree search phrase, resolves each keyed token
- * through its owning facet, intersects the UID sets (AND semantics) and feeds
- * the result into the core event.
+ * The adapter between the core's tree-filter event and FilterResolutionService,
+ * which owns the actual resolve pipeline (AND intersection, site/page scope) -
+ * the same service backs FacetsModalController::count() for the modal's live
+ * match-count preview, so both paths run identical criteria resolution. This
+ * class's own job: parse the search phrase, build the FilterContext, and
+ * translate the resolved result into the core event's shape.
  *
  * Verified against TYPO3 v14 (cms-backend 14.3): the core dispatches
  * BeforePageTreeIsFilteredEvent with an empty OR CompositeExpression as
@@ -37,7 +40,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * and $searchUids during the same dispatch), overwrite $searchUids with our
  * intersection result and neutralize the core LIKE parts in $searchParts.
  *
- * The intersection is also handed to MatchedPageRegistry, which is what lets
+ * The resolved hit list is also handed to MatchedPageRegistry, which is what lets
  * SearchResultLabelListener mark the hits once the same request renders the
  * tree - the core surrounds them with their rootline, and by then the raw
  * search phrase is all that is left of this dispatch.
@@ -59,9 +62,7 @@ final readonly class PageTreeFilterListener
     public function __construct(
         private TokenParser $tokenParser,
         private FacetRegistry $facetRegistry,
-        private SiteScopeService $siteScopeService,
-        private PageSubtreeScopeService $pageSubtreeScopeService,
-        private ContentQueryHelper $queryHelper,
+        private FilterResolutionService $filterResolutionService,
         private MatchedPageRegistry $matchedPages,
     ) {}
 
@@ -84,25 +85,9 @@ final readonly class PageTreeFilterListener
             siteIdentifier: $this->extractSiteScope($tokens),
         );
 
-        $uidSets = $this->resolveUidSets($tokens, $context, $backendUser);
-        if ([] === $uidSets) {
+        $uids = $this->filterResolutionService->resolve($tokens, $context);
+        if (null === $uids) {
             return; // only unknown/scope tokens -> behave like core
-        }
-
-        $uids = $this->intersect($uidSets);
-
-        // Site scope: post-filter the (small) result set instead of
-        // materializing the site subtree upfront.
-        if (null !== $context->siteIdentifier && [] !== $uids) {
-            $uids = $this->siteScopeService->filterUidsBySite($uids, $context->siteIdentifier);
-        }
-
-        // Page scope ("under:<uid>", set from the modal's "current page and
-        // its subpages" toggle): same treatment, post-filter by rootline
-        // rather than materializing the scope page's subtree upfront.
-        $pageScope = $this->extractPageScope($tokens);
-        if (null !== $pageScope && [] !== $uids) {
-            $uids = $this->pageSubtreeScopeService->filterUidsUnderPage($uids, $pageScope);
         }
 
         // Hand the hit list to the rendering phase before the no-match
@@ -115,80 +100,6 @@ final readonly class PageTreeFilterListener
     }
 
     /**
-     * Hash-based AND intersection: array_intersect() sorts both sides
-     * (O(n log n) per pair), which adds up on the 10k+ UID sets broad criteria
-     * produce. An empty running result ends the loop - every further AND
-     * stays empty.
-     *
-     * @param non-empty-list<list<int>> $uidSets
-     *
-     * @return list<int>
-     */
-    private function intersect(array $uidSets): array
-    {
-        $uids = array_shift($uidSets);
-        foreach ($uidSets as $set) {
-            if ([] === $uids) {
-                break;
-            }
-            $lookup = array_flip($set);
-            $uids = array_values(array_filter($uids, static fn (int $uid): bool => isset($lookup[$uid])));
-        }
-
-        return $uids;
-    }
-
-    /**
-     * Resolve each keyed token to its page-UID set via the owning facet; freetext
-     * is resolved by us (pages searchFields LIKE + numeric uid) and intersected
-     * like any other criterion, rather than relying on the core's searchParts
-     * whose combined OR/AND semantics with our result would be unverified.
-     *
-     * @param list<Token> $tokens
-     *
-     * @return list<list<int>>
-     */
-    private function resolveUidSets(array $tokens, FilterContext $context, BackendUserAuthentication $backendUser): array
-    {
-        // Resolve the (per-user config-filtered) facet set once for the whole
-        // phrase and index it by token key, instead of re-running getFacets() via
-        // findFacetForToken() for every token. First-seen wins, mirroring the
-        // priority order findFacetForToken() would return.
-        $facetByKey = [];
-        foreach ($this->facetRegistry->getFacets($backendUser) as $facet) {
-            foreach ($facet->getTokenKeys() as $key) {
-                $facetByKey[$key] ??= $facet;
-            }
-        }
-
-        $uidSets = [];
-        $seen = [];
-        foreach ($tokens as $token) {
-            // A literally repeated token ("doktype:1 doktype:1") resolves to
-            // the same set, and ANDing a set with itself is a no-op - skip the
-            // duplicate query instead.
-            if (isset($seen[$token->raw])) {
-                continue;
-            }
-            $seen[$token->raw] = true;
-            if ($token->isFreetext()) {
-                $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
-                continue;
-            }
-            if ('site' === $token->key || 'under' === $token->key) {
-                continue; // scope, not a criterion - handled separately
-            }
-            $facet = $facetByKey[$token->key] ?? null;
-            if (null === $facet) {
-                continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
-            }
-            $uidSets[] = $facet->resolvePageUids($token, $context);
-        }
-
-        return $uidSets;
-    }
-
-    /**
      * @param list<Token> $tokens
      */
     private function extractSiteScope(array $tokens): ?string
@@ -196,22 +107,6 @@ final readonly class PageTreeFilterListener
         foreach ($tokens as $token) {
             if ('site' === $token->key) {
                 return $token->firstValue();
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param list<Token> $tokens
-     */
-    private function extractPageScope(array $tokens): ?int
-    {
-        foreach ($tokens as $token) {
-            if ('under' === $token->key) {
-                $uid = (int) $token->firstValue();
-
-                return $uid > 0 ? $uid : null;
             }
         }
 

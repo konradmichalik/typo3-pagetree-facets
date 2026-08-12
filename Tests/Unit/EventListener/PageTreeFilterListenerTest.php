@@ -15,7 +15,7 @@ namespace KonradMichalik\PagetreeFacets\Tests\Unit\EventListener;
 
 use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
-use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, FacetRegistry, MatchedPageRegistry, PageAncestryService, PageSubtreeScopeService, SiteScopeService};
+use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, FacetRegistry, FilterResolutionService, MatchedPageRegistry, PageAncestryService, PageSubtreeScopeService, SiteScopeService};
 use KonradMichalik\PagetreeFacets\Tests\Unit\Fixture\{CollectingEventDispatcher, StubFacet};
 use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
 use PHPUnit\Framework\Attributes\Test;
@@ -335,12 +335,17 @@ final class PageTreeFilterListenerTest extends TestCase
             static fn (string $needle): array => $freetextUids[$needle] ?? [],
         );
 
-        return new PageTreeFilterListener(
-            new TokenParser(),
+        $filterResolutionService = new FilterResolutionService(
             $registry,
             new SiteScopeService($this->createSiteFinder($siteMap), $this->createAncestry($siteMap)),
             new PageSubtreeScopeService(self::createStub(PageAncestryService::class)),
             $queryHelper,
+        );
+
+        return new PageTreeFilterListener(
+            new TokenParser(),
+            $registry,
+            $filterResolutionService,
             $matchedPages ?? new MatchedPageRegistry(),
         );
     }
