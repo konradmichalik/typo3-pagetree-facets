@@ -60,6 +60,24 @@ final class FilterResolutionServiceTest extends TestCase
     }
 
     #[Test]
+    public function countReturnsTheSizeOfTheResolvedResult(): void
+    {
+        self::assertSame(2, $this->createService()->count(
+            [new Token('doktype', ['1'], 'doktype:1'), new Token('is', ['empty'], 'is:empty')],
+            $this->createContext(),
+        ));
+    }
+
+    #[Test]
+    public function countIsNullWhenResolveIsNull(): void
+    {
+        self::assertNull($this->createService()->count(
+            [new Token('status', ['3'], 'status:3')],
+            $this->createContext(),
+        ));
+    }
+
+    #[Test]
     public function emptyIntersectionResolvesToAnEmptyListRatherThanNull(): void
     {
         $uids = $this->createService()->resolve(

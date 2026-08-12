@@ -181,10 +181,14 @@ class FacetsModal {
       // change, the optional chaining leaves #pendingNotice null and the notice
       // simply stays absent; the close guard, which is the actual safety net,
       // does not depend on it.
-      this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
+      // Order matters: each prepend() lands before whatever is already first, so
+      // the count notice - meant to trail the pending notice, per its own
+      // margin-inline-start - must be prepended first, with the pending notice
+      // prepended after it to end up on the left.
       if (this.#countEnabled) {
         this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderCountNotice());
       }
+      this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
 
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
@@ -198,6 +202,10 @@ class FacetsModal {
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
       if (this.#countEnabled) {
+        // #refreshActiveIndicators() above already armed a debounced refresh via
+        // #scheduleCountRefresh() - cancel it so it cannot fire a second, redundant
+        // request moments after this immediate one.
+        clearTimeout(this.#countDebounce);
         this.#refreshCount(); // populate immediately - no debounce for the very first value
       }
     });
@@ -881,8 +889,8 @@ class FacetsModal {
     } catch {
       return; // network/parse failure - keep the last known count on screen, no error surfaced
     }
-    if (seq !== this.#countSeq || !this.#countNotice) {
-      return; // superseded by a newer request, or the modal has moved on
+    if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
+      return; // superseded by a newer request, the modal has moved on, or token view took over in the meantime
     }
     if (null === count) {
       this.#countNotice.hidden = true;
@@ -1211,6 +1219,10 @@ class FacetsModal {
     }
     this.#tokenField.hidden = false;
     this.#tokenField.focus();
+    // A count refresh armed just before entering token mode (e.g. during the
+    // #computePhrase() await above) must not land afterwards - #refreshCount()'s
+    // own guard also checks #tokenMode, this is belt-and-suspenders.
+    clearTimeout(this.#countDebounce);
     if (this.#countNotice) {
       this.#countNotice.hidden = true; // token mode has its own authoritative source - see #scheduleCountRefresh's guard
     }

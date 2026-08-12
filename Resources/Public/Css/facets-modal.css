@@ -399,10 +399,12 @@
 .pagetree-facets__match-count {
     display: inline-flex;
     flex: 0 0 auto;
+    align-items: center;
     margin: 0;
     margin-inline-start: 0.75rem;
     font-size: 0.8125rem;
     font-weight: 500;
+    line-height: 1.4;
 }
 
 .pagetree-facets-modal .pagetree-facets__match-count {

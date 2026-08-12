@@ -103,27 +103,29 @@ describe('when the setting is on', () => {
 
   it('drops a response overtaken by a later change', async () => {
     enableLivePreviewCount();
-    let releaseFirst;
-    const gate = new Promise((resolve) => { releaseFirst = resolve; });
-    let seenFirstRequest = false;
+    let releaseHung;
+    const gate = new Promise((resolve) => { releaseHung = resolve; });
+    let calls = 0;
     const { modal } = await openModal({
       count: async () => {
-        if (!seenFirstRequest) {
-          seenFirstRequest = true;
+        calls += 1;
+        if (2 === calls) {
           await gate;
           return 111; // stale - must never reach the DOM
         }
-        return 2;
+        return 1 === calls ? 1 : 2;
       },
     });
-    await expect.poll(() => matchCount(modal)?.textContent).not.toBe('');
+    // The initial, undebounced population - the redundant duplicate request this
+    // notice used to race against is gone, so this is the one and only call so far.
+    await expect.poll(() => matchCount(modal)?.textContent).toBe('1 matching page');
 
-    control(modal, 'doktype[doktype]', '1').click();
-    await new Promise((resolve) => { setTimeout(resolve, 400); }); // let the first request start and hang on the gate
-    control(modal, 'state[is]', 'hidden').click();
+    control(modal, 'doktype[doktype]', '1').click(); // 2nd call - hangs on the gate
+    await new Promise((resolve) => { setTimeout(resolve, 400); }); // let it start and hang on the gate
+    control(modal, 'state[is]', 'hidden').click(); // 3rd call - resolves immediately
     await expect.poll(() => matchCount(modal)?.textContent).toBe('2 matching pages');
 
-    releaseFirst();
+    releaseHung();
     await new Promise((resolve) => { setTimeout(resolve, 20); });
 
     expect(matchCount(modal).textContent).toBe('2 matching pages');
@@ -159,5 +161,10 @@ describe('when the setting is on', () => {
     modal.querySelector('[data-role="site-scope"]').dispatchEvent(new Event('change', { bubbles: true }));
 
     await expect.poll(() => seenPayloads.at(-1)?.site).toBe('main');
+
+    modal.querySelector('[data-role="freetext"]').value = 'solar';
+    modal.querySelector('[data-role="freetext"]').dispatchEvent(new Event('change', { bubbles: true }));
+
+    await expect.poll(() => seenPayloads.at(-1)?.freetext).toBe('solar');
   });
 });
