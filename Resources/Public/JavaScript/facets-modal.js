@@ -116,6 +116,7 @@ class FacetsModal {
     this.#skipCloseGuard = false;
     // Points into the previous modal's (now detached) footer until re-created.
     this.#pendingNotice = null;
+    this.#resetButton = null;
     this.#countNotice = null;
     this.#countTextSpan = null;
     this.#countSkeletonSpan = null;
@@ -153,9 +154,13 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset',
           btnClass: 'btn-default',
+          icon: 'actions-refresh',
           // Rendered as the button's name attribute, which is how we find it
-          // again to inject its icon/title and to enable/disable it (see
-          // #refreshActiveIndicators()) - same technique #applyButton uses.
+          // again to inject its class/title and to enable/disable it (see
+          // #refreshActiveIndicators()) - same technique #applyButton uses. The
+          // icon itself is declared above instead: Modal.advanced()'s own button
+          // renderer already supports an `icon` field, so only the class and
+          // title genuinely need post-render injection.
           name: 'pagetree-facets-reset',
           trigger: () => { this.#resetAll(); },
         },
@@ -192,15 +197,15 @@ class FacetsModal {
       brandIcon.className = 'pagetree-facets__brand';
       this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
 
-      // Same one-shot-injection technique as the brand icon above: the icon,
-      // extra class and title are not part of Modal.advanced()'s button
-      // config API, so they are added directly to the rendered <button> once,
-      // right after the footer exists - mirroring how #applyButton is looked
-      // up here too.
+      // Same one-shot-injection technique as the brand icon above, but only for
+      // the extra class and title: those are not part of Modal.advanced()'s
+      // button config API, so they are added directly to the rendered <button>
+      // once, right after the footer exists - mirroring how #applyButton is
+      // looked up here too. The icon itself is declared in the buttons array
+      // above and rendered by core's own button template.
       this.#resetButton = this.#modal.querySelector('button[name="pagetree-facets-reset"]');
       if (this.#resetButton) {
         this.#resetButton.classList.add('pagetree-facets__reset');
-        this.#resetButton.prepend(decorativeIcon('actions-refresh'));
         this.#resetButton.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
           ?? 'Removes every criterion here. The page tree keeps its current filter until you apply.';
       }
@@ -365,8 +370,9 @@ class FacetsModal {
       onSave: (label) => this.#saveFavorite(label),
     });
 
-    // Sharing, saving or resetting an empty filter is meaningless, so the actions
-    // only appear once something is active (see #refreshActiveIndicators).
+    // Sharing or saving an empty filter is meaningless, so the actions only
+    // appear once something is active (see #refreshActiveIndicators, whose
+    // `savable` flag also disables the footer's Reset button).
     this.#actions = document.createElement('div');
     this.#actions.className = 'pagetree-facets__actions';
     this.#actions.hidden = true;
