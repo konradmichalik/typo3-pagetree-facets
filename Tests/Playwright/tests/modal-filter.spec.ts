@@ -75,6 +75,26 @@ test('the live match count stays hidden until a criterion is picked, then update
   await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
 });
 
+test('the footer Reset button renders its icon, is gated like Apply, and clears the selection', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await expect(modal.resetButton().locator('typo3-backend-icon')).toHaveCount(1);
+  await expect(modal.resetButton()).toBeDisabled();
+
+  await modal.navItem('doktype').click();
+  // doktype 3 is "Link" in this instance's TCA - same fixture value the
+  // other tests in this file already rely on.
+  await modal.option('doktype', 'doktype', '3').check();
+  await expect(modal.resetButton()).toBeEnabled();
+
+  await modal.resetButton().click();
+
+  await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
+  await expect(modal.chips()).toHaveCount(0);
+  await expect(modal.resetButton()).toBeDisabled();
+});
+
 test('the loading skeleton renders with a real, visible color', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
