@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
 use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, FormTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use Throwable;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -40,6 +40,7 @@ final readonly class BuiltInTabsListener
         private LayoutTab $layoutTab,
         private PageStateTab $pageStateTab,
         private TranslationsTab $translationsTab,
+        private FormTab $formTab,
         private SeoTab $seoTab,
         private RawQueryTab $rawQueryTab,
         private ExtensionConfiguration $extensionConfiguration,
@@ -57,6 +58,11 @@ final readonly class BuiltInTabsListener
         $event->addFacet($this->layoutTab, 65);
         $event->addFacet($this->pageStateTab, 60);
         $event->addFacet($this->translationsTab, 50);
+        // Conditional registration: the "form:" token needs a
+        // form_formframework element to exist at all, which needs EXT:form.
+        if (ExtensionManagementUtility::isLoaded('form')) {
+            $event->addFacet($this->formTab, 45);
+        }
         // Conditional registration: seo fields only exist with EXT:seo.
         if (ExtensionManagementUtility::isLoaded('seo')) {
             $event->addFacet($this->seoTab, 40);

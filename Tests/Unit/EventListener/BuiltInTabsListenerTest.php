@@ -17,7 +17,7 @@ use KonradMichalik\PagetreeFacets\Api\FacetInterface;
 use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\EventListener\BuiltInTabsListener;
 use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, FormTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -79,6 +79,30 @@ final class BuiltInTabsListenerTest extends TestCase
         self::assertContains('seo', $this->registeredIdentifiers(enableRawQueryTab: false));
     }
 
+    #[Test]
+    public function formTabIsNotRegisteredWhenExtFormIsNotLoaded(): void
+    {
+        self::assertNotContains('form', $this->registeredIdentifiers(enableRawQueryTab: false));
+    }
+
+    #[Test]
+    public function formTabIsRegisteredAtPriority45WhenExtFormIsLoaded(): void
+    {
+        $packageManager = self::createStub(PackageManager::class);
+        $packageManager->method('isPackageActive')->willReturnCallback(static fn (string $key): bool => 'form' === $key);
+        ExtensionManagementUtility::setPackageManager($packageManager);
+
+        $identifiers = $this->registeredIdentifiers(enableRawQueryTab: false);
+
+        self::assertContains('form', $identifiers);
+        // translations (50) is registered unconditionally right before form
+        // (45) - form landing directly after it in the ordered list is what
+        // proves the priority, not just presence.
+        $translationsIndex = array_search('translations', $identifiers, true);
+        self::assertIsInt($translationsIndex);
+        self::assertSame($translationsIndex + 1, array_search('form', $identifiers, true));
+    }
+
     /**
      * @return list<string>
      */
@@ -112,6 +136,7 @@ final class BuiltInTabsListenerTest extends TestCase
             new LayoutTab($queryHelper, self::createStub(BackendLayoutView::class), self::createStub(SiteFinder::class)),
             new PageStateTab($queryHelper, $optionRegistry),
             new TranslationsTab($queryHelper, self::createStub(SiteFinder::class)),
+            new FormTab($queryHelper),
             new SeoTab($queryHelper, $optionRegistry),
             new RawQueryTab($queryHelper),
             $extensionConfiguration,

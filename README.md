@@ -37,7 +37,7 @@ a public facet API.
 ## ✨ Features
 
 - **Filterable page tree**: type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
-- **Eight built-in filter facets** (SEO requires EXT:seo): content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scope tokens
+- **Nine built-in filter facets** (SEO requires EXT:seo, Forms requires EXT:form): content elements, records, activity, page type, layouts, page state, translations, SEO and forms, plus `site:` / `under:` scope tokens
 - **Sharable links, session persistence and favorites**: hand a filter to a colleague, keep it across a reload, or save it under a name
 - **Live match count**: see how many pages a selection would match before applying, right in the filter modal (opt-out via `livePreviewCount`)
 - **Extensible**: add a single option to an existing facet, or a whole facet of your own
@@ -106,6 +106,7 @@ Every built-in facet and the token keys it owns:
 | Layouts | `layout:` `pagelayout:` | the backend/frontend layout assigned to the page |
 | Page state | `is:` | flags such as hidden, empty or editlocked |
 | Translations | `untranslated:` `translated:` | translation completeness |
+| Forms (requires EXT:form) | `form:` | which TYPO3 Form Framework form is embedded on the page |
 | SEO (requires EXT:seo) | `seo:` | SEO metadata issues, e.g. a missing description |
 | Raw query (opt-in, see [Configuration](Documentation/CONFIGURATION.md)) | `raw:` | arbitrary `field=value` conditions on any TCA table |
 
