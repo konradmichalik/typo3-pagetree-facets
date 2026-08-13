@@ -96,7 +96,7 @@ final class FormTab extends AbstractPagesQueryTab
         }
 
         $uids = [];
-        foreach ($token->values as $persistenceIdentifier) {
+        foreach (array_unique($token->values) as $persistenceIdentifier) {
             $uids[] = $this->pageUidsReferencingForm($persistenceIdentifier, $context);
         }
 
@@ -185,7 +185,15 @@ final class FormTab extends AbstractPagesQueryTab
     private function referencedForms(FilterContext $context): array
     {
         $queryBuilder = $this->refindexQueryBuilder($context);
-        $queryBuilder->select('ref_table', 'ref_uid', 'ref_string')->distinct()->from('sys_refindex');
+        $queryBuilder->select('ref_table', 'ref_uid', 'ref_string')->distinct()->from('sys_refindex')->andWhere(
+            // Narrows to the three ref_table shapes this softref key can ever
+            // produce (see the class docblock), pushed into SQL rather than
+            // left to the PHP-side branching below alone.
+            $queryBuilder->expr()->in('ref_table', $queryBuilder->createNamedParameter(
+                ['_STRING', 'sys_file', 'form_definition'],
+                Connection::PARAM_STR_ARRAY,
+            )),
+        );
         $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
 
         $stringIdentifiers = [];
