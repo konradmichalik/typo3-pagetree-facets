@@ -155,7 +155,7 @@ final class SeedDemoContentCommand extends Command
         $uids = $dataHandler->substNEWwithIDs;
 
         if (isset($uids['NEW_about'])) {
-            $this->localizePage((int) $uids['NEW_about'], $output);
+            $this->localizePage($uids['NEW_about'], $output);
         }
 
         $this->backdateActivityTestData($uids);
