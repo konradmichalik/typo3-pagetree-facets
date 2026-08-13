@@ -106,6 +106,7 @@ Every built-in facet and the token keys it owns:
 | Layouts | `layout:` `pagelayout:` | the backend/frontend layout assigned to the page |
 | Page state | `is:` | flags such as hidden, empty or editlocked |
 | Translations | `untranslated:` `translated:` | translation completeness |
+| Forms (requires EXT:form) | `form:` | which TYPO3 Form Framework form is embedded on the page |
 | SEO (requires EXT:seo) | `seo:` | SEO metadata issues, e.g. a missing description |
 | Raw query (opt-in, see [Configuration](Documentation/CONFIGURATION.md)) | `raw:` | arbitrary `field=value` conditions on any TCA table |
 
