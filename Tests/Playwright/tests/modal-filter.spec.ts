@@ -72,6 +72,11 @@ test('the live match count stays hidden until a criterion is picked, then update
   await modal.option('doktype', 'doktype', '3').uncheck();
   await modal.option('doktype', 'doktype', '1').check();
 
+  // Requiring visibility and the real label pattern first, not just "not
+  // firstText", rules out a broken update path landing on some other wrong
+  // value (e.g. the null-count label) and having that count as "changed".
+  await expect(modal.matchCount()).toBeVisible();
+  await expect(modal.matchCount()).toHaveText(/matching page/);
   await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
 });
 
