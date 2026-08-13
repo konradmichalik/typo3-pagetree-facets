@@ -15,6 +15,27 @@ is a minimal extension in this repository that exercises both, commented method 
 method. Its README walks through the interfaces, the priority semantics and what
 counts as public API.
 
+## A pattern worth reusing: relation-based facets via `sys_refindex`
+
+The built-in `form:` facet (`Classes/Tab/FormTab.php`) answers "which pages embed
+form X" without ever parsing FlexForm XML: it queries TYPO3 core's own
+`sys_refindex`, which core already keeps up to date for every relation on save,
+then re-verifies the candidate `tt_content` rows through the normal
+`DeletedRestriction`/`WorkspaceRestriction`-guarded query path before turning them
+into page UIDs. That mechanism is table-agnostic — it works the same way for a
+plain FlexForm foreign-key field (a `select`/`group` TCA field pointing at another
+table, e.g. a "which record is referenced by this plugin" relation such as
+Powermail's form selector), where `sys_refindex` records a single, uniform
+`ref_table`/`ref_uid` row with none of `form:`'s extra shapes (`form:` also has to
+distinguish an `EXT:` path, a FAL storage path and a bare database UID, since
+that's how TYPO3 core represents "which form" three different ways — a normal
+foreign-key relation has only the one shape). A facet built this way still wants
+its own `FacetInterface` implementation (the modal UI and labeling are
+per-record-type), but the underlying resolve-via-`sys_refindex` query logic is a
+candidate to extract into a shared `ContentQueryHelper` method once a second
+facet actually needs it — not done for `form:` alone, per this repository's
+extract-after-three-repetitions convention.
+
 ## Public API & stability
 
 This is a `0.x` release: **the public API surface below may still break between
