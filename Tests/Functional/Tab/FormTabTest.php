@@ -16,6 +16,9 @@ namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 use KonradMichalik\PagetreeFacets\Tab\FormTab;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Database\ReferenceIndex;
+use TYPO3\CMS\Core\Information\Typo3Version;
+
+use function sprintf;
 
 /**
  * FormTabTest.
@@ -30,6 +33,17 @@ use TYPO3\CMS\Core\Database\ReferenceIndex;
  */
 final class FormTabTest extends AbstractTabTestCase
 {
+    /**
+     * form_definition (database-stored form) soft-reference support was
+     * added to TYPO3 Form in 14.2 - verified directly against core's
+     * FormPersistenceIdentifierSoftReferenceParser.php, absent in 14.0/14.1.
+     * This extension's own composer constraint stays ^14.0 (dropping 14.0/14.1
+     * project-wide over one facet's newest branch would be disproportionate),
+     * so the form_definition-specific test cases skip themselves on older
+     * TYPO3 rather than asserting behavior core cannot yet produce.
+     */
+    private const string MIN_VERSION_FOR_FORM_DEFINITION_SOFTREF = '14.2.0';
+
     protected array $coreExtensionsToLoad = ['form'];
 
     protected function setUp(): void
@@ -69,12 +83,14 @@ final class FormTabTest extends AbstractTabTestCase
     #[Test]
     public function findsThePageEmbeddingTheDatabaseStoredForm(): void
     {
+        $this->skipUnlessFormDefinitionSoftReferenceIsSupported();
         self::assertSame([4], $this->resolve($this->get(FormTab::class), 'form:999'));
     }
 
     #[Test]
     public function anUnreferencedDatabaseStoredIdentifierResolvesToNoMatches(): void
     {
+        $this->skipUnlessFormDefinitionSoftReferenceIsSupported();
         self::assertSame([], $this->resolve($this->get(FormTab::class), 'form:123456'));
     }
 
@@ -86,6 +102,7 @@ final class FormTabTest extends AbstractTabTestCase
     #[Test]
     public function multipleValuesAreOrCombinedAcrossBranches(): void
     {
+        $this->skipUnlessFormDefinitionSoftReferenceIsSupported();
         self::assertSame(
             [2, 4],
             $this->resolve($this->get(FormTab::class), 'form:EXT:typo3_pagetree_facets/Tests/Functional/Fixtures/contact.form.yaml,999'),
@@ -103,6 +120,7 @@ final class FormTabTest extends AbstractTabTestCase
     #[Test]
     public function modalConfigurationOffersEachReferencedFormWithAnIdentifierDerivedLabel(): void
     {
+        $this->skipUnlessFormDefinitionSoftReferenceIsSupported();
         $configuration = $this->get(FormTab::class)->getModalConfiguration($this->createContext());
 
         self::assertSame(
@@ -126,5 +144,17 @@ final class FormTabTest extends AbstractTabTestCase
         self::assertSame(['form'], $tab->getTokenKeys());
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:tab.form', $tab->getLabel());
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.forms', $tab->getGroup());
+    }
+
+    private function skipUnlessFormDefinitionSoftReferenceIsSupported(): void
+    {
+        $version = $this->get(Typo3Version::class)->getVersion();
+        if (version_compare($version, self::MIN_VERSION_FOR_FORM_DEFINITION_SOFTREF, '<')) {
+            self::markTestSkipped(sprintf(
+                'form_definition soft-reference support requires TYPO3 %s+, running %s.',
+                self::MIN_VERSION_FOR_FORM_DEFINITION_SOFTREF,
+                $version,
+            ));
+        }
     }
 }
