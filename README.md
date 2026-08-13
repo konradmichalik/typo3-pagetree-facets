@@ -37,7 +37,7 @@ a public facet API.
 ## ✨ Features
 
 - **Filterable page tree**: type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
-- **Eight built-in filter facets** (SEO requires EXT:seo): content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scope tokens
+- **Nine built-in filter facets** (SEO requires EXT:seo, Forms requires EXT:form): content elements, records, activity, page type, layouts, page state, translations, SEO and forms, plus `site:` / `under:` scope tokens
 - **Sharable links, session persistence and favorites**: hand a filter to a colleague, keep it across a reload, or save it under a name
 - **Live match count**: see how many pages a selection would match before applying, right in the filter modal (opt-out via `livePreviewCount`)
 - **Extensible**: add a single option to an existing facet, or a whole facet of your own
