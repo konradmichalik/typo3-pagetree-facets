@@ -92,8 +92,16 @@ final class FormTabTest extends AbstractTabTestCase
         );
     }
 
+    /**
+     * FormTab derives every option label purely from the identifier's own
+     * shape (labelFromIdentifier()) - there is no "real" label loaded from
+     * the form definition itself (see the class docblock for why that was
+     * tried and removed), so a stale EXT: reference to a file that doesn't
+     * exist on disk gets exactly the same kind of derived label as a
+     * perfectly live form_definition reference.
+     */
     #[Test]
-    public function modalConfigurationOffersTheReferencedFormWithAFallbackLabel(): void
+    public function modalConfigurationOffersEachReferencedFormWithAnIdentifierDerivedLabel(): void
     {
         $configuration = $this->get(FormTab::class)->getModalConfiguration($this->createContext());
 
@@ -104,12 +112,6 @@ final class FormTabTest extends AbstractTabTestCase
             ],
             array_column($configuration['fields'][0]['options'], 'value'),
         );
-        // The referenced file does not actually exist on disk, so
-        // FormPersistenceManagerInterface::load() throws and the label falls
-        // back to the identifier-derived one - this IS the case being
-        // verified (a stale/orphaned reference stays filterable with a
-        // sensible label, not just an unlabeled option). Same fallback path
-        // for the bare-integer identifier, just a different derived label.
         $labels = array_column($configuration['fields'][0]['options'], 'label');
         self::assertContains('Contact', $labels);
         self::assertContains('Form #999', $labels);

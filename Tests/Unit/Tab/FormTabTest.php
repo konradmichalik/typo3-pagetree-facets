@@ -20,12 +20,9 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
 
 /**
  * FormTabTest.
@@ -34,11 +31,6 @@ use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
  */
 final class FormTabTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        GeneralUtility::purgeInstances();
-    }
-
     #[Test]
     public function identityAndGroupingMetadataIsStable(): void
     {
@@ -76,42 +68,6 @@ final class FormTabTest extends TestCase
         $tab = $this->createTab();
 
         self::assertSame('Form #999', $this->labelFromIdentifier($tab, '999'));
-    }
-
-    #[Test]
-    public function formLabelUsesTheLoadedDefinitionsLabelWhenAvailable(): void
-    {
-        $manager = self::createStub(FormPersistenceManagerInterface::class);
-        $manager->method('load')->willReturn(['label' => 'Newsletter Signup']);
-        GeneralUtility::addInstance(FormPersistenceManagerInterface::class, $manager);
-
-        $tab = $this->createTab();
-
-        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
-    }
-
-    #[Test]
-    public function formLabelFallsBackToTheIdentifierWhenLoadThrows(): void
-    {
-        $manager = self::createStub(FormPersistenceManagerInterface::class);
-        $manager->method('load')->willThrowException(new RuntimeException('storage gone'));
-        GeneralUtility::addInstance(FormPersistenceManagerInterface::class, $manager);
-
-        $tab = $this->createTab();
-
-        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
-    }
-
-    #[Test]
-    public function formLabelFallsBackToTheIdentifierWhenTheLoadedLabelIsEmpty(): void
-    {
-        $manager = self::createStub(FormPersistenceManagerInterface::class);
-        $manager->method('load')->willReturn(['label' => '']);
-        GeneralUtility::addInstance(FormPersistenceManagerInterface::class, $manager);
-
-        $tab = $this->createTab();
-
-        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
     }
 
     #[Test]
@@ -183,11 +139,6 @@ final class FormTabTest extends TestCase
     private function labelFromIdentifier(FormTab $tab, string $persistenceIdentifier): string
     {
         return (new ReflectionMethod($tab, 'labelFromIdentifier'))->invoke($tab, $persistenceIdentifier);
-    }
-
-    private function formLabel(FormTab $tab, string $persistenceIdentifier): string
-    {
-        return (new ReflectionMethod($tab, 'formLabel'))->invoke($tab, $persistenceIdentifier);
     }
 
     private function resolveFileUid(FormTab $tab, string $persistenceIdentifier): ?int

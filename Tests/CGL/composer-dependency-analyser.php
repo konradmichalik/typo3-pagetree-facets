@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 use Composer\Autoload;
 use ShipMonk\ComposerDependencyAnalyser;
-use ShipMonk\ComposerDependencyAnalyser\Config\ErrorType;
 
 $rootPath = dirname(__DIR__, 2);
 
@@ -28,13 +27,6 @@ $configuration
         $rootPath.'/Tests/CGL',
         $rootPath.'/Tests/Functional/Fixtures',
     ])
-    // typo3/cms-form is a deliberate dev-only dependency (see composer.json):
-    // Classes/Tab/FormTab.php references FormPersistenceManagerInterface only
-    // via ::class inside GeneralUtility::makeInstance(), never as a real
-    // type-hint, so it's never autoloaded unless EXT:form is genuinely
-    // present. The analyser can't tell a ::class-only reference from a real
-    // compile-time dependency, so this specific false positive is ignored.
-    ->ignoreErrorsOnPackage('typo3/cms-form', [ErrorType::DEV_DEPENDENCY_IN_PROD])
 ;
 
 return $configuration;

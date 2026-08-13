@@ -15,10 +15,8 @@ namespace KonradMichalik\PagetreeFacets\Tab;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
 use KonradMichalik\PagetreeFacets\Token\Token;
-use Throwable;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function ctype_digit;
 use function is_int;
@@ -49,12 +47,21 @@ use function strlen;
  * Registered only when EXT:form is loaded (BuiltInTabsListener) - like
  * SeoTab, this tab therefore never checks isLoaded() itself, since the
  * engine only ever routes a "form:" token here when it was registered.
- * typo3/cms-form stays a dev-only dependency (see composer.json): the one
- * place this class touches it (formLabel()'s load() call) does so through
- * GeneralUtility::makeInstance() with the interface referenced only via
- * ::class, never as a constructor/property/method type - a real type-hint
- * would make TYPO3's DI container reflect it eagerly for every
- * installation, including ones without typo3/cms-form installed at all.
+ * typo3/cms-form stays a dev-only dependency (see composer.json): this class
+ * has no PHP dependency on it whatsoever - it only needs EXT:form to be
+ * loaded for form_formframework/its soft-reference parser to exist and
+ * populate sys_refindex in the first place, which is a runtime/registration
+ * concern handled entirely by BuiltInTabsListener's isLoaded('form') check
+ * (and, for tests, coreExtensionsToLoad). An earlier version of this class
+ * tried to enrich the option label via
+ * FormPersistenceManagerInterface::load() (through GeneralUtility::
+ * makeInstance() with the interface referenced only via ::class, to avoid a
+ * real type-hint); that never actually worked because EXT:form's service
+ * definitions are not public, so makeInstance() could never resolve a real
+ * instance in any context - it was removed rather than fixed, since making
+ * cms-form a hard require just to enable constructor injection would have
+ * defeated the point of keeping it optional. labelFromIdentifier() is the
+ * only label source now.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -105,7 +112,7 @@ final class FormTab extends AbstractPagesQueryTab
         foreach ($this->referencedForms($context) as $persistenceIdentifier) {
             $options[] = [
                 'value' => $persistenceIdentifier,
-                'label' => $this->formLabel($persistenceIdentifier),
+                'label' => $this->labelFromIdentifier($persistenceIdentifier),
                 'description' => $persistenceIdentifier,
             ];
         }
@@ -124,36 +131,16 @@ final class FormTab extends AbstractPagesQueryTab
     }
 
     /**
-     * Best-effort friendly name: load() takes only the identifier (its other
-     * two parameters are independently optional), so this needs none of the
-     * SearchCriteria/ConfigurationManager chain listForms() would - see the
-     * design spec. Any failure (deleted file, storage gone, a future
-     * signature change in this internal EXT:form API) falls back to a name
-     * derived from the identifier itself rather than surfacing an error in
-     * the modal.
+     * Friendly name derived purely from the identifier's own shape - the
+     * only label source (see the class docblock: a real load()'d label was
+     * tried and removed, since EXT:form's non-public service definitions
+     * make it unreachable in any context).
      */
-    protected function formLabel(string $persistenceIdentifier): string
-    {
-        try {
-            /** @var \TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface $manager */
-            $manager = GeneralUtility::makeInstance(\TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface::class);
-            $definition = $manager->load($persistenceIdentifier);
-            $label = (string) ($definition['label'] ?? '');
-            if ('' !== $label) {
-                return $label;
-            }
-        } catch (Throwable) {
-            // Fall through to the identifier-derived label below.
-        }
-
-        return $this->labelFromIdentifier($persistenceIdentifier);
-    }
-
     protected function labelFromIdentifier(string $persistenceIdentifier): string
     {
         // A bare integer is a form_definition (database storage) uid, not a
         // path - there is no filename to derive a title from, so this is the
-        // clearest fallback short of a real load()'d label.
+        // clearest label available for that shape.
         if ('' !== $persistenceIdentifier && ctype_digit($persistenceIdentifier)) {
             return sprintf('Form #%s', $persistenceIdentifier);
         }
