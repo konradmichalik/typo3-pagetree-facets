@@ -38,6 +38,7 @@ final class FormTabTest extends AbstractTabTestCase
         $this->importCSVDataSet(__DIR__.'/../Fixtures/FormTab.csv');
         $this->get(ReferenceIndex::class)->updateRefIndexTable('tt_content', 200);
         $this->get(ReferenceIndex::class)->updateRefIndexTable('tt_content', 201);
+        $this->get(ReferenceIndex::class)->updateRefIndexTable('tt_content', 202);
     }
 
     #[Test]
@@ -58,21 +59,60 @@ final class FormTabTest extends AbstractTabTestCase
         );
     }
 
+    /**
+     * The soft-reference parser records a bare-integer persistenceIdentifier
+     * (a form_definition/database-storage form, TYPO3 v14's highest-priority
+     * storage adapter and what the backend UI creates by default) as
+     * ref_table='form_definition' rather than '_STRING' - a distinct branch
+     * from the EXT: case above.
+     */
+    #[Test]
+    public function findsThePageEmbeddingTheDatabaseStoredForm(): void
+    {
+        self::assertSame([4], $this->resolve($this->get(FormTab::class), 'form:999'));
+    }
+
+    #[Test]
+    public function anUnreferencedDatabaseStoredIdentifierResolvesToNoMatches(): void
+    {
+        self::assertSame([], $this->resolve($this->get(FormTab::class), 'form:123456'));
+    }
+
+    /**
+     * Multiple token values are OR-combined - one value matching through the
+     * EXT: branch and another through the form_definition branch must both
+     * contribute their pages to the result.
+     */
+    #[Test]
+    public function multipleValuesAreOrCombinedAcrossBranches(): void
+    {
+        self::assertSame(
+            [2, 4],
+            $this->resolve($this->get(FormTab::class), 'form:EXT:typo3_pagetree_facets/Tests/Functional/Fixtures/contact.form.yaml,999'),
+        );
+    }
+
     #[Test]
     public function modalConfigurationOffersTheReferencedFormWithAFallbackLabel(): void
     {
         $configuration = $this->get(FormTab::class)->getModalConfiguration($this->createContext());
 
         self::assertSame(
-            ['EXT:typo3_pagetree_facets/Tests/Functional/Fixtures/contact.form.yaml'],
+            [
+                'EXT:typo3_pagetree_facets/Tests/Functional/Fixtures/contact.form.yaml',
+                '999',
+            ],
             array_column($configuration['fields'][0]['options'], 'value'),
         );
         // The referenced file does not actually exist on disk, so
         // FormPersistenceManagerInterface::load() throws and the label falls
         // back to the identifier-derived one - this IS the case being
         // verified (a stale/orphaned reference stays filterable with a
-        // sensible label, not just an unlabeled option).
-        self::assertSame('Contact', $configuration['fields'][0]['options'][0]['label']);
+        // sensible label, not just an unlabeled option). Same fallback path
+        // for the bare-integer identifier, just a different derived label.
+        $labels = array_column($configuration['fields'][0]['options'], 'label');
+        self::assertContains('Contact', $labels);
+        self::assertContains('Form #999', $labels);
     }
 
     #[Test]

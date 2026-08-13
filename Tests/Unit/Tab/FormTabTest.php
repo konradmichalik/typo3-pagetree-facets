@@ -68,6 +68,17 @@ final class FormTabTest extends TestCase
     }
 
     #[Test]
+    public function labelFromIdentifierRendersAFormHashForABareIntegerIdentifier(): void
+    {
+        // A bare integer is a form_definition (database storage) persistence
+        // identifier, not a path - there is no filename to derive a title
+        // from.
+        $tab = $this->createTab();
+
+        self::assertSame('Form #999', $this->labelFromIdentifier($tab, '999'));
+    }
+
+    #[Test]
     public function formLabelUsesTheLoadedDefinitionsLabelWhenAvailable(): void
     {
         $manager = self::createStub(FormPersistenceManagerInterface::class);
@@ -111,6 +122,40 @@ final class FormTabTest extends TestCase
         self::assertSame([], $tab->resolvePageUids(new Token('form', [], 'form:'), $this->context()));
     }
 
+    /**
+     * resolveFileUid()'s own parsing checks (colon presence, storage uid
+     * positivity, non-empty path) all short-circuit before it ever asks the
+     * query helper for a QueryBuilder - covered directly via reflection here,
+     * DB-free. The complementary "valid input resolves to a real uid" case
+     * needs an actual sys_file row and stays with the functional suite (see
+     * the class docblock's rationale for keeping FAL storage out of the unit
+     * layer entirely).
+     */
+    #[Test]
+    public function resolveFileUidReturnsNullForAnIdentifierWithoutAColon(): void
+    {
+        $tab = new FormTab($this->queryHelperThatMustNotBeCalled());
+
+        self::assertNull($this->resolveFileUid($tab, 'no-colon-at-all'));
+    }
+
+    #[Test]
+    public function resolveFileUidReturnsNullForANonPositiveStorageUid(): void
+    {
+        $tab = new FormTab($this->queryHelperThatMustNotBeCalled());
+
+        self::assertNull($this->resolveFileUid($tab, '0:some/path.form.yaml'));
+        self::assertNull($this->resolveFileUid($tab, '-1:some/path.form.yaml'));
+    }
+
+    #[Test]
+    public function resolveFileUidReturnsNullForAnEmptyPath(): void
+    {
+        $tab = new FormTab($this->queryHelperThatMustNotBeCalled());
+
+        self::assertNull($this->resolveFileUid($tab, '1:'));
+    }
+
     private function createTab(): FormTab
     {
         $queryHelper = new ContentQueryHelper(
@@ -143,5 +188,10 @@ final class FormTabTest extends TestCase
     private function formLabel(FormTab $tab, string $persistenceIdentifier): string
     {
         return (new ReflectionMethod($tab, 'formLabel'))->invoke($tab, $persistenceIdentifier);
+    }
+
+    private function resolveFileUid(FormTab $tab, string $persistenceIdentifier): ?int
+    {
+        return (new ReflectionMethod($tab, 'resolveFileUid'))->invoke($tab, $persistenceIdentifier, $this->context());
     }
 }

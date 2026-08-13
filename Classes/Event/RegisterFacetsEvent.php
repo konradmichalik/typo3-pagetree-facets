@@ -21,8 +21,9 @@ use KonradMichalik\PagetreeFacets\Api\FacetInterface;
  * PSR-14 event: register filter facets (built-in and third-party alike).
  *
  * Priority convention: built-ins occupy 100..40 (ce 100, records 90,
- * activity 80, doktype 70, state 60, translations 50, seo 40). Third-party
- * facets default to 0 but may position themselves deliberately.
+ * activity 80, doktype 70, layout 65, state 60, translations 50, form 45,
+ * seo 40). Third-party facets default to 0 but may position themselves
+ * deliberately.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */

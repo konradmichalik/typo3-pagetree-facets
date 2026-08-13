@@ -20,8 +20,10 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function ctype_digit;
 use function is_int;
 use function is_string;
+use function sprintf;
 use function strlen;
 
 /**
@@ -33,6 +35,16 @@ use function strlen;
  * on every save of a form_formframework content element) rather than
  * parsing pi_flexform XML directly - see the class docblock on the private
  * resolution methods below for the exact refindex shape this depends on.
+ *
+ * A persistenceIdentifier takes one of three shapes, mirroring
+ * FormPersistenceIdentifierSoftReferenceParser's own three branches: an
+ * "EXT:..." extension-file path (ref_table '_STRING'), a "<storageUid>:<path>"
+ * FAL-storage path (ref_table 'sys_file'), or - TYPO3 v14's newer database
+ * storage, the highest-priority storage adapter and what a form created via
+ * the backend UI gets by default - a bare integer (ref_table
+ * 'form_definition', matched by ref_uid). No other ref_table value is
+ * expected for this softref key; any row with one is skipped rather than
+ * guessed at.
  *
  * Registered only when EXT:form is loaded (BuiltInTabsListener) - like
  * SeoTab, this tab therefore never checks isLoaded() itself, since the
@@ -139,6 +151,13 @@ final class FormTab extends AbstractPagesQueryTab
 
     protected function labelFromIdentifier(string $persistenceIdentifier): string
     {
+        // A bare integer is a form_definition (database storage) uid, not a
+        // path - there is no filename to derive a title from, so this is the
+        // clearest fallback short of a real load()'d label.
+        if ('' !== $persistenceIdentifier && ctype_digit($persistenceIdentifier)) {
+            return sprintf('Form #%s', $persistenceIdentifier);
+        }
+
         $basename = basename($persistenceIdentifier);
         if ('' === $basename) {
             return '';
@@ -184,17 +203,23 @@ final class FormTab extends AbstractPagesQueryTab
 
         $stringIdentifiers = [];
         $fileUids = [];
+        $formDefinitionIdentifiers = [];
         foreach ($rows as $row) {
-            if ('sys_file' === $row['ref_table']) {
-                $fileUids[] = (int) $row['ref_uid'];
-            } else {
+            if ('_STRING' === $row['ref_table']) {
                 $stringIdentifiers[] = (string) $row['ref_string'];
+            } elseif ('sys_file' === $row['ref_table']) {
+                $fileUids[] = (int) $row['ref_uid'];
+            } elseif ('form_definition' === $row['ref_table']) {
+                $formDefinitionIdentifiers[] = (string) $row['ref_uid'];
             }
+            // Any other ref_table value is unexpected for this softref key -
+            // skip it rather than miscategorizing it as one of the above.
         }
 
         return array_values(array_unique([
             ...array_filter($stringIdentifiers, static fn (string $v): bool => '' !== $v),
             ...$this->fileIdentifiersFor($fileUids, $context),
+            ...$formDefinitionIdentifiers,
         ]));
     }
 
@@ -234,6 +259,14 @@ final class FormTab extends AbstractPagesQueryTab
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->eq('ref_table', $queryBuilder->createNamedParameter('_STRING')),
                 $queryBuilder->expr()->eq('ref_string', $queryBuilder->createNamedParameter($persistenceIdentifier)),
+            );
+        } elseif (ctype_digit($persistenceIdentifier) && (int) $persistenceIdentifier > 0) {
+            // Bare integer: a form_definition (database storage) uid - must be
+            // intercepted here, before the FAL branch below, since it has no
+            // colon and would otherwise silently resolve to "no match".
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq('ref_table', $queryBuilder->createNamedParameter('form_definition')),
+                $queryBuilder->expr()->eq('ref_uid', $queryBuilder->createNamedParameter((int) $persistenceIdentifier, Connection::PARAM_INT)),
             );
         } else {
             $fileUid = $this->resolveFileUid($persistenceIdentifier, $context);
