@@ -65,6 +65,11 @@ test('the live match count stays hidden until a criterion is picked, then update
   await modal.option('doktype', 'doktype', '3').check();
 
   await expect(modal.matchCount()).toBeVisible();
+  // The notice becomes visible the instant a criterion changes (showing the
+  // loading skeleton), before the count itself has resolved - waiting for the
+  // known first result here, not just visibility, keeps firstText from
+  // capturing an empty/stale value instead of doktype:3's real "1 matching page".
+  await expect(modal.matchCount()).toHaveText('1 matching page');
   const firstText = await modal.matchCount().textContent();
 
   // doktype 1 ("Page") is the common type across the seeded demo content, so
