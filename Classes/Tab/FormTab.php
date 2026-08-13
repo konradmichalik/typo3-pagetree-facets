@@ -46,7 +46,7 @@ use function strlen;
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
-class FormTab extends AbstractPagesQueryTab
+final class FormTab extends AbstractPagesQueryTab
 {
     private const string SOFTREF_KEY = 'formPersistenceIdentifier';
 
@@ -115,10 +115,10 @@ class FormTab extends AbstractPagesQueryTab
      * Best-effort friendly name: load() takes only the identifier (its other
      * two parameters are independently optional), so this needs none of the
      * SearchCriteria/ConfigurationManager chain listForms() would - see the
-     * design spec. Any failure (deleted file, storage gone, a future.
-     *
-     * @internal signature change) falls back to a name derived from the
-     * identifier itself rather than surfacing an error in the modal
+     * design spec. Any failure (deleted file, storage gone, a future
+     * signature change in this internal EXT:form API) falls back to a name
+     * derived from the identifier itself rather than surfacing an error in
+     * the modal.
      */
     protected function formLabel(string $persistenceIdentifier): string
     {

@@ -19,34 +19,13 @@ use KonradMichalik\PagetreeFacets\Tab\FormTab;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\SearchableSchemaFieldsCollector;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
-
-/**
- * TestableFormTab.
- *
- * @internal test seam only - exposes FormTab's protected label helpers for
- * direct assertions, without going through the DB-touching modal/resolve
- * entry points that call them
- *
- * @author Konrad Michalik <hej@konradmichalik.dev>
- */
-final class TestableFormTab extends FormTab
-{
-    public function labelFromIdentifierForTesting(string $persistenceIdentifier): string
-    {
-        return $this->labelFromIdentifier($persistenceIdentifier);
-    }
-
-    public function formLabelForTesting(string $persistenceIdentifier): string
-    {
-        return $this->formLabel($persistenceIdentifier);
-    }
-}
 
 /**
  * FormTabTest.
@@ -76,8 +55,8 @@ final class FormTabTest extends TestCase
     {
         $tab = $this->createTab();
 
-        self::assertSame('Contact Form', $tab->labelFromIdentifierForTesting('EXT:my_ext/Resources/Private/Forms/contact_form.form.yaml'));
-        self::assertSame('Newsletter Signup', $tab->labelFromIdentifierForTesting('1:/form_definitions/newsletter-signup.form.yaml'));
+        self::assertSame('Contact Form', $this->labelFromIdentifier($tab, 'EXT:my_ext/Resources/Private/Forms/contact_form.form.yaml'));
+        self::assertSame('Newsletter Signup', $this->labelFromIdentifier($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
     }
 
     #[Test]
@@ -85,7 +64,7 @@ final class FormTabTest extends TestCase
     {
         $tab = $this->createTab();
 
-        self::assertSame('', $tab->labelFromIdentifierForTesting(''));
+        self::assertSame('', $this->labelFromIdentifier($tab, ''));
     }
 
     #[Test]
@@ -97,7 +76,7 @@ final class FormTabTest extends TestCase
 
         $tab = $this->createTab();
 
-        self::assertSame('Newsletter Signup', $tab->formLabelForTesting('1:/form_definitions/newsletter-signup.form.yaml'));
+        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
     }
 
     #[Test]
@@ -109,7 +88,7 @@ final class FormTabTest extends TestCase
 
         $tab = $this->createTab();
 
-        self::assertSame('Newsletter Signup', $tab->formLabelForTesting('1:/form_definitions/newsletter-signup.form.yaml'));
+        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
     }
 
     #[Test]
@@ -121,7 +100,7 @@ final class FormTabTest extends TestCase
 
         $tab = $this->createTab();
 
-        self::assertSame('Newsletter Signup', $tab->formLabelForTesting('1:/form_definitions/newsletter-signup.form.yaml'));
+        self::assertSame('Newsletter Signup', $this->formLabel($tab, '1:/form_definitions/newsletter-signup.form.yaml'));
     }
 
     #[Test]
@@ -132,14 +111,14 @@ final class FormTabTest extends TestCase
         self::assertSame([], $tab->resolvePageUids(new Token('form', [], 'form:'), $this->context()));
     }
 
-    private function createTab(): TestableFormTab
+    private function createTab(): FormTab
     {
         $queryHelper = new ContentQueryHelper(
             self::createStub(ConnectionPool::class),
             self::createStub(SearchableSchemaFieldsCollector::class),
         );
 
-        return new TestableFormTab($queryHelper);
+        return new FormTab($queryHelper);
     }
 
     private function queryHelperThatMustNotBeCalled(): ContentQueryHelper
@@ -154,5 +133,15 @@ final class FormTabTest extends TestCase
     private function context(): FilterContext
     {
         return new FilterContext(self::createStub(BackendUserAuthentication::class), 0);
+    }
+
+    private function labelFromIdentifier(FormTab $tab, string $persistenceIdentifier): string
+    {
+        return (new ReflectionMethod($tab, 'labelFromIdentifier'))->invoke($tab, $persistenceIdentifier);
+    }
+
+    private function formLabel(FormTab $tab, string $persistenceIdentifier): string
+    {
+        return (new ReflectionMethod($tab, 'formLabel'))->invoke($tab, $persistenceIdentifier);
     }
 }
