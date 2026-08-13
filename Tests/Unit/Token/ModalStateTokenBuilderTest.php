@@ -147,11 +147,11 @@ final class ModalStateTokenBuilderTest extends TestCase
      */
     private function createRecordingFacet(string $identifier): FacetInterface
     {
-        return new class($identifier) implements FacetInterface {
+        return new readonly class($identifier) implements FacetInterface {
             /**
              * @param non-empty-string $identifier
              */
-            public function __construct(private readonly string $identifier) {}
+            public function __construct(private string $identifier) {}
 
             public function getIdentifier(): string
             {
