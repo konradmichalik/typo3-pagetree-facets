@@ -17,7 +17,7 @@ use KonradMichalik\PagetreeFacets\Api\FacetInterface;
 use KonradMichalik\PagetreeFacets\Event\RegisterFacetsEvent;
 use KonradMichalik\PagetreeFacets\EventListener\BuiltInTabsListener;
 use KonradMichalik\PagetreeFacets\Service\{ContentQueryHelper, OptionRegistry};
-use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, FormTab, LayoutTab, PageStateTab, RawQueryTab, RecordsTab, SeoTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -110,6 +110,7 @@ final class BuiltInTabsListenerTest extends TestCase
             new ActivityTab($queryHelper),
             new DoktypeTab($queryHelper),
             new LayoutTab($queryHelper, self::createStub(BackendLayoutView::class), self::createStub(SiteFinder::class)),
+            new FormTab($queryHelper),
             new PageStateTab($queryHelper, $optionRegistry),
             new TranslationsTab($queryHelper, self::createStub(SiteFinder::class)),
             new SeoTab($queryHelper, $optionRegistry),
