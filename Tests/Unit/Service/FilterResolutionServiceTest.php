@@ -137,11 +137,30 @@ final class FilterResolutionServiceTest extends TestCase
     }
 
     /**
+     * Neither FacetInterface nor FilterOptionInterface requires a facet to
+     * return unique UIDs (every built-in one already does: pages-table queries
+     * select the primary key, record-table lookups use ->distinct()) - a
+     * third-party facet that does not would otherwise inflate count() past
+     * PageTreeFilterListener's own, separately deduplicated result.
+     */
+    #[Test]
+    public function duplicateUidsFromAFacetAreNormalizedBeforeCounting(): void
+    {
+        $service = $this->createService(doktypeUids: [10, 10, 20]);
+        $tokens = [new Token('doktype', ['1'], 'doktype:1')];
+        $context = $this->createContext();
+
+        self::assertSame([10, 20], $service->resolve($tokens, $context));
+        self::assertSame(2, $service->count($tokens, $context));
+    }
+
+    /**
      * @param array<string, list<int>> $siteMap
      * @param array<string, list<int>> $freetextUids
      * @param array<int, int>          $pidMap
+     * @param list<int>                $doktypeUids
      */
-    private function createService(array $siteMap = [], array $freetextUids = [], array $pidMap = []): FilterResolutionService
+    private function createService(array $siteMap = [], array $freetextUids = [], array $pidMap = [], array $doktypeUids = [10, 20, 30, 40]): FilterResolutionService
     {
         // Auto-generate pidMap from siteMap when not explicitly provided
         if ([] === $pidMap && [] !== $siteMap) {
@@ -159,7 +178,7 @@ final class FilterResolutionServiceTest extends TestCase
             }
         }
 
-        $doktypeTab = new StubFacet('doktype', ['doktype'], ['doktype:1' => [10, 20, 30, 40]]);
+        $doktypeTab = new StubFacet('doktype', ['doktype'], ['doktype:1' => $doktypeUids]);
         $stateTab = new StubFacet('state', ['is'], ['is:empty' => [20, 40, 50], 'is:hidden' => [30]]);
 
         $extensionConfigurationStub = self::createStub(ExtensionConfiguration::class);

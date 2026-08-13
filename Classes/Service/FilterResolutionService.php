@@ -53,7 +53,14 @@ final readonly class FilterResolutionService
             return null;
         }
 
-        $uids = $this->intersect($uidSets);
+        // A custom FacetInterface/FilterOptionInterface implementation is not
+        // required to return unique UIDs (built-in ones already do: pages-table
+        // queries select a primary key, record-table lookups use ->distinct()).
+        // intersect() preserves whatever duplicates its first set carries, so
+        // normalizing here keeps count() (below) in agreement with
+        // PageTreeFilterListener, which applies its own array_unique() to this
+        // same resolve() result before using it as $searchUids.
+        $uids = array_values(array_unique($this->intersect($uidSets)));
 
         // Site scope: post-filter the (small) result set instead of
         // materializing the site subtree upfront.
