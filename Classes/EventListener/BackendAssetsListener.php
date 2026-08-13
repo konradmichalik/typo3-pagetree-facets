@@ -68,6 +68,10 @@ final readonly class BackendAssetsListener
         if ($this->isEmptyResultNoticeEnabled()) {
             $this->pageRenderer->addInlineSetting('PagetreeFacets', 'emptyResultNotice', '1');
         }
+
+        if ($this->isLivePreviewCountEnabled()) {
+            $this->pageRenderer->addInlineSetting('PagetreeFacets', 'livePreviewCount', '1');
+        }
     }
 
     private function isEmptyResultNoticeEnabled(): bool
@@ -78,6 +82,18 @@ final readonly class BackendAssetsListener
             // Defaults to ON, unlike the other settings: a missing key means the
             // value was never written - a fresh install, or an upgrade from
             // before this setting existed - which must not read as "disabled".
+            return true;
+        }
+    }
+
+    private function isLivePreviewCountEnabled(): bool
+    {
+        try {
+            return (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'livePreviewCount');
+        } catch (Throwable) {
+            // Same upgrade-safety default as isEmptyResultNoticeEnabled(): a
+            // missing key means the value was never written, which must not
+            // read as "disabled".
             return true;
         }
     }

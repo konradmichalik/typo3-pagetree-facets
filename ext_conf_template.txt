@@ -17,5 +17,8 @@ persistFilter = 0
 # cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.emptyResultNotice
 emptyResultNotice = 1
 
+# cat=basic; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.livePreviewCount
+livePreviewCount = 1
+
 # cat=advanced; type=boolean; label=LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_settings.xlf:settings.enableRawQueryTab
 enableRawQueryTab = 0

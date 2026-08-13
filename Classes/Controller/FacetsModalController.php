@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace KonradMichalik\PagetreeFacets\Controller;
 
 use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, PhraseSummaryService, SessionFilterService};
-use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser, TokenSerializer};
+use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FavoriteService, FilterResolutionService, LivePreviewCountSettingService, PhraseSummaryService, SessionFilterService};
+use KonradMichalik\PagetreeFacets\Token\{ModalStateTokenBuilder, Token, TokenParser, TokenSerializer};
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\{Connection, ConnectionPool};
@@ -46,6 +46,9 @@ final readonly class FacetsModalController
         private SessionFilterService $sessionFilterService,
         private SiteFinder $siteFinder,
         private ConnectionPool $connectionPool,
+        private FilterResolutionService $filterResolutionService,
+        private LivePreviewCountSettingService $livePreviewCountSetting,
+        private ModalStateTokenBuilder $modalStateTokenBuilder,
     ) {}
 
     public function configuration(ServerRequestInterface $request): JsonResponse
@@ -83,34 +86,35 @@ final readonly class FacetsModalController
     public function serialize(ServerRequestInterface $request): JsonResponse
     {
         $backendUser = $this->requireEnabledUser();
-        $body = (array) ($request->getParsedBody() ?? []);
-        $states = (array) ($body['states'] ?? []);
-        $siteIdentifier = (string) ($body['site'] ?? '');
-        $pageScope = (int) ($body['pageScope'] ?? 0);
-        $freetext = trim((string) ($body['freetext'] ?? ''));
-
-        $tokens = [];
-        foreach ($this->facetRegistry->getFacets($backendUser) as $facet) {
-            $state = (array) ($states[$facet->getIdentifier()] ?? []);
-            if ([] !== $state) {
-                $tokens = array_merge($tokens, $facet->serialize($state));
-            }
-        }
-        if ('' !== $siteIdentifier) {
-            $tokens[] = new Token('site', [$siteIdentifier], 'site:'.$siteIdentifier);
-        }
-        if ($pageScope > 0) {
-            $tokens[] = new Token('under', [(string) $pageScope], 'under:'.$pageScope);
-        }
-        if ('' !== $freetext) {
-            $tokens[] = new Token(
-                Token::FREETEXT,
-                [$freetext],
-                $freetext,
-            );
-        }
+        $tokens = $this->modalStateTokenBuilder->build((array) ($request->getParsedBody() ?? []), $backendUser);
 
         return new JsonResponse(['phrase' => $this->tokenSerializer->serialize($tokens)]);
+    }
+
+    /**
+     * Live, debounced match count for the modal footer (see FilterResolutionService
+     * for the shared resolve pipeline). Bails out to a null count - rather than a
+     * 403 - when the feature is switched off: this is a convenience toggle, not an
+     * access boundary, so a stale client hitting this endpoint after an admin
+     * disabled it should see no number, not an error.
+     */
+    public function count(ServerRequestInterface $request): JsonResponse
+    {
+        $backendUser = $this->requireEnabledUser();
+        if (!$this->livePreviewCountSetting->isEnabled()) {
+            return new JsonResponse(['count' => null]);
+        }
+
+        $body = (array) ($request->getParsedBody() ?? []);
+        $tokens = $this->modalStateTokenBuilder->build($body, $backendUser);
+        $siteIdentifier = trim((string) ($body['site'] ?? ''));
+        $context = new FilterContext(
+            backendUser: $backendUser,
+            workspaceId: $backendUser->workspace,
+            siteIdentifier: '' !== $siteIdentifier ? $siteIdentifier : null,
+        );
+
+        return new JsonResponse(['count' => $this->filterResolutionService->count($tokens, $context)]);
     }
 
     public function addFavorite(ServerRequestInterface $request): JsonResponse

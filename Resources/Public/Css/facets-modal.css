@@ -284,6 +284,8 @@
     /* Undo Bootstrap's .form-check float layout so the gap controls the spacing
      * between the checkbox and its label instead of a fixed indent. */
     padding-left: 0;
+    grid-column: 1;
+    justify-self: start;
 }
 
 .pagetree-facets__page-scope .form-check-input {
@@ -291,13 +293,16 @@
     margin: 0;
 }
 
-/* Page scope and the filter-wide actions share one row; the actions sit at the
-   trailing edge whether or not the scope checkbox is present. Its min-height is
-   the tallest thing the row can hold - the favorite name form further down - so
-   opening that form swaps the row's contents instead of adding a row and
-   shifting everything under it. */
+/* Page scope, the live match count and the filter-wide actions share one row -
+   a 3-column grid, each placed by an explicit grid-column below rather than
+   DOM order, so the centered count does not shift into column 1 when the
+   scope checkbox is absent (no page open). Its min-height is the tallest
+   thing the row can hold - the favorite name form further down - so opening
+   that form swaps the row's contents instead of adding a row and shifting
+   everything under it. */
 .pagetree-facets__utility {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.5rem;
     min-height: 1.875rem;
@@ -311,7 +316,8 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-inline-start: auto;
+    grid-column: 3;
+    justify-self: end;
 }
 
 .pagetree-facets__actions[hidden] {
@@ -396,6 +402,68 @@
     flex: 0 0 auto;
 }
 
+.pagetree-facets__match-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    grid-column: 2;
+    justify-self: center;
+}
+
+.pagetree-facets-modal .pagetree-facets__match-count {
+    color: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+}
+
+.pagetree-facets__match-count[hidden] {
+    display: none;
+}
+
+.pagetree-facets__match-count-skeleton {
+    display: inline-block;
+    width: 9em;
+    height: 0.85em;
+    border-radius: 3px;
+    /* Same backend-global token (with fallback) the match-count text itself
+     * uses, for consistency with the rest of this row - not a scoping
+     * requirement. --pl-muted would resolve here too now that this element
+     * lives inside .pagetree-facets, but there is no reason to switch a
+     * working, already-reviewed rule just because its surroundings moved. */
+    background: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+    opacity: 0.3;
+    animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.pagetree-facets__match-count-skeleton[hidden] {
+    display: none;
+}
+
+@keyframes pagetree-facets-skeleton-pulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pagetree-facets__match-count-skeleton {
+        animation: none;
+        opacity: 0.4;
+    }
+}
+
+.pagetree-facets__reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
 .pagetree-facets__hint {
     display: inline-flex;
     align-items: center;
@@ -433,8 +501,7 @@
  * reservation - with .btn-sm's default vertical padding they are taller, so
  * the row would grow (and shift everything below) when they appear. */
 .pagetree-facets__copy-link,
-.pagetree-facets__favorite-add,
-.pagetree-facets__reset {
+.pagetree-facets__favorite-add {
     flex: 0 0 auto;
     padding: 0;
     white-space: nowrap;
@@ -863,17 +930,18 @@
 
 /* Inline "name this filter" form: its own header line, unfolded by the "Save
  * current filter" action, so the actions row itself stays a single tidy line. */
-/* Shares the utility row with the page scope and the actions, and takes it over
- * while open - naming a filter is a moment of its own, and the two controls it
- * displaces (page scope, copy/reset) have nothing to contribute to it. */
+/* Shares the utility row with the page scope, the match count and the actions,
+ * and takes it over while open - naming a filter is a moment of its own, and
+ * the three controls it displaces have nothing to contribute to it. */
 .pagetree-facets__favorite-form {
     display: flex;
-    flex: 1 1 auto;
     align-items: center;
     gap: 0.375rem;
+    grid-column: 1 / -1;
 }
 
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__page-scope,
+.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__match-count,
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__actions {
     display: none;
 }

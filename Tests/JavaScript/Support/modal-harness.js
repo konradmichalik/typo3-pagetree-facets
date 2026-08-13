@@ -20,6 +20,7 @@ import { requests, resetAjaxStub, respondWith } from '../Stubs/typo3/core/ajax/a
 export const urls = {
   configuration: '/ajax/configuration',
   serialize: '/ajax/serialize',
+  count: '/ajax/count',
   favoriteAdd: '/ajax/favorite/add',
   favoriteRemove: '/ajax/favorite/remove',
   users: '/ajax/users',
@@ -140,6 +141,7 @@ export function resetHarness() {
       ajaxUrls: {
         typo3_pagetree_facets_configuration: urls.configuration,
         typo3_pagetree_facets_serialize: urls.serialize,
+        typo3_pagetree_facets_count: urls.count,
         typo3_pagetree_facets_favorite_add: urls.favoriteAdd,
         typo3_pagetree_facets_favorite_remove: urls.favoriteRemove,
         typo3_pagetree_facets_users: urls.users,
@@ -164,6 +166,7 @@ export async function openModal({
   pageId = 5,
   configuration = configurationFixture(),
   favorites = [],
+  count = null,
   onApply = vi.fn(),
 } = {}) {
   const configurationFor = 'function' === typeof configuration ? configuration : () => configuration;
@@ -176,6 +179,8 @@ export async function openModal({
         return { ...await configurationFor(payload.phrase), favorites: stored };
       case urls.serialize:
         return { phrase: fakeSerialize(payload) };
+      case urls.count:
+        return { count: 'function' === typeof count ? await count(payload) : count };
       case urls.favoriteAdd:
         // `criteria` is the server's resolved summary of the phrase (see
         // PhraseSummaryService); its exact wording is that service's business,
@@ -210,6 +215,10 @@ export { lastModal, openedModals, requests };
 /** The Apply button lives in the modal's own footer, found by its name. */
 export function applyButton(modal) {
   return modal.querySelector('button[name="pagetree-facets-apply"]');
+}
+
+export function resetButton(modal) {
+  return modal.querySelector('button[name="pagetree-facets-reset"]');
 }
 
 export function footerButton(modal, text) {

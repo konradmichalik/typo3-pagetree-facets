@@ -51,3 +51,102 @@ test('removing the chip clears the selection again', async ({ page }) => {
   await expect(modal.chips()).toHaveCount(0);
   await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
 });
+
+test('the live match count stays hidden until a criterion is picked, then updates as the selection changes', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  // No criteria yet - showing a count for an unfiltered tree isn't useful, so
+  // the notice stays hidden until the first facet is picked.
+  await expect(modal.matchCount()).toBeHidden();
+
+  await modal.navItem('doktype').click();
+  // doktype 3 ("Link") matches only the one external-link fixture page.
+  await modal.option('doktype', 'doktype', '3').check();
+
+  await expect(modal.matchCount()).toBeVisible();
+  // The notice becomes visible the instant a criterion changes (showing the
+  // loading skeleton), before the count itself has resolved - waiting for the
+  // known first result here, not just visibility, keeps firstText from
+  // capturing an empty/stale value instead of doktype:3's real "1 matching page".
+  await expect(modal.matchCount()).toHaveText('1 matching page');
+  const firstText = await modal.matchCount().textContent();
+
+  // doktype 1 ("Page") is the common type across the seeded demo content, so
+  // it necessarily produces a different (larger) count than doktype 3.
+  await modal.option('doktype', 'doktype', '3').uncheck();
+  await modal.option('doktype', 'doktype', '1').check();
+
+  // Requiring visibility and the real label pattern first, not just "not
+  // firstText", rules out a broken update path landing on some other wrong
+  // value (e.g. the null-count label) and having that count as "changed".
+  await expect(modal.matchCount()).toBeVisible();
+  await expect(modal.matchCount()).toHaveText(/matching page/);
+  await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
+});
+
+test('the footer Reset button renders its icon, is gated like Apply, and clears the selection', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await expect(modal.resetButton().locator('typo3-backend-icon')).toHaveCount(1);
+  await expect(modal.resetButton()).toBeDisabled();
+
+  await modal.navItem('doktype').click();
+  // doktype 3 is "Link" in this instance's TCA - same fixture value the
+  // other tests in this file already rely on.
+  await modal.option('doktype', 'doktype', '3').check();
+  await expect(modal.resetButton()).toBeEnabled();
+
+  await modal.resetButton().click();
+
+  await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
+  await expect(modal.chips()).toHaveCount(0);
+  await expect(modal.resetButton()).toBeDisabled();
+});
+
+test('the match count renders its icon as a real, resolved icon', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  const icon = page.locator('typo3-backend-modal .pagetree-facets__match-count typo3-backend-icon');
+
+  await modal.open();
+  await modal.navItem('doktype').click();
+  await modal.option('doktype', 'doktype', '3').check(); // "Link" - 1 match
+
+  await expect(icon).toHaveAttribute('identifier', 'actions-search');
+  await expect(icon.locator('svg')).toHaveCount(1);
+});
+
+test('the footer Close and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  const closeIcon = page.getByRole('button', { name: 'Close', exact: true }).locator('typo3-backend-icon');
+  await expect(closeIcon).toHaveAttribute('identifier', 'actions-close');
+  await expect(closeIcon.locator('svg')).toHaveCount(1);
+
+  const applyIcon = modal.applyButton().locator('typo3-backend-icon');
+  await expect(applyIcon).toHaveAttribute('identifier', 'actions-check');
+  await expect(applyIcon.locator('svg')).toHaveCount(1);
+});
+
+test('the loading skeleton renders with a real, visible color', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // The skeleton bar is normally revealed only once a count request has been
+  // in flight past its delay threshold - a real local backend usually
+  // resolves faster than that, so forcing it visible directly is the only
+  // way to test the CSS rule's own correctness deterministically (a jsdom
+  // unit test cannot: jsdom does not resolve CSS custom-property scoping the
+  // way a real browser does, which is exactly how this bug slipped past 236
+  // passing unit tests - the bar was fully transparent in the real backend).
+  const skeleton = page.locator('typo3-backend-modal .pagetree-facets__match-count-skeleton');
+  await skeleton.evaluate((el) => { el.hidden = false; });
+
+  const backgroundColor = await skeleton.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+  expect(backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+});
+

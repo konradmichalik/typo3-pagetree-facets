@@ -39,6 +39,7 @@ a public facet API.
 - **Filterable page tree**: type tokens into the tree's search field, or open a guided modal with <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>
 - **Eight built-in filter facets** (SEO requires EXT:seo): content elements, records, activity, page type, layouts, page state, translations and SEO, plus `site:` / `under:` scope tokens
 - **Sharable links, session persistence and favorites**: hand a filter to a colleague, keep it across a reload, or save it under a name
+- **Live match count**: see how many pages a selection would match before applying, right in the filter modal (opt-out via `livePreviewCount`)
 - **Extensible**: add a single option to an existing facet, or a whole facet of your own
 - **Per-user/group control**: disable facets installation-wide or via User TSconfig
 - **Raw query escape hatch** (`raw:`, opt-in): match arbitrary `field=value` conditions against any TCA table the user may already read

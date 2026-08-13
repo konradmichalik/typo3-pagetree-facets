@@ -19,6 +19,9 @@
 			<trans-unit id="pagetreeFacets.modal.favoriteSaved.message"><source>The current filter was saved to your favorites.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clear"><source>Clear</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pending"><source>Not applied yet — choose "Apply" to filter the page tree.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.matchCount.zero"><source>No matching pages</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.matchCount.one"><source>1 matching page</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.matchCount.other"><source>%d matching pages</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.title"><source>Selection not applied</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.message"><source>You picked filter criteria but never applied them, so the page tree is unchanged.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply &amp; close</source></trans-unit>

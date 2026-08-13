@@ -50,6 +50,11 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
+  /** The live match-count text in the header's utility row (see facets-modal.js). */
+  matchCount(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__match-count`);
+  }
+
   /**
    * A checkbox-group / radio option.
    *
@@ -83,6 +88,10 @@ export class FacetsModalPage {
 
   applyButton(): Locator {
     return this.page.locator(`${MODAL} button[name="pagetree-facets-apply"]`);
+  }
+
+  resetButton(): Locator {
+    return this.page.locator(`${MODAL} button[name="pagetree-facets-reset"]`);
   }
 
   async apply(): Promise<void> {

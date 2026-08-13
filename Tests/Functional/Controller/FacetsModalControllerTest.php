@@ -268,6 +268,72 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function countReturnsTheNumberOfMatchingPages(): void
+    {
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/PageSubtreeScopeService.csv');
+        $request = (new ServerRequest())->withParsedBody([
+            'states' => ['doktype' => ['doktype' => ['1']]],
+        ]);
+
+        $payload = $this->decode($this->subject->count($request));
+
+        self::assertSame(5, $payload['count']);
+    }
+
+    #[Test]
+    public function countRespectsThePageScope(): void
+    {
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/PageSubtreeScopeService.csv');
+        $request = (new ServerRequest())->withParsedBody([
+            'states' => ['doktype' => ['doktype' => ['1']]],
+            'pageScope' => 2,
+        ]);
+
+        $payload = $this->decode($this->subject->count($request));
+
+        self::assertSame(2, $payload['count']);
+    }
+
+    #[Test]
+    public function countIsNullWhenOnlyScopeCriteriaAreGiven(): void
+    {
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/PageSubtreeScopeService.csv');
+        $request = (new ServerRequest())->withParsedBody(['pageScope' => 2]);
+
+        $payload = $this->decode($this->subject->count($request));
+
+        self::assertNull($payload['count']);
+    }
+
+    #[Test]
+    public function countIsNullWhenTheSettingIsDisabled(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['livePreviewCount'] = '0';
+        $this->importCSVDataSet(__DIR__.'/../Fixtures/PageSubtreeScopeService.csv');
+        $request = (new ServerRequest())->withParsedBody([
+            'states' => ['doktype' => ['doktype' => ['1']]],
+        ]);
+
+        $payload = $this->decode($this->subject->count($request));
+
+        self::assertNull($payload['count']);
+    }
+
+    #[Test]
+    public function aDisabledFeatureBlocksTheCountEndpoint(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['typo3_pagetree_facets']['adminOnly'] = '1';
+        $this->setUpBackendUser(2); // non-admin -> locked out by adminOnly
+
+        try {
+            $this->subject->count(new ServerRequest());
+            self::fail('Expected the disabled feature to block the endpoint.');
+        } catch (PropagateResponseException $exception) {
+            self::assertSame(403, $exception->getResponse()->getStatusCode());
+        }
+    }
+
+    #[Test]
     public function favoriteEndpointsRoundTrip(): void
     {
         $addRequest = (new ServerRequest())->withParsedBody([

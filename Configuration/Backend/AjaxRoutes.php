@@ -22,6 +22,10 @@ return [
         'path' => '/pagetree-facets/serialize',
         'target' => FacetsModalController::class.'::serialize',
     ],
+    'typo3_pagetree_facets_count' => [
+        'path' => '/pagetree-facets/count',
+        'target' => FacetsModalController::class.'::count',
+    ],
     'typo3_pagetree_facets_favorite_add' => [
         'path' => '/pagetree-facets/favorite/add',
         'target' => FacetsModalController::class.'::addFavorite',
