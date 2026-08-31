@@ -47,7 +47,7 @@ abstract class AbstractPagesQueryTab implements FacetInterface
      *
      * @return list<Token>
      */
-    public function serialize(array $modalState): array
+    final public function serialize(array $modalState): array
     {
         $tokens = [];
         foreach ($this->getTokenKeys() as $key) {
@@ -66,7 +66,7 @@ abstract class AbstractPagesQueryTab implements FacetInterface
      *
      * @return array<string, mixed>
      */
-    public function hydrate(array $tokens): array
+    final public function hydrate(array $tokens): array
     {
         $state = [];
         foreach ($tokens as $token) {
@@ -81,7 +81,7 @@ abstract class AbstractPagesQueryTab implements FacetInterface
     /**
      * @return list<int>
      */
-    protected function fetchPageUids(FilterContext $context, callable $constrain): array
+    final protected function fetchPageUids(FilterContext $context, callable $constrain): array
     {
         $queryBuilder = $this->queryHelper->createQueryBuilder('pages', $context);
         $queryBuilder->select('uid')->from('pages');
@@ -90,7 +90,7 @@ abstract class AbstractPagesQueryTab implements FacetInterface
         return array_map(intval(...), $queryBuilder->executeQuery()->fetchFirstColumn());
     }
 
-    protected function excludeNonContentDoktypes(QueryBuilder $queryBuilder): void
+    final protected function excludeNonContentDoktypes(QueryBuilder $queryBuilder): void
     {
         $queryBuilder->andWhere(
             $queryBuilder->expr()->notIn(
