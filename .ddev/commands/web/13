@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 ## #ddev-generated
-## Description: Exec command for TYPO3 instance 14.
-## Usage: 14
-## Example: "ddev 14 composer du -o" or "ddev 14 typo3 cache:flush"
+## Description: Exec command for TYPO3 instance 13.
+## Usage: 13
+## Example: "ddev 13 composer du -o" or "ddev 13 typo3 cache:flush"
 
 . .ddev/.setup/scripts/utils.sh
 
 command=$@
-version=14
+version=13
 TYPO3_PATH=".Build/${version}"
 
 if [ ! -d "$TYPO3_PATH" ]; then

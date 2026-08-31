@@ -4,10 +4,10 @@ set -eo pipefail
 ## #ddev-generated
 . .ddev/.setup/scripts/utils.sh
 
-# Pre-setup function for TYPO3 version 14
+# Pre-setup function for TYPO3 version 12.
 # This function is part of the installation script and is responsible for performing
 # initial setup tasks before the main installation process begins.
-pre_setup 14
+pre_setup 12
 
 # Extra composer packages, TYPO3 settings etc. -> .ddev/.setup/project.sh
 
