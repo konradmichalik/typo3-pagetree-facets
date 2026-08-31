@@ -104,7 +104,7 @@ final class SearchResultLabelListenerTest extends TestCase
         $registry = new MatchedPageRegistry();
         $registry->record([20]);
 
-        $existing = new Label(label: 'Marketing', color: '#ff8700');
+        $existing = new Label('Marketing', '#ff8700');
         $item = $this->createItem(20);
         $item['labels'] = [$existing];
 

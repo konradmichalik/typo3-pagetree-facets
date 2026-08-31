@@ -33,7 +33,7 @@ final readonly class StubFilterOption implements FilterOptionInterface
     public function __construct(
         private string $tokenKey,
         private string $value,
-        private array $uids = [],
+        private array $uids,
     ) {}
 
     public function getTokenKey(): string

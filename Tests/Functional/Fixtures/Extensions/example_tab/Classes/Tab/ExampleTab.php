@@ -102,8 +102,8 @@ final class ExampleTab extends AbstractPagesQueryTab
         $sets = [];
         foreach ($token->values as $value) {
             $sets[] = match ($value) {
-                'set' => $this->resolveAbstract($context, isSet: true),
-                'empty' => $this->resolveAbstract($context, isSet: false),
+                'set' => $this->resolveAbstract($context, true),
+                'empty' => $this->resolveAbstract($context, false),
                 default => null,
             };
         }

@@ -99,7 +99,7 @@ final class TcaModalConfigurationTest extends TestCase
         $backendUser->expects(self::never())->method('checkAuthMode');
 
         $configuration = $this->contentElementTab()->getModalConfiguration(
-            new FilterContext($backendUser, 0),
+            new FilterContext($backendUser, 0, null),
         );
 
         self::assertSame(['text'], array_column($configuration['fields'][0]['options'], 'value'));
@@ -176,7 +176,7 @@ final class TcaModalConfigurationTest extends TestCase
             static fn (string $permission, string $table): bool => 'tt_content' === $table,
         );
 
-        $configuration = $this->recordsTab()->getModalConfiguration(new FilterContext($backendUser, 0));
+        $configuration = $this->recordsTab()->getModalConfiguration(new FilterContext($backendUser, 0, null));
 
         // With bucketing, gather all table values from all table-named fields.
         $allTableValues = [];
@@ -229,6 +229,6 @@ final class TcaModalConfigurationTest extends TestCase
         $backendUser->method('checkAuthMode')->willReturn(true);
         $backendUser->method('check')->willReturn(true);
 
-        return new FilterContext($backendUser, 0);
+        return new FilterContext($backendUser, 0, null);
     }
 }

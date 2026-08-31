@@ -69,7 +69,7 @@ final class RawQueryTabTest extends TestCase
 
         $uids = $tab->resolvePageUids(
             new Token('raw', ['tt_content|CType=image'], 'raw:tt_content|CType=image'),
-            $this->context(tablesSelectAllowed: false),
+            $this->context(false),
         );
 
         self::assertSame([], $uids);
@@ -186,6 +186,6 @@ final class RawQueryTabTest extends TestCase
         $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('check')->willReturn($tablesSelectAllowed);
 
-        return new FilterContext($backendUser, 0);
+        return new FilterContext($backendUser, 0, null);
     }
 }
