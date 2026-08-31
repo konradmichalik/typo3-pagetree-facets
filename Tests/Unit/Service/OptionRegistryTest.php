@@ -34,9 +34,9 @@ final class OptionRegistryTest extends TestCase
     public function returnsOptionsForOneTokenKeyInPriorityOrder(): void
     {
         $registry = $this->createRegistry([
-            [new StubFilterOption('is', 'low'), 0],
-            [new StubFilterOption('seo', 'other'), 100],
-            [new StubFilterOption('is', 'high'), 100],
+            [new StubFilterOption('is', 'low', []), 0],
+            [new StubFilterOption('seo', 'other', []), 100],
+            [new StubFilterOption('is', 'high', []), 100],
         ]);
 
         self::assertSame(
@@ -65,7 +65,7 @@ final class OptionRegistryTest extends TestCase
     public function disabledOptionsFromExtensionConfigurationAreRemoved(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFilterOption('is', 'empty'), 0], [new StubFilterOption('is', 'editlocked'), 0]],
+            [[new StubFilterOption('is', 'empty', []), 0], [new StubFilterOption('is', 'editlocked', []), 0]],
             ['disabledOptions' => 'is:editlocked'],
         );
 
@@ -80,7 +80,7 @@ final class OptionRegistryTest extends TestCase
     #[Test]
     public function disabledOptionsFromUserTsConfigAreRemoved(): void
     {
-        $registry = $this->createRegistry([[new StubFilterOption('seo', 'nofollow'), 0]]);
+        $registry = $this->createRegistry([[new StubFilterOption('seo', 'nofollow', []), 0]]);
         $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disableOptions' => 'seo:nofollow']]);
 
         self::assertSame([], $registry->getOptions('seo', $backendUser));
@@ -89,7 +89,7 @@ final class OptionRegistryTest extends TestCase
     #[Test]
     public function eventIsDispatchedOnlyOnce(): void
     {
-        $dispatcher = new CollectingOptionEventDispatcher([[new StubFilterOption('is', 'empty'), 0]]);
+        $dispatcher = new CollectingOptionEventDispatcher([[new StubFilterOption('is', 'empty', []), 0]]);
         $registry = new OptionRegistry($dispatcher, $this->createExtensionConfiguration());
 
         $registry->getOptions('is', $this->createBackendUser());
@@ -107,7 +107,7 @@ final class OptionRegistryTest extends TestCase
             new ExtensionConfigurationPathDoesNotExistException('not configured', 1668941190),
         );
         $registry = new OptionRegistry(
-            new CollectingOptionEventDispatcher([[new StubFilterOption('is', 'empty'), 0]]),
+            new CollectingOptionEventDispatcher([[new StubFilterOption('is', 'empty', []), 0]]),
             $extensionConfiguration,
         );
 

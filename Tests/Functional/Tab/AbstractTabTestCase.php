@@ -44,12 +44,12 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($this->backendUser);
     }
 
-    protected function createContext(?string $siteIdentifier = null, ?BackendUserAuthentication $backendUser = null): FilterContext
+    final protected function createContext(?string $siteIdentifier = null, ?BackendUserAuthentication $backendUser = null): FilterContext
     {
         return new FilterContext(
-            backendUser: $backendUser ?? $this->backendUser,
-            workspaceId: 0,
-            siteIdentifier: $siteIdentifier,
+            $backendUser ?? $this->backendUser,
+            0,
+            $siteIdentifier,
         );
     }
 
@@ -59,7 +59,7 @@ abstract class AbstractTabTestCase extends FunctionalTestCase
      *
      * @return list<int>
      */
-    protected function resolve(FacetInterface $facet, string $tokenString): array
+    final protected function resolve(FacetInterface $facet, string $tokenString): array
     {
         $tokens = (new TokenParser())->parse($tokenString);
         self::assertNotSame([], $tokens, 'Token string did not parse: '.$tokenString);

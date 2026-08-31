@@ -1,2 +1,25 @@
 parameters:
-	ignoreErrors: []
+	ignoreErrors:
+		-
+			message: '#^Method KonradMichalik\\PagetreeFacets\\Option\\AbstractPagesQueryOption\:\:getDescription\(\) is not final, but since the containing class is abstract, it should be\.$#'
+			identifier: ergebnis.finalInAbstractClass
+			count: 1
+			path: ../../Classes/Option/AbstractPagesQueryOption.php
+
+		-
+			message: '#^Method KonradMichalik\\PagetreeFacets\\Option\\AbstractPagesQueryOption\:\:getIcon\(\) is not final, but since the containing class is abstract, it should be\.$#'
+			identifier: ergebnis.finalInAbstractClass
+			count: 1
+			path: ../../Classes/Option/AbstractPagesQueryOption.php
+
+		-
+			message: '#^Method KonradMichalik\\PagetreeFacets\\Tab\\AbstractPagesQueryTab\:\:getGroup\(\) is not final, but since the containing class is abstract, it should be\.$#'
+			identifier: ergebnis.finalInAbstractClass
+			count: 1
+			path: ../../Classes/Tab/AbstractPagesQueryTab.php
+
+		-
+			message: '#^Method KonradMichalik\\PagetreeFacets\\Tests\\Functional\\Tab\\AbstractTabTestCase\:\:setUp\(\) is not final, but since the containing class is abstract, it should be\.$#'
+			identifier: ergebnis.finalInAbstractClass
+			count: 1
+			path: ../Functional/Tab/AbstractTabTestCase.php

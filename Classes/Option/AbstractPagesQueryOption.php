@@ -46,7 +46,7 @@ abstract class AbstractPagesQueryOption implements FilterOptionInterface
     /**
      * @return list<int>
      */
-    protected function fetchPageUids(FilterContext $context, callable $constrain): array
+    final protected function fetchPageUids(FilterContext $context, callable $constrain): array
     {
         $queryBuilder = $this->queryHelper->createQueryBuilder('pages', $context);
         $queryBuilder->select('uid')->from('pages');
@@ -61,7 +61,7 @@ abstract class AbstractPagesQueryOption implements FilterOptionInterface
      *
      * @return list<int>
      */
-    protected function resolveFlag(FilterContext $context, string $field): array
+    final protected function resolveFlag(FilterContext $context, string $field): array
     {
         return $this->fetchPageUids($context, static function (QueryBuilder $queryBuilder) use ($field): void {
             $queryBuilder->andWhere(
@@ -70,7 +70,7 @@ abstract class AbstractPagesQueryOption implements FilterOptionInterface
         });
     }
 
-    protected function excludeNonContentDoktypes(QueryBuilder $queryBuilder): void
+    final protected function excludeNonContentDoktypes(QueryBuilder $queryBuilder): void
     {
         $queryBuilder->andWhere(
             $queryBuilder->expr()->notIn(

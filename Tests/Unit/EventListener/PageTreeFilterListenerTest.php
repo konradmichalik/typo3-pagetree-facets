@@ -75,7 +75,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function freetextCombinedWithTokensIsIntersected(): void
     {
         $event = $this->createEvent('doktype:1 solar');
-        $this->createListener(freetextUids: ['solar' => [20, 99]])($event);
+        $this->createListener([], [], ['solar' => [20, 99]])($event);
 
         self::assertSame([20], $event->searchUids);
     }
@@ -157,7 +157,7 @@ final class PageTreeFilterListenerTest extends TestCase
         };
 
         $event = $this->createEvent('doktype:1 doktype:1');
-        $this->createListener(doktypeTab: $countingTab)($event);
+        $this->createListener([], [], [], $countingTab)($event);
 
         // ANDing a set with itself is a no-op, so the duplicate must not
         // trigger a second resolution (each one is a real query in production).
@@ -187,7 +187,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function siteScopePostFiltersTheResult(): void
     {
         $event = $this->createEvent('doktype:1 site:main');
-        $this->createListener(siteMap: ['main' => [20, 30]])($event);
+        $this->createListener(['main' => [20, 30]])($event);
 
         self::assertSame([20, 30], $event->searchUids);
     }
@@ -196,7 +196,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function knownSiteWithoutOverlapForcesNoMatch(): void
     {
         $event = $this->createEvent('doktype:1 site:other');
-        $this->createListener(siteMap: ['main' => [20, 30], 'other' => [99]])($event);
+        $this->createListener(['main' => [20, 30], 'other' => [99]])($event);
 
         self::assertSame([0], $event->searchUids);
     }
@@ -206,7 +206,7 @@ final class PageTreeFilterListenerTest extends TestCase
     {
         // Favorite robustness: favorites may reference removed sites.
         $event = $this->createEvent('doktype:1 site:gone');
-        $this->createListener(siteMap: ['main' => [20, 30]])($event);
+        $this->createListener(['main' => [20, 30]])($event);
 
         self::assertSame([10, 20, 30, 40], $event->searchUids);
     }
@@ -239,7 +239,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function tokensOfTabsDisabledViaExtensionConfigurationAreIgnored(): void
     {
         $event = $this->createEvent('doktype:1 is:empty');
-        $this->createListener(extensionConfiguration: ['disabledFacets' => 'state'])($event);
+        $this->createListener([], ['disabledFacets' => 'state'])($event);
 
         self::assertSame([10, 20, 30, 40], $event->searchUids);
     }
@@ -248,7 +248,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function theResolvedHitsAreRecordedForTheSearchResultLabel(): void
     {
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(matchedPages: $matchedPages)($this->createEvent('doktype:1 is:empty'));
+        $this->createListener([], [], [], null, $matchedPages)($this->createEvent('doktype:1 is:empty'));
 
         self::assertTrue($matchedPages->isActive());
         self::assertTrue($matchedPages->matches(20));
@@ -262,7 +262,7 @@ final class PageTreeFilterListenerTest extends TestCase
     public function theRecordedHitsAreScopedLikeTheResult(): void
     {
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(siteMap: ['main' => [20, 30]], matchedPages: $matchedPages)($this->createEvent('doktype:1 site:main'));
+        $this->createListener(['main' => [20, 30]], [], [], null, $matchedPages)($this->createEvent('doktype:1 site:main'));
 
         self::assertTrue($matchedPages->matches(20));
         self::assertFalse($matchedPages->matches(10));
@@ -274,7 +274,7 @@ final class PageTreeFilterListenerTest extends TestCase
         // applyResult() substitutes the impossible uid 0 to express "no matches"
         // to the core. Recording that substitution would label the tree root.
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(matchedPages: $matchedPages)($this->createEvent('is:hidden is:empty'));
+        $this->createListener([], [], [], null, $matchedPages)($this->createEvent('is:hidden is:empty'));
 
         self::assertTrue($matchedPages->isActive());
         self::assertFalse($matchedPages->matches(0));
@@ -285,7 +285,7 @@ final class PageTreeFilterListenerTest extends TestCase
     {
         // The core's own search-result label already covers that case.
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(matchedPages: $matchedPages)($this->createEvent('solar park'));
+        $this->createListener([], [], [], null, $matchedPages)($this->createEvent('solar park'));
 
         self::assertFalse($matchedPages->isActive());
     }
@@ -295,7 +295,7 @@ final class PageTreeFilterListenerTest extends TestCase
     {
         $GLOBALS['BE_USER'] = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(matchedPages: $matchedPages)($this->createEvent('doktype:1'));
+        $this->createListener([], [], [], null, $matchedPages)($this->createEvent('doktype:1'));
 
         self::assertFalse($matchedPages->isActive());
     }
@@ -306,7 +306,7 @@ final class PageTreeFilterListenerTest extends TestCase
         // The engine bows out and leaves the phrase to the core, so there is no
         // hit list of ours to mark.
         $matchedPages = new MatchedPageRegistry();
-        $this->createListener(matchedPages: $matchedPages)($this->createEvent('status:3'));
+        $this->createListener([], [], [], null, $matchedPages)($this->createEvent('status:3'));
 
         self::assertFalse($matchedPages->isActive());
     }

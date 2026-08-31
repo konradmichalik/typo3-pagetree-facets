@@ -136,7 +136,7 @@ final class FormTab extends AbstractPagesQueryTab
      * tried and removed, since EXT:form's non-public service definitions
      * make it unreachable in any context).
      */
-    protected function labelFromIdentifier(string $persistenceIdentifier): string
+    private function labelFromIdentifier(string $persistenceIdentifier): string
     {
         // A bare integer is a form_definition (database storage) uid, not a
         // path - there is no filename to derive a title from, so this is the

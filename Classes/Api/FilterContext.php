@@ -32,6 +32,6 @@ final readonly class FilterContext
         public BackendUserAuthentication $backendUser,
         public int $workspaceId,
         /** Site identifier from a "site:" scope token, or null = all accessible sites */
-        public ?string $siteIdentifier = null,
+        public ?string $siteIdentifier,
     ) {}
 }

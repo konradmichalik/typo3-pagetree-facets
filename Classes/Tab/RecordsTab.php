@@ -99,9 +99,7 @@ final class RecordsTab extends AbstractPagesQueryTab
                 continue;
             }
             $bucketKey = $this->bucketKeyForTable($table, $extensionBuckets);
-            if (!isset($bucketLabels[$bucketKey])) {
-                $bucketLabels[$bucketKey] = $this->bucketLabel($bucketKey, $extensionBuckets, $lll);
-            }
+            $bucketLabels[$bucketKey] ??= $this->bucketLabel($bucketKey, $extensionBuckets, $lll);
             $buckets[$bucketKey][] = [
                 'value' => $table,
                 'label' => (string) ($GLOBALS['TCA'][$table]['ctrl']['title'] ?? $table),

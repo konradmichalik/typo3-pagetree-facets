@@ -133,7 +133,7 @@ final class FormTabTest extends TestCase
 
     private function context(): FilterContext
     {
-        return new FilterContext(self::createStub(BackendUserAuthentication::class), 0);
+        return new FilterContext(self::createStub(BackendUserAuthentication::class), 0, null);
     }
 
     private function labelFromIdentifier(FormTab $tab, string $persistenceIdentifier): string

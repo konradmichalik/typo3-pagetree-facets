@@ -35,8 +35,8 @@ final class FacetRegistryTest extends TestCase
     public function returnsFacetsInPriorityOrder(): void
     {
         $registry = $this->createRegistry([
-            [new StubFacet('low', ['a']), 0],
-            [new StubFacet('high', ['b']), 100],
+            [new StubFacet('low', ['a'], []), 0],
+            [new StubFacet('high', ['b'], []), 100],
         ]);
 
         self::assertSame(
@@ -49,7 +49,7 @@ final class FacetRegistryTest extends TestCase
     public function disabledFacetsFromExtensionConfigurationAreRemoved(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFacet('doktype', ['doktype']), 70], [new StubFacet('state', ['is']), 60]],
+            [[new StubFacet('doktype', ['doktype'], []), 70], [new StubFacet('state', ['is'], []), 60]],
             ['disabledFacets' => 'state'],
         );
 
@@ -62,7 +62,7 @@ final class FacetRegistryTest extends TestCase
     public function disabledFacetsFromUserTsConfigAreRemoved(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFacet('doktype', ['doktype']), 70], [new StubFacet('state', ['is']), 60]],
+            [[new StubFacet('doktype', ['doktype'], []), 70], [new StubFacet('state', ['is'], []), 60]],
         );
         $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disableFacets' => 'doktype']]);
 
@@ -75,7 +75,7 @@ final class FacetRegistryTest extends TestCase
     public function tokensOfDisabledFacetsBecomeUnknown(): void
     {
         $registry = $this->createRegistry(
-            [[new StubFacet('state', ['is']), 60]],
+            [[new StubFacet('state', ['is'], []), 60]],
             ['disabledFacets' => 'state'],
         );
 
@@ -85,7 +85,7 @@ final class FacetRegistryTest extends TestCase
     #[Test]
     public function userTsConfigDisableSwitchesTheFeatureOff(): void
     {
-        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype']), 70]]);
+        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype'], []), 70]]);
         $backendUser = $this->createBackendUser(['tx_typo3pagetreefacets.' => ['disable' => '1']]);
 
         self::assertTrue($registry->isDisabledForUser($backendUser));
@@ -95,10 +95,10 @@ final class FacetRegistryTest extends TestCase
     #[Test]
     public function adminOnlyModeLocksOutNonAdmins(): void
     {
-        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype']), 70]], ['adminOnly' => '1']);
+        $registry = $this->createRegistry([[new StubFacet('doktype', ['doktype'], []), 70]], ['adminOnly' => '1']);
 
-        self::assertTrue($registry->isDisabledForUser($this->createBackendUser(admin: false)));
-        self::assertFalse($registry->isDisabledForUser($this->createBackendUser(admin: true)));
+        self::assertTrue($registry->isDisabledForUser($this->createBackendUser([], false)));
+        self::assertFalse($registry->isDisabledForUser($this->createBackendUser([], true)));
     }
 
     #[Test]
@@ -113,7 +113,7 @@ final class FacetRegistryTest extends TestCase
             new ExtensionConfigurationPathDoesNotExistException('not configured', 1668941190),
         );
         $registry = new FacetRegistry(
-            new CollectingEventDispatcher([[new StubFacet('doktype', ['doktype']), 70]]),
+            new CollectingEventDispatcher([[new StubFacet('doktype', ['doktype'], []), 70]]),
             $extensionConfigurationMock,
         );
 
@@ -124,7 +124,7 @@ final class FacetRegistryTest extends TestCase
     #[Test]
     public function findsOwningFacetForToken(): void
     {
-        $registry = $this->createRegistry([[new StubFacet('records', ['table', 'record', 'text']), 100]]);
+        $registry = $this->createRegistry([[new StubFacet('records', ['table', 'record', 'text'], []), 100]]);
 
         $facet = $registry->findFacetForToken(new Token('text', ['foo'], 'text:foo'), $this->createBackendUser());
         self::assertSame('records', $facet?->getIdentifier());

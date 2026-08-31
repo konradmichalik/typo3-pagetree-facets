@@ -171,6 +171,9 @@ final class ModalStateTokenBuilderTest extends TestCase
             /**
              * @return list<non-empty-string>
              */
+            /**
+             * @return list<non-empty-string>
+             */
             public function getTokenKeys(): array
             {
                 return [$this->identifier];
