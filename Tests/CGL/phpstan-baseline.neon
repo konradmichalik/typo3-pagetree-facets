@@ -23,9 +23,3 @@ parameters:
 			identifier: ergebnis.finalInAbstractClass
 			count: 1
 			path: ../Functional/Tab/AbstractTabTestCase.php
-
-		-
-			message: '#^Method KonradMichalik\\PagetreeFacets\\Api\\FacetInterface@anonymous/Tests/Unit/Token/ModalStateTokenBuilderTest\.php\:150\:\:getTokenKeys\(\) should return list\<non\-empty\-string\> but returns array\{string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: ../Unit/Token/ModalStateTokenBuilderTest.php
