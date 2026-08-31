@@ -80,9 +80,9 @@ final readonly class PageTreeFilterListener
         }
 
         $context = new FilterContext(
-            backendUser: $backendUser,
-            workspaceId: $backendUser->workspace,
-            siteIdentifier: $this->extractSiteScope($tokens),
+            $backendUser,
+            $backendUser->workspace,
+            $this->extractSiteScope($tokens),
         );
 
         $uids = $this->filterResolutionService->resolve($tokens, $context);

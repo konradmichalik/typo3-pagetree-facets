@@ -190,7 +190,7 @@ final class RecordsTabTest extends TestCase
 
     private function context(): FilterContext
     {
-        return new FilterContext(self::createStub(BackendUserAuthentication::class), 0);
+        return new FilterContext(self::createStub(BackendUserAuthentication::class), 0, null);
     }
 
     private function fakePackage(string $key, ?string $title): PackageInterface
@@ -226,7 +226,7 @@ final class RecordsTabTest extends TestCase
     {
         $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('check')->willReturn(true);
-        $context = new FilterContext($backendUser, 0);
+        $context = new FilterContext($backendUser, 0, null);
 
         $fields = $tab->getModalConfiguration($context)['fields'];
 

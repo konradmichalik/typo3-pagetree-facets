@@ -39,8 +39,8 @@ final class SupportsFilterOptionsTest extends TestCase
     public function modalConfigurationMergesRegisteredOptionsIntoTheField(): void
     {
         $tab = $this->createTab([
-            [new StubFilterOption('is', 'empty'), 100],
-            [new StubFilterOption('is', 'hidden'), 90],
+            [new StubFilterOption('is', 'empty', []), 100],
+            [new StubFilterOption('is', 'hidden', []), 90],
         ]);
 
         $options = $tab->getModalConfiguration($this->createContext())['fields'][0]['options'];
@@ -98,7 +98,7 @@ final class SupportsFilterOptionsTest extends TestCase
 
     private function createContext(): FilterContext
     {
-        return new FilterContext(backendUser: $this->createBackendUser(), workspaceId: 0);
+        return new FilterContext($this->createBackendUser(), 0, null);
     }
 
     private function createBackendUser(): BackendUserAuthentication&Stub

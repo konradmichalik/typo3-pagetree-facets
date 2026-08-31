@@ -58,9 +58,9 @@ final readonly class FacetsModalController
         $siteIdentifier = $this->extractSiteScope($tokens);
 
         $context = new FilterContext(
-            backendUser: $backendUser,
-            workspaceId: $backendUser->workspace,
-            siteIdentifier: $siteIdentifier,
+            $backendUser,
+            $backendUser->workspace,
+            $siteIdentifier,
         );
 
         $tabs = $this->buildTabs($context, $tokens);
@@ -109,9 +109,9 @@ final readonly class FacetsModalController
         $tokens = $this->modalStateTokenBuilder->build($body, $backendUser);
         $siteIdentifier = trim((string) ($body['site'] ?? ''));
         $context = new FilterContext(
-            backendUser: $backendUser,
-            workspaceId: $backendUser->workspace,
-            siteIdentifier: '' !== $siteIdentifier ? $siteIdentifier : null,
+            $backendUser,
+            $backendUser->workspace,
+            '' !== $siteIdentifier ? $siteIdentifier : null,
         );
 
         return new JsonResponse(['count' => $this->filterResolutionService->count($tokens, $context)]);
@@ -232,9 +232,9 @@ final readonly class FacetsModalController
     private function describedFavorites(BackendUserAuthentication $backendUser): array
     {
         $context = new FilterContext(
-            backendUser: $backendUser,
-            workspaceId: $backendUser->workspace,
-            siteIdentifier: null,
+            $backendUser,
+            $backendUser->workspace,
+            null,
         );
 
         return $this->phraseSummaryService->describeFavorites(

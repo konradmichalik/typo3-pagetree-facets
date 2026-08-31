@@ -101,7 +101,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $editor = $this->setUpBackendUser(2);
         $editor->groupData['explicit_allowdeny'] = 'tt_content:CType:textmedia';
 
-        $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+        $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext(null, $editor));
 
         self::assertSame(['textmedia'], array_column($this->flattenOptions($configuration), 'value'));
     }
@@ -112,7 +112,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $editor = $this->setUpBackendUser(2);
         $editor->groupData['pagetypes_select'] = '1';
 
-        $configuration = $this->get(DoktypeTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+        $configuration = $this->get(DoktypeTab::class)->getModalConfiguration($this->createContext(null, $editor));
 
         self::assertSame(['1'], array_column($configuration['fields'][0]['options'], 'value'));
     }
@@ -272,7 +272,7 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $editor = $this->setUpBackendUser(2);
         $editor->groupData['webmounts'] = '1';
 
-        $configuration = $this->get(TranslationsTab::class)->getModalConfiguration($this->createContext(backendUser: $editor));
+        $configuration = $this->get(TranslationsTab::class)->getModalConfiguration($this->createContext(null, $editor));
 
         self::assertSame(
             ['1'],

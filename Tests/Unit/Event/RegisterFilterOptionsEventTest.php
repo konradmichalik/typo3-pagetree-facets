@@ -30,9 +30,9 @@ final class RegisterFilterOptionsEventTest extends TestCase
     public function ordersByPriorityDescendingAndKeepsRegistrationOrderOnTie(): void
     {
         $event = new RegisterFilterOptionsEvent();
-        $event->addOption(new StubFilterOption('is', 'third-party-a'));
-        $event->addOption(new StubFilterOption('is', 'built-in'), 100);
-        $event->addOption(new StubFilterOption('is', 'third-party-b'));
+        $event->addOption(new StubFilterOption('is', 'third-party-a', []));
+        $event->addOption(new StubFilterOption('is', 'built-in', []), 100);
+        $event->addOption(new StubFilterOption('is', 'third-party-b', []));
 
         self::assertSame(
             ['built-in', 'third-party-a', 'third-party-b'],

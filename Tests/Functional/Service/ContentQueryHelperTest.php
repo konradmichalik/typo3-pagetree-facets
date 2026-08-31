@@ -45,7 +45,7 @@ final class ContentQueryHelperTest extends FunctionalTestCase
         parent::setUp();
         $this->importCSVDataSet(__DIR__.'/../Fixtures/ContentQueryHelper.csv');
         $this->subject = $this->get(ContentQueryHelper::class);
-        $this->context = new FilterContext(self::createStub(BackendUserAuthentication::class), 0);
+        $this->context = new FilterContext(self::createStub(BackendUserAuthentication::class), 0, null);
     }
 
     #[Test]

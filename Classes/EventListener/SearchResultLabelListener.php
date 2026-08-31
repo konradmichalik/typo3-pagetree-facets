@@ -85,18 +85,12 @@ final readonly class SearchResultLabelListener
             if (!$this->registry->matches((int) $page['uid'])) {
                 continue;
             }
-            if (!isset($item['labels'])) {
-                $item['labels'] = [];
-            }
-            $item['labels'][] = new Label(
-                label: $label,
-                color: self::LABEL_COLOR,
-                // inheritByChildren is flagged @internal, yet its default (true)
-                // is the wrong answer here: it would hand the stripe down to
-                // every child of a hit. The core's search-result label passes
-                // false for the same reason.
-                inheritByChildren: false,
-            );
+            $item['labels'] ??= [];
+            // inheritByChildren is flagged @internal, yet its default (true) is
+            // the wrong answer here: it would hand the stripe down to every
+            // child of a hit. The core's search-result label passes false for
+            // the same reason.
+            $item['labels'][] = new Label($label, self::LABEL_COLOR, 0, false);
         }
         unset($item);
 

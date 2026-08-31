@@ -33,7 +33,7 @@ final readonly class StubFacet implements FacetInterface
     public function __construct(
         private string $identifier,
         private array $tokenKeys,
-        private array $uidMap = [],
+        private array $uidMap,
     ) {}
 
     public function getIdentifier(): string

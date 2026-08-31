@@ -77,7 +77,7 @@ final class BackendAssetsListenerTest extends TestCase
             },
         );
 
-        ($this->createListener($pageRenderer, persistFilter: '1'))($this->createEvent());
+        ($this->createListener($pageRenderer, '1'))($this->createEvent());
 
         self::assertSame('1', $inlineSettings['persistFilter'] ?? null);
         self::assertSame('doktype:1', $inlineSettings['persistedFilter'] ?? null);
@@ -96,7 +96,7 @@ final class BackendAssetsListenerTest extends TestCase
             },
         );
 
-        ($this->createListener($pageRenderer, emptyResultNotice: '0'))($this->createEvent());
+        ($this->createListener($pageRenderer, '0', '0'))($this->createEvent());
 
         self::assertArrayNotHasKey('emptyResultNotice', $inlineSettings);
     }
@@ -114,7 +114,7 @@ final class BackendAssetsListenerTest extends TestCase
             },
         );
 
-        ($this->createListener($pageRenderer, livePreviewCount: '0'))($this->createEvent());
+        ($this->createListener($pageRenderer, '0', '1', '0'))($this->createEvent());
 
         self::assertArrayNotHasKey('livePreviewCount', $inlineSettings);
     }

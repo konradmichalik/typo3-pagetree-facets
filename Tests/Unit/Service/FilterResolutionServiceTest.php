@@ -105,7 +105,7 @@ final class FilterResolutionServiceTest extends TestCase
     #[Test]
     public function freetextIsResolvedAndIntersectedLikeAnyOtherCriterion(): void
     {
-        $uids = $this->createService(freetextUids: ['solar' => [20, 99]])->resolve(
+        $uids = $this->createService([], ['solar' => [20, 99]])->resolve(
             [new Token('doktype', ['1'], 'doktype:1'), new Token(Token::FREETEXT, ['solar'], 'solar')],
             $this->createContext(),
         );
@@ -116,9 +116,9 @@ final class FilterResolutionServiceTest extends TestCase
     #[Test]
     public function siteScopePostFiltersTheResult(): void
     {
-        $uids = $this->createService(siteMap: ['main' => [20, 30]])->resolve(
+        $uids = $this->createService(['main' => [20, 30]])->resolve(
             [new Token('doktype', ['1'], 'doktype:1')],
-            $this->createContext(siteIdentifier: 'main'),
+            $this->createContext('main'),
         );
 
         self::assertSame([20, 30], $uids);
@@ -128,7 +128,7 @@ final class FilterResolutionServiceTest extends TestCase
     public function pageScopePostFiltersTheResultByRootline(): void
     {
         $pidMap = [2 => 1, 10 => 2, 20 => 1, 30 => 1, 40 => 1];
-        $uids = $this->createService(pidMap: $pidMap)->resolve(
+        $uids = $this->createService([], [], $pidMap)->resolve(
             [new Token('doktype', ['1'], 'doktype:1'), new Token('under', ['2'], 'under:2')],
             $this->createContext(),
         );
@@ -146,7 +146,7 @@ final class FilterResolutionServiceTest extends TestCase
     #[Test]
     public function duplicateUidsFromAFacetAreNormalizedBeforeCounting(): void
     {
-        $service = $this->createService(doktypeUids: [10, 10, 20]);
+        $service = $this->createService([], [], [], [10, 10, 20]);
         $tokens = [new Token('doktype', ['1'], 'doktype:1')];
         $context = $this->createContext();
 
@@ -248,6 +248,6 @@ final class FilterResolutionServiceTest extends TestCase
         $backendUser->method('isAdmin')->willReturn(true);
         $backendUser->workspace = 0;
 
-        return new FilterContext(backendUser: $backendUser, workspaceId: 0, siteIdentifier: $siteIdentifier);
+        return new FilterContext($backendUser, 0, $siteIdentifier);
     }
 }

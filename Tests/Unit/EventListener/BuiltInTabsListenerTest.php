@@ -51,13 +51,13 @@ final class BuiltInTabsListenerTest extends TestCase
     #[Test]
     public function rawQueryTabIsNotRegisteredByDefault(): void
     {
-        self::assertNotContains('raw', $this->registeredIdentifiers(enableRawQueryTab: false));
+        self::assertNotContains('raw', $this->registeredIdentifiers(false));
     }
 
     #[Test]
     public function rawQueryTabIsRegisteredWhenExplicitlyEnabled(): void
     {
-        self::assertContains('raw', $this->registeredIdentifiers(enableRawQueryTab: true));
+        self::assertContains('raw', $this->registeredIdentifiers(true));
     }
 
     #[Test]
@@ -66,7 +66,7 @@ final class BuiltInTabsListenerTest extends TestCase
         $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
         $extensionConfiguration->method('get')->willThrowException(new RuntimeException('broken configuration'));
 
-        self::assertNotContains('raw', $this->registeredIdentifiers(enableRawQueryTab: false, extensionConfiguration: $extensionConfiguration));
+        self::assertNotContains('raw', $this->registeredIdentifiers(false, $extensionConfiguration));
     }
 
     #[Test]
@@ -76,13 +76,13 @@ final class BuiltInTabsListenerTest extends TestCase
         $packageManager->method('isPackageActive')->willReturnCallback(static fn (string $key): bool => 'seo' === $key);
         ExtensionManagementUtility::setPackageManager($packageManager);
 
-        self::assertContains('seo', $this->registeredIdentifiers(enableRawQueryTab: false));
+        self::assertContains('seo', $this->registeredIdentifiers(false));
     }
 
     #[Test]
     public function formTabIsNotRegisteredWhenExtFormIsNotLoaded(): void
     {
-        self::assertNotContains('form', $this->registeredIdentifiers(enableRawQueryTab: false));
+        self::assertNotContains('form', $this->registeredIdentifiers(false));
     }
 
     #[Test]
@@ -92,7 +92,7 @@ final class BuiltInTabsListenerTest extends TestCase
         $packageManager->method('isPackageActive')->willReturnCallback(static fn (string $key): bool => 'form' === $key);
         ExtensionManagementUtility::setPackageManager($packageManager);
 
-        $identifiers = $this->registeredIdentifiers(enableRawQueryTab: false);
+        $identifiers = $this->registeredIdentifiers(false);
 
         self::assertContains('form', $identifiers);
         // translations (50) is registered unconditionally right before form
