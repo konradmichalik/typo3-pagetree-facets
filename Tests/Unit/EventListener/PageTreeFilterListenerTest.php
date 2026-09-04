@@ -21,9 +21,9 @@ use KonradMichalik\PagetreeFacets\Token\Token;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
-use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Information\Typo3Version;
 
 /**
  * PageTreeFilterListenerTest.
@@ -35,6 +35,8 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
  */
 final class PageTreeFilterListenerTest extends TestCase
 {
+    use BuildsTreeFilterResolver;
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -48,8 +50,6 @@ final class PageTreeFilterListenerTest extends TestCase
             self::markTestSkipped('BeforePageTreeIsFilteredEvent is a TYPO3 v14 API.');
         }
     }
-
-    use BuildsTreeFilterResolver;
 
     protected function setUp(): void
     {

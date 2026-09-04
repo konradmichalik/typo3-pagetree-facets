@@ -35,18 +35,6 @@ use TYPO3\CMS\Core\Localization\LanguageService;
  */
 final class SearchResultLabelListenerTest extends TestCase
 {
-    /**
-     * v13's tree.js inherits a parent's labels to any node carrying none of its
-     * own and Label has no inheritByChildren flag to stop it, so the listener
-     * gives unmarked nodes a transparent placeholder there. The assertions that
-     * differ between the two are the ones about what an *unmarked* node looks
-     * like - the marked one is the same shape either way.
-     */
-    private static function supportsInheritanceFlag(): bool
-    {
-        return (new Typo3Version())->getMajorVersion() >= 14;
-    }
-
     protected function setUp(): void
     {
         $languageService = self::createStub(LanguageService::class);
@@ -159,6 +147,18 @@ final class SearchResultLabelListenerTest extends TestCase
         foreach ($event->getItems() as $item) {
             self::assertArrayNotHasKey('labels', $item);
         }
+    }
+
+    /**
+     * v13's tree.js inherits a parent's labels to any node carrying none of its
+     * own and Label has no inheritByChildren flag to stop it, so the listener
+     * gives unmarked nodes a transparent placeholder there. The assertions that
+     * differ between the two are the ones about what an *unmarked* node looks
+     * like - the marked one is the same shape either way.
+     */
+    private static function supportsInheritanceFlag(): bool
+    {
+        return (new Typo3Version())->getMajorVersion() >= 14;
     }
 
     /**

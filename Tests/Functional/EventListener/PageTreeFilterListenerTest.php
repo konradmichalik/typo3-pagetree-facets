@@ -19,10 +19,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\Controller\Event\AfterPageTreeItemsPreparedEvent;
 use TYPO3\CMS\Backend\Dto\Tree\Label\Label;
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
-use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\{LanguageService, LanguageServiceFactory};
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -41,6 +41,12 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 final class PageTreeFilterListenerTest extends FunctionalTestCase
 {
+    protected array $testExtensionsToLoad = [
+        'konradmichalik/typo3-pagetree-facets',
+    ];
+
+    private LanguageService $languageService;
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -54,12 +60,6 @@ final class PageTreeFilterListenerTest extends FunctionalTestCase
             self::markTestSkipped('BeforePageTreeIsFilteredEvent is a TYPO3 v14 API.');
         }
     }
-
-    protected array $testExtensionsToLoad = [
-        'konradmichalik/typo3-pagetree-facets',
-    ];
-
-    private LanguageService $languageService;
 
     protected function setUp(): void
     {

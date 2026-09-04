@@ -34,24 +34,6 @@ use TYPO3\CMS\Core\View\ViewInterface;
  */
 final class BackendAssetsListenerTest extends TestCase
 {
-    /**
-     * The inline settings a default installation publishes. The empty-result
-     * notice is missing before v14: it is driven by the core tree's
-     * typo3:tree:filter-applied / -reset events, which only exist from v14 on,
-     * so BackendAssetsListener does not announce a feature that cannot work.
-     *
-     * @return array<string, string>
-     */
-    private static function defaultInlineSettings(): array
-    {
-        $settings = ['livePreviewCount' => '1'];
-        if ((new Typo3Version())->getMajorVersion() >= 14) {
-            $settings = ['emptyResultNotice' => '1'] + $settings;
-        }
-
-        return $settings;
-    }
-
     protected function tearDown(): void
     {
         unset($GLOBALS['BE_USER']);
@@ -190,6 +172,24 @@ final class BackendAssetsListenerTest extends TestCase
         $pageRenderer->expects(self::never())->method('loadJavaScriptModule');
 
         ($this->createListener($pageRenderer))($this->createEvent());
+    }
+
+    /**
+     * The inline settings a default installation publishes. The empty-result
+     * notice is missing before v14: it is driven by the core tree's
+     * typo3:tree:filter-applied / -reset events, which only exist from v14 on,
+     * so BackendAssetsListener does not announce a feature that cannot work.
+     *
+     * @return array<string, string>
+     */
+    private static function defaultInlineSettings(): array
+    {
+        $settings = ['livePreviewCount' => '1'];
+        if ((new Typo3Version())->getMajorVersion() >= 14) {
+            $settings = ['emptyResultNotice' => '1'] + $settings;
+        }
+
+        return $settings;
     }
 
     private function createListener(
