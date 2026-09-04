@@ -32,12 +32,12 @@ return RectorConfig::configure()
         $rootPath.'/Tests/Unit',
         $rootPath.'/Tests/Functional',
     ])
-    ->withPhpVersion(PhpVersion::PHP_83)
+    ->withPhpVersion(PhpVersion::PHP_82)
     ->withSets([
         Typo3SetList::CODE_QUALITY,
         Typo3SetList::GENERAL,
         Typo3LevelSetList::UP_TO_TYPO3_14,
-        LevelSetList::UP_TO_PHP_83,
+        LevelSetList::UP_TO_PHP_82,
     ])
     ->withPHPStanConfigs([
         Typo3Option::PHPSTAN_FOR_RECTOR_PATH,
@@ -46,7 +46,7 @@ return RectorConfig::configure()
         AddVoidReturnTypeWhereNoReturnRector::class,
     ])
     ->withConfiguredRule(ExtEmConfRector::class, [
-        ExtEmConfRector::PHP_VERSION_CONSTRAINT => '8.3.0-8.5.99',
+        ExtEmConfRector::PHP_VERSION_CONSTRAINT => '8.2.0-8.5.99',
         ExtEmConfRector::TYPO3_VERSION_CONSTRAINT => '13.4.0-14.99.99',
         ExtEmConfRector::ADDITIONAL_VALUES_TO_BE_REMOVED => [],
     ])

@@ -5,6 +5,12 @@ includes:
 parameters:
 	level: 8
 
+	# Typed class constants are PHP 8.3+ syntax; the preset's 100% constant
+	# type-coverage requirement would otherwise force a floor of 8.3, one major
+	# above what TYPO3 v13/v14 themselves require.
+	type_coverage:
+		constant: 0
+
 	typo3:
 		requestGetAttributeMapping:
 			# Set by typo3/cms-backend/backend-routing for every backend request
