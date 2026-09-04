@@ -82,13 +82,13 @@ final readonly class PageTreeFilterMiddleware implements MiddlewareInterface
      * Configuration/Backend/AjaxRoutes.php are registered with an "ajax_"
      * prefix, so "page_tree_filter" is reached under this identifier.
      */
-    private const string FILTER_ROUTE = 'ajax_page_tree_filter';
+    private const FILTER_ROUTE = 'ajax_page_tree_filter';
 
     /**
      * The query parameter TreeController::filterDataAction() reads the search
      * phrase from.
      */
-    private const string SEARCH_PARAM = 'q';
+    private const SEARCH_PARAM = 'q';
 
     /**
      * Appended to every rewritten phrase; see the class docblock for why. Must
@@ -96,7 +96,7 @@ final readonly class PageTreeFilterMiddleware implements MiddlewareInterface
      * commas (the core splits on those), and implausible enough as a substring
      * of a page title that the LIKE it lands in can never match.
      */
-    private const string NO_MATCH_SENTINEL = '#pagetree-facets-no-match#';
+    private const NO_MATCH_SENTINEL = '#pagetree-facets-no-match#';
 
     public function __construct(
         private TreeFilterResolver $treeFilterResolver,

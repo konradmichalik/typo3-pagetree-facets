@@ -42,7 +42,7 @@ class ContentQueryHelper
      * Doktypes that naturally carry no content - excluded from "is:empty"
      * and "seo:*" so shortcuts/folders do not flood the results.
      */
-    public const array NON_CONTENT_DOKTYPES = [3, 4, 7, 199, 254, 255]; // external, shortcut, mountpoint, spacer, sysfolder, recycler
+    public const NON_CONTENT_DOKTYPES = [3, 4, 7, 199, 254, 255]; // external, shortcut, mountpoint, spacer, sysfolder, recycler
 
     /**
      * Hard cap on the LIKE-based text searches only (never on set-inversion
@@ -52,7 +52,7 @@ class ContentQueryHelper
      * tree "narrowed" to 10k+ matches is not usably filtered anyway, and in
      * the AND intersection truncation can only drop matches, never invent one.
      */
-    private const int TEXT_MATCH_LIMIT = 10000;
+    private const TEXT_MATCH_LIMIT = 10000;
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,

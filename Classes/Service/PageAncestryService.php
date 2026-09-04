@@ -43,7 +43,7 @@ class PageAncestryService
      * Stays comfortably below every platform's placeholder limit
      * (SQLite historically 999, hence not 1000).
      */
-    private const int CHUNK_SIZE = 900;
+    private const CHUNK_SIZE = 900;
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,

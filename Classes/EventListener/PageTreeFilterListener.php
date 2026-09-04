@@ -51,7 +51,7 @@ final readonly class PageTreeFilterListener
      * Impossible page UID used to force an empty result set when the
      * intersection is empty (uid 0 is the root, never a tree node).
      */
-    private const int NO_MATCH_UID = 0;
+    private const NO_MATCH_UID = 0;
 
     public function __construct(
         private TreeFilterResolver $treeFilterResolver,

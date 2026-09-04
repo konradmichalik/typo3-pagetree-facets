@@ -59,16 +59,16 @@ final readonly class SearchResultLabelListener
      * tree, and they never occur in the same render anyway (a phrase without
      * keyed tokens is left entirely to the core).
      */
-    private const string LABEL_COLOR = '#F5A770';
+    private const LABEL_COLOR = '#F5A770';
 
     /**
      * Colour of the v13 inheritance blocker below. The stripe is rendered
      * unconditionally as `background-color: <color>`, so the only way to have a
      * label that occupies a node without showing anything is a transparent one.
      */
-    private const string BLOCKER_COLOR = 'transparent';
+    private const BLOCKER_COLOR = 'transparent';
 
-    private const string LABEL_KEY = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_tree.xlf:tree.match';
+    private const LABEL_KEY = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_tree.xlf:tree.match';
 
     public function __construct(
         private MatchedPageRegistry $registry,

@@ -31,11 +31,11 @@ use function is_string;
  */
 final readonly class SessionFilterService
 {
-    private const string SESSION_KEY = 'typo3_pagetree_facets_filter';
+    private const SESSION_KEY = 'typo3_pagetree_facets_filter';
 
     // Bound on what a single BE user can persist into their session, mirroring
     // FavoriteService's token cap - generous enough for any realistic phrase.
-    private const int MAX_LENGTH = 2000;
+    private const MAX_LENGTH = 2000;
 
     public function __construct(
         private ExtensionConfiguration $extensionConfiguration,

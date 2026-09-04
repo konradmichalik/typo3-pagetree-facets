@@ -23,7 +23,7 @@ namespace KonradMichalik\PagetreeFacets\Token;
  */
 final readonly class Token
 {
-    public const string FREETEXT = '_freetext';
+    public const FREETEXT = '_freetext';
 
     /**
      * @param non-empty-string $key    Token key, e.g. "doktype", "is", "text". Freetext uses Token::FREETEXT.
