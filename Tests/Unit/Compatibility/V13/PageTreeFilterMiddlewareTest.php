@@ -41,7 +41,7 @@ final class PageTreeFilterMiddlewareTest extends TestCase
      * than read from the class: the exact string is the contract with the core
      * query, so a test that followed a change to it would assert nothing.
      */
-    private const string SENTINEL = '#pagetree-facets-no-match#';
+    private const SENTINEL = '#pagetree-facets-no-match#';
 
     protected function setUp(): void
     {

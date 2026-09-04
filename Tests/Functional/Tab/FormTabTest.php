@@ -42,7 +42,7 @@ final class FormTabTest extends AbstractTabTestCase
      * so the form_definition-specific test cases skip themselves on older
      * TYPO3 rather than asserting behavior core cannot yet produce.
      */
-    private const string MIN_VERSION_FOR_FORM_DEFINITION_SOFTREF = '14.2.0';
+    private const MIN_VERSION_FOR_FORM_DEFINITION_SOFTREF = '14.2.0';
 
     protected array $coreExtensionsToLoad = ['form'];
 

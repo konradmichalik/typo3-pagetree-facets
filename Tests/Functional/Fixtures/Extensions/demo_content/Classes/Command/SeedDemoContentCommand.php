@@ -43,7 +43,7 @@ use function count;
 final class SeedDemoContentCommand extends Command
 {
     /** Titles created by this command - used to make re-running it idempotent. */
-    private const array PAGE_TITLES = [
+    private const PAGE_TITLES = [
         'About us', 'Products', 'Archive', 'Legal', 'Coming Soon',
         'Partner Website', 'Old Homepage', 'Assets', 'Contact',
         'Team', 'Jobs',
@@ -58,7 +58,7 @@ final class SeedDemoContentCommand extends Command
      *
      * @var array<string, array{description: string, config: string}>
      */
-    private const array LAYOUT_RECORDS = [
+    private const LAYOUT_RECORDS = [
         'Demo: One column' => [
             'description' => 'Single content column.',
             'config' => 'backend_layout {
@@ -105,8 +105,8 @@ final class SeedDemoContentCommand extends Command
      * page's TSconfig field between markers so a re-run replaces exactly this
      * block and leaves anything else in that field alone.
      */
-    private const string TSCONFIG_MARKER_START = '# --- pagetree-facets demo layouts (start) ---';
-    private const string TSCONFIG_MARKER_END = '# --- pagetree-facets demo layouts (end) ---';
+    private const TSCONFIG_MARKER_START = '# --- pagetree-facets demo layouts (start) ---';
+    private const TSCONFIG_MARKER_END = '# --- pagetree-facets demo layouts (end) ---';
 
     /**
      * Editors the Activity tab's "Edited by"/"Created by" pickers can be tried
@@ -116,14 +116,14 @@ final class SeedDemoContentCommand extends Command
      * accounts exist for. Never deleted on a re-run (see ensureEditors) - the
      * history they are attributed in points at their uids.
      */
-    private const array EDITORS = [
+    private const EDITORS = [
         'anna.editor' => 'Anna Schmidt',
         'ben.author' => 'Ben Weber',
         'clara.reviewer' => 'Clara Fischer',
     ];
 
     /** The password the ddev addon gives its admin - dev-only, same as that one. */
-    private const string EDITOR_PASSWORD = 'Password1!';
+    private const EDITOR_PASSWORD = 'Password1!';
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,
