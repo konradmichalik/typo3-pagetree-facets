@@ -35,3 +35,33 @@
   UID match. That set is broader than the core's title/`nav_title` search but does
   **not** cover translated titles or `http(s)://` frontend URIs; search for those
   on their own, without a token.
+
+## TYPO3 v13
+
+The extension supports v13 and v14 from one code base, but the two reach the page
+tree through different core APIs — v14's `BeforePageTreeIsFilteredEvent` does not
+exist in v13, so there the filter is applied by a request middleware
+(`Compatibility\V13\PageTreeFilterMiddleware`) that rewrites the tree's search
+phrase into the resolved page UIDs before `TreeController` sees it. Criteria
+resolution itself is the same engine on both, but two details differ:
+
+- **The core title search still runs on v13, at a cost.**
+  `PageTreeRepository::fetchFilteredTree()` ORs the UID list with a
+  `title`/`nav_title` `LIKE` and offers no way to drop it; on v14 the event lets
+  the extension neutralize that term, making the filter an exact `uid IN (…)`.
+  The extension keeps the `LIKE` from widening the result by appending a
+  sentinel to the rewritten phrase — it contributes no UID but makes the pattern
+  one no page title can contain. What remains is the cost: a broad criterion on
+  a large installation produces a pattern as long as its own result list, which
+  the database evaluates against every row the `uid IN (…)` branch did not
+  already satisfy. Pair a broad criterion with a narrower one if it ever feels
+  slow; the v14 path does not have this cost at all.
+- **Hit markers cost unmarked pages a trailing `"; "` in their tooltip on v13.**
+  A filtered tree renders the hits plus the rootline leading to them, and the
+  orange stripe tells the two apart. v13's tree lets any node without labels of
+  its own inherit its parent's, with no opt-out (`Label::$inheritByChildren`
+  only exists from v14 on), which would put the stripe on every rendered
+  descendant of a hit. The extension prevents that by giving unmarked nodes a
+  transparent placeholder label while a facet filter is active; the core joins
+  label texts into the node tooltip unconditionally, hence the trailing
+  separator.

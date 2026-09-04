@@ -5,7 +5,7 @@
 # TYPO3 extension `typo3_pagetree_facets`
 
 [![Latest Stable Version](https://typo3-badges.dev/badge/typo3_pagetree_facets/version/shields.svg)](https://extensions.typo3.org/extension/typo3_pagetree_facets)
-![TYPO3](https://img.shields.io/badge/TYPO3-14.3-orange.svg)
+![TYPO3](https://img.shields.io/badge/TYPO3-13.4%20%7C%2014.3-orange.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.3%20%7C%208.4%20%7C%208.5-blue.svg)
 [![CGL](https://img.shields.io/github/actions/workflow/status/konradmichalik/typo3-pagetree-facets/cgl.yml?label=cgl&logo=github)](https://github.com/konradmichalik/typo3-pagetree-facets/actions/workflows/cgl.yml)
 [![Coverage](https://coveralls.io/repos/github/konradmichalik/typo3-pagetree-facets/badge.svg?branch=main)](https://coveralls.io/github/konradmichalik/typo3-pagetree-facets)
@@ -48,7 +48,7 @@ a public facet API.
 
 ### Requirements
 
-* TYPO3 ^14.0
+* TYPO3 ^13.4 || ^14.0
 * PHP 8.3 - 8.5
 
 ### Composer
