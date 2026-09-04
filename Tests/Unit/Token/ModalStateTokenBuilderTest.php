@@ -151,7 +151,7 @@ final class ModalStateTokenBuilderTest extends TestCase
             /**
              * @param non-empty-string $identifier
              */
-            public function __construct(private string $identifier) {}
+            public function __construct(private readonly string $identifier) {}
 
             public function getIdentifier(): string
             {

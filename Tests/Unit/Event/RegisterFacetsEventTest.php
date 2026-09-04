@@ -49,7 +49,7 @@ final class RegisterFacetsEventTest extends TestCase
     private function createFacet(string $identifier): FacetInterface
     {
         return new class($identifier) implements FacetInterface {
-            public function __construct(private string $identifier) {}
+            public function __construct(private readonly string $identifier) {}
 
             public function getIdentifier(): string
             {
