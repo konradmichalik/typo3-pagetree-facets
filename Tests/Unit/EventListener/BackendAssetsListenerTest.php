@@ -23,6 +23,7 @@ use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
 
@@ -33,6 +34,24 @@ use TYPO3\CMS\Core\View\ViewInterface;
  */
 final class BackendAssetsListenerTest extends TestCase
 {
+    /**
+     * The inline settings a default installation publishes. The empty-result
+     * notice is missing before v14: it is driven by the core tree's
+     * typo3:tree:filter-applied / -reset events, which only exist from v14 on,
+     * so BackendAssetsListener does not announce a feature that cannot work.
+     *
+     * @return array<string, string>
+     */
+    private static function defaultInlineSettings(): array
+    {
+        $settings = ['livePreviewCount' => '1'];
+        if ((new Typo3Version())->getMajorVersion() >= 14) {
+            $settings = ['emptyResultNotice' => '1'] + $settings;
+        }
+
+        return $settings;
+    }
+
     protected function tearDown(): void
     {
         unset($GLOBALS['BE_USER']);
@@ -61,7 +80,7 @@ final class BackendAssetsListenerTest extends TestCase
 
         // Session persistence is off by default; the empty-result notice and the
         // live count preview are both on by default.
-        self::assertSame(['emptyResultNotice' => '1', 'livePreviewCount' => '1'], $inlineSettings);
+        self::assertSame(self::defaultInlineSettings(), $inlineSettings);
     }
 
     #[Test]
@@ -148,7 +167,7 @@ final class BackendAssetsListenerTest extends TestCase
             $extensionConfiguration,
         ))($this->createEvent());
 
-        self::assertSame(['emptyResultNotice' => '1', 'livePreviewCount' => '1'], $inlineSettings);
+        self::assertSame(self::defaultInlineSettings(), $inlineSettings);
     }
 
     #[Test]
