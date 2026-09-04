@@ -108,7 +108,13 @@ final readonly class SearchResultLabelListener
         $items = $event->getItems();
         foreach ($items as &$item) {
             $uid = $this->pageUid($item);
-            if (null !== $uid && $this->registry->matches($uid)) {
+            if (null === $uid) {
+                // Not a page item this listener can make sense of - leave it
+                // exactly as the core built it rather than guessing.
+                continue;
+            }
+
+            if ($this->registry->matches($uid)) {
                 $item['labels'] ??= [];
                 $item['labels'][] = $matchLabel;
 
@@ -126,9 +132,7 @@ final readonly class SearchResultLabelListener
 
     /**
      * "_page" is documented as being there for events like this one, but it is
-     * not part of the item contract - never assume its shape. A node without
-     * one still needs the blocker in __invoke(): it is exactly the kind of
-     * unmarked node the v13 inheritance workaround exists for.
+     * not part of the item contract - never assume its shape.
      *
      * @param array<string, mixed> $item
      */
