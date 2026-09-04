@@ -123,6 +123,13 @@ final readonly class PageTreeFilterMiddleware implements MiddlewareInterface
      */
     private function buildPhrase(array $uids): string
     {
+        // Deduplicated for the same reason PageTreeFilterListener dedupes
+        // before assigning $event->searchUids on v14: TreeFilterResolver
+        // promises byte-identical hit lists on both adapters, and this is the
+        // only place that promise is still enforced once the resolver's own
+        // upstream deduplication is bypassed or changes.
+        $uids = array_values(array_unique($uids));
+
         // The sentinel is the whole phrase for an empty result: no UID part at
         // all, so the core is left querying for a title nobody has.
         return implode(',', [...$uids, self::NO_MATCH_SENTINEL]);
