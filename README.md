@@ -48,7 +48,7 @@ a public facet API.
 
 ### Requirements
 
-* TYPO3 ^13.4 || ^14.0
+* TYPO3 ^13.4 || ^14.3
 * PHP 8.3 - 8.5
 
 ### Composer
@@ -139,7 +139,7 @@ or add a value to an existing one; see [Extending](Documentation/EXTENDING.md).
 | [Known Limitations](Documentation/LIMITATIONS.md) | Scopes as a post-filter, layout inheritance, page permissions, and freetext-with-token search behaviour |
 | [Extending](Documentation/EXTENDING.md) | The two extension points, the `example_tab` fixture, and the public API / stability promise |
 
-## 🙏 Acknowledgments
+## 💎 Credits
 
 This project is inspired by the great [pagetreefilter](https://github.com/christophlehmann/pagetreefilter) extension.
 
