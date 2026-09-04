@@ -87,7 +87,7 @@ final readonly class SearchResultLabelListener
         // translation domain: domains are a v14 addition, and v13's sL() returns
         // anything without an LLL: prefix verbatim - which would print the raw
         // identifier into the node tooltip.
-        $text = $this->getLanguageService()->sL(self::LABEL_KEY) ?: 'Matches the filter';
+        $text = $this->getLanguageService()->sL('typo3_pagetree_facets.tree:tree.match') ?: 'Matches the filter';
 
         // Both labels are built once and shared across every item: Label is
         // final readonly, and a broad criterion resolves to five-figure hit
