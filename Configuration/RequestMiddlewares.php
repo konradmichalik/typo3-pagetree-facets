@@ -36,6 +36,20 @@ return [
             'after' => [
                 'typo3/cms-backend/site-resolver',
             ],
+            // The four middlewares that must stay inside this one (see the
+            // class docblock: skipping them on an early return would ship a
+            // response without compression, CSP or response headers) are
+            // flagged internal by core and not meant to be referenced - but
+            // there is no public middleware between site-resolver and them to
+            // anchor on instead. Without this, their relative order is only an
+            // alphabetical tie-break in DependencyOrderingService, not a
+            // guarantee.
+            'before' => [
+                'typo3/cms-backend/output-compression',
+                'typo3/cms-backend/csp-headers',
+                'typo3/cms-backend/response-headers',
+                'typo3/cms-core/response-propagation',
+            ],
         ],
     ],
 ];
