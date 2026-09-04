@@ -107,14 +107,8 @@ final readonly class SearchResultLabelListener
 
         $items = $event->getItems();
         foreach ($items as &$item) {
-            $page = $item['_page'] ?? null;
-            // "_page" is documented as being there for events like this one, but
-            // it is not part of the item contract - never assume its shape.
-            if (!is_array($page) || !isset($page['uid'])) {
-                continue;
-            }
-
-            if ($this->registry->matches((int) $page['uid'])) {
+            $uid = $this->pageUid($item);
+            if (null !== $uid && $this->registry->matches($uid)) {
                 $item['labels'] ??= [];
                 $item['labels'][] = $matchLabel;
 
@@ -128,6 +122,21 @@ final readonly class SearchResultLabelListener
         unset($item);
 
         $event->setItems($items);
+    }
+
+    /**
+     * "_page" is documented as being there for events like this one, but it is
+     * not part of the item contract - never assume its shape. A node without
+     * one still needs the blocker in __invoke(): it is exactly the kind of
+     * unmarked node the v13 inheritance workaround exists for.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function pageUid(array $item): ?int
+    {
+        $page = $item['_page'] ?? null;
+
+        return is_array($page) && isset($page['uid']) ? (int) $page['uid'] : null;
     }
 
     /**
