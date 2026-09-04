@@ -1,6 +1,6 @@
 {
 	"name": "konradmichalik/typo3-pagetree-facets",
-	"description": "Pagetree Facets - Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.",
+	"description": "Pagetree Facets - Filterable page tree with an extensible filter tab API, for TYPO3 v13 and v14.",
 	"license": [
 		"GPL-2.0-or-later"
 	],
@@ -26,20 +26,20 @@
 		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
 		"ext-ctype": "*",
 		"ext-mbstring": "*",
-		"doctrine/dbal": "^4.4.4",
+		"doctrine/dbal": "^4.0",
 		"psr/event-dispatcher": "^1.0",
 		"psr/http-message": "^1.0 || ^2.0",
-		"typo3/cms-backend": "^14.3.6",
-		"typo3/cms-core": "^14.3.6"
+		"typo3/cms-backend": "^13.4.0 || ^14.3.6",
+		"typo3/cms-core": "^13.4.0 || ^14.3.6"
 	},
 	"require-dev": {
 		"eliashaeussler/version-bumper": "^4.1.0",
 		"konradmichalik/ttt": "^0.4.0",
 		"phpunit/phpcov": "^11.0.4 || ^12.0 || ^13.1.0",
 		"phpunit/phpunit": "^11.0 || ^12.0 || ^13.0",
-		"typo3/cms-base-distribution": "^14.3.0",
-		"typo3/cms-form": "^14.3.6",
-		"typo3/cms-seo": "^14.3.6",
+		"typo3/cms-base-distribution": "^13.4.0 || ^14.3.0",
+		"typo3/cms-form": "^13.4.0 || ^14.3.6",
+		"typo3/cms-seo": "^13.4.0 || ^14.3.6",
 		"typo3/testing-framework": "^9.0 || ^10.0"
 	},
 	"autoload": {

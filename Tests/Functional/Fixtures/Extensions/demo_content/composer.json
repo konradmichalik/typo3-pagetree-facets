@@ -7,7 +7,7 @@
 	"type": "typo3-cms-extension",
 	"require": {
 		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
-		"typo3/cms-core": "^14.0"
+		"typo3/cms-core": "^13.4 || ^14.0"
 	},
 	"autoload": {
 		"psr-4": {
