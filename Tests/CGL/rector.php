@@ -19,6 +19,7 @@ use Rector\ValueObject\PhpVersion;
 use Ssch\TYPO3Rector\CodeQuality\General\ExtEmConfRector;
 use Ssch\TYPO3Rector\Configuration\Typo3Option;
 use Ssch\TYPO3Rector\Set\{Typo3LevelSetList, Typo3SetList};
+use Ssch\TYPO3Rector\TYPO314\v0\MigrateLabelReferenceToDomainSyntaxRector;
 
 $rootPath = dirname(__DIR__, 2);
 
@@ -46,7 +47,7 @@ return RectorConfig::configure()
     ])
     ->withConfiguredRule(ExtEmConfRector::class, [
         ExtEmConfRector::PHP_VERSION_CONSTRAINT => '8.3.0-8.5.99',
-        ExtEmConfRector::TYPO3_VERSION_CONSTRAINT => '14.0.0-14.99.99',
+        ExtEmConfRector::TYPO3_VERSION_CONSTRAINT => '13.4.0-14.99.99',
         ExtEmConfRector::ADDITIONAL_VALUES_TO_BE_REMOVED => [],
     ])
     ->withSkip([
@@ -56,6 +57,11 @@ return RectorConfig::configure()
             'ext_tables.php',
             'ClassAliasMap.php',
         ],
+        // Domain-syntax label references (e.g. "extkey.tree:tree.match") are a
+        // v14-only core feature; v13's sL() returns anything without an LLL:
+        // prefix verbatim instead of resolving it. This extension supports both
+        // majors from one code base, so the classic LLL:EXT: paths must stay.
+        MigrateLabelReferenceToDomainSyntaxRector::class,
     ])
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)
