@@ -5,6 +5,13 @@ includes:
 parameters:
 	level: 8
 
+	typo3:
+		requestGetAttributeMapping:
+			# Set by typo3/cms-backend/backend-routing for every backend request
+			# that matched a route; PageTreeFilterMiddleware reads it to tell the
+			# page tree's filter endpoint from the rest of the backend stack.
+			route: TYPO3\CMS\Backend\Routing\Route|null
+
 	type_perfect:
 		# PSR-7 request handlers must accept the ServerRequestInterface, not a
 		# concrete request class - narrowing framework entry-point parameters
