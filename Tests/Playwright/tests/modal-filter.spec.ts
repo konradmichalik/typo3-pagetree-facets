@@ -34,7 +34,12 @@ test('a selected option shows up as an active-filter chip and a nav count', asyn
   await modal.option('doktype', 'doktype', '3').check();
 
   await expect(modal.chips()).toHaveCount(1);
-  expect(await modal.chipLabels()).toEqual(['Page type: Link']);
+  // The option label comes straight from core TCA, which renamed doktype 3 from
+  // "Link to External URL" (v13) to "Link" (v14) - so the chip is asserted on
+  // the part this extension actually produces: the facet prefix and the option
+  // it stands for.
+  expect(await modal.chipLabels()).toHaveLength(1);
+  expect((await modal.chipLabels())[0]).toMatch(/^Page type: Link/);
   await expect(modal.navCount('doktype')).toHaveText('1');
 });
 

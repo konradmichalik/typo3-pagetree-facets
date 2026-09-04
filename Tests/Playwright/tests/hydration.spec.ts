@@ -18,7 +18,10 @@ test('an existing phrase hydrates the modal state', async ({ page }) => {
 
   await expect(modal.option('doktype', 'doktype', '3')).toBeChecked();
   await expect(modal.navCount('doktype')).toHaveText('1');
-  expect(await modal.chipLabels()).toEqual(['Page type: Link']);
+  // Prefix match rather than the full string: the option label is core TCA,
+  // which renamed doktype 3 from "Link to External URL" (v13) to "Link" (v14).
+  expect(await modal.chipLabels()).toHaveLength(1);
+  expect((await modal.chipLabels())[0]).toMatch(/^Page type: Link/);
 });
 
 test('opening and closing the modal does not rewrite the phrase', async ({ page }) => {
