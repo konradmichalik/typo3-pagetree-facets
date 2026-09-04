@@ -232,7 +232,7 @@ final readonly class PhraseSummaryService
         // anything without an LLL: prefix straight back, so every summary would
         // silently fall through to its English fallback there.
         $translated = $this->getLanguageService()->sL(
-            'typo3_pagetree_facets.messages:pagetreeFacets.modal.',
+            'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:pagetreeFacets.modal.'.$key,
         );
 
         return '' !== $translated ? $translated : $fallback;
