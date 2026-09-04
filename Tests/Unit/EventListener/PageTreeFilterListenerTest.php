@@ -39,8 +39,6 @@ final class PageTreeFilterListenerTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        parent::setUpBeforeClass();
-
         // BeforePageTreeIsFilteredEvent does not exist before v14 - the whole
         // reason PageTreeFilterMiddleware exists. Instantiating the event below
         // would fatal on the v13 matrix job, so the v14 adapter's tests only run
