@@ -13,7 +13,7 @@
 	},
 	"devDependencies": {
 		"@konradmichalik/ptu": "^0.1.0",
-		"@playwright/test": "^1.62.1",
+		"@playwright/test": "^1.63.0",
 		"@vitest/coverage-v8": "^5.0.0",
 		"jsdom": "^30.0.1",
 		"vitest": "^5.0.0"
