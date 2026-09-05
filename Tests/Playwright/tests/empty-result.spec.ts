@@ -4,6 +4,13 @@ import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { DEMO_PAGES, NO_MATCH_TOKEN } from '../support/demo-pages.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 import { searchTree } from '../support/search-tree.js';
+import { resolveTypo3Version } from '@konradmichalik/ptu';
+
+// The empty-result notice is driven by the core's own filter lifecycle events
+// (typo3:tree:filter-applied / -reset), which the page tree only dispatches from
+// v14 on; BackendAssetsListener therefore does not even publish the setting on
+// v13. See Documentation/LIMITATIONS.md.
+test.skip(resolveTypo3Version() === '13', 'The empty-result notice is a v14-only feature.');
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');

@@ -19,6 +19,7 @@ use TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 /**
@@ -76,6 +77,16 @@ final readonly class BackendAssetsListener
 
     private function isEmptyResultNoticeEnabled(): bool
     {
+        // The notice hangs off the core's own filter lifecycle events
+        // (typo3:tree:filter-applied / -reset), which the tree only dispatches
+        // from v14 on. v13 signals a finished filter through reactive component
+        // state instead, and reaching into that is the kind of DOM coupling this
+        // extension keeps to the single spot in #findFilterInput() - so the
+        // notice stays off there rather than being wired up on internals.
+        if ((new Typo3Version())->getMajorVersion() < 14) {
+            return false;
+        }
+
         try {
             return (bool) $this->extensionConfiguration->get('typo3_pagetree_facets', 'emptyResultNotice');
         } catch (Throwable) {

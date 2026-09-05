@@ -9,13 +9,15 @@ You can find the extension settings in the TYPO3 backend under
 |---|---|---|
 | `adminOnly` | `0` | Only administrators can use the filter modal and tokens. |
 | `disabledFacets` | *(empty)* | Comma-separated list of built-in facet identifiers to disable installation-wide. |
+| `disabledOptions` | *(empty)* | Comma-separated list of `tokenKey:value` pairs to disable a single vocabulary option (e.g. `is:hidden`) installation-wide. |
 | `persistFilter` | `0` | Remember each backend user's current page tree filter for their session, so it survives a reload or module switch (cleared on logout). |
 | `emptyResultNotice` | `1` | Show a hint below the page tree when a filter matches nothing, offering to adjust or reset it. |
 | `livePreviewCount` | `1` | Show a live count of matching pages in the filter modal's footer while criteria are being picked, before "Apply". |
 | `enableRawQueryTab` | `0` | Enable the `raw:` power-user token (see below). Off by default. |
 
 Built-in facet identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `state`,
-`translations`, `seo`, `raw` (only registered at all when `enableRawQueryTab` is on).
+`translations`, `form`, `seo`, `raw` (only registered at all when `enableRawQueryTab` is on;
+`form` and `seo` only when EXT:form / EXT:seo are loaded).
 
 > [!NOTE]
 > Disabling a facet also makes its token keys unknown to the filter engine, so the
@@ -40,7 +42,7 @@ dropped rather than matched.
 
 ## User TSconfig
 
-Both restrictions can also be applied per backend user or group:
+These restrictions can also be applied per backend user or group:
 
 ``` typoscript
 # Disable the extension entirely for this user/group
@@ -48,4 +50,7 @@ tx_typo3pagetreefacets.disable = 1
 
 # Disable individual facets (merged with the disabledFacets extension setting)
 tx_typo3pagetreefacets.disableFacets = seo, translations
+
+# Disable individual options (merged with the disabledOptions extension setting)
+tx_typo3pagetreefacets.disableOptions = is:hidden
 ```

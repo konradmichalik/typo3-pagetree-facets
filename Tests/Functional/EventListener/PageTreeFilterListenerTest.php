@@ -22,6 +22,7 @@ use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\{LanguageService, LanguageServiceFactory};
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -45,6 +46,20 @@ final class PageTreeFilterListenerTest extends FunctionalTestCase
     ];
 
     private LanguageService $languageService;
+
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // BeforePageTreeIsFilteredEvent does not exist before v14 - the whole
+        // reason PageTreeFilterMiddleware exists. Instantiating the event below
+        // would fatal on the v13 matrix job, so the v14 adapter's tests only run
+        // where the v14 adapter does; the shared engine underneath is covered on
+        // both by PageTreeFilterMiddlewareTest.
+        if ((new Typo3Version())->getMajorVersion() < 14) {
+            self::markTestSkipped('BeforePageTreeIsFilteredEvent is a TYPO3 v14 API.');
+        }
+    }
 
     protected function setUp(): void
     {

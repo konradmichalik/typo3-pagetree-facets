@@ -13,23 +13,19 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\EventListener;
 
-use KonradMichalik\PagetreeFacets\Api\FilterContext;
-use KonradMichalik\PagetreeFacets\Service\{FacetRegistry, FilterResolutionService, MatchedPageRegistry};
-use KonradMichalik\PagetreeFacets\Token\{Token, TokenParser};
+use KonradMichalik\PagetreeFacets\Service\TreeFilterResolver;
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 
 /**
  * PageTreeFilterListener.
  *
- * The adapter between the core's tree-filter event and FilterResolutionService,
- * which owns the actual resolve pipeline (AND intersection, site/page scope) -
- * the same service backs FacetsModalController::count() for the modal's live
- * match-count preview, so both paths run identical criteria resolution. This
- * class's own job: parse the search phrase, build the FilterContext, and
- * translate the resolved result into the core event's shape.
+ * The v14 adapter between the core's tree-filter event and TreeFilterResolver,
+ * which owns the decision logic (permission gate, parse, resolve, hand-over to
+ * the render phase). This class's own job is nothing but the translation into
+ * the core event's shape - the v13 middleware is the second implementation of
+ * exactly that job against a different core API.
  *
  * Verified against TYPO3 v14 (cms-backend 14.3): the core dispatches
  * BeforePageTreeIsFilteredEvent with an empty OR CompositeExpression as
@@ -40,10 +36,8 @@ use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
  * and $searchUids during the same dispatch), overwrite $searchUids with our
  * intersection result and neutralize the core LIKE parts in $searchParts.
  *
- * The resolved hit list is also handed to MatchedPageRegistry, which is what lets
- * SearchResultLabelListener mark the hits once the same request renders the
- * tree - the core surrounds them with their rootline, and by then the raw
- * search phrase is all that is left of this dispatch.
+ * The event does not exist before v14, which is what the whole
+ * Compatibility\V13 namespace is about.
  *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  */
@@ -57,60 +51,20 @@ final readonly class PageTreeFilterListener
      * Impossible page UID used to force an empty result set when the
      * intersection is empty (uid 0 is the root, never a tree node).
      */
-    private const int NO_MATCH_UID = 0;
+    private const NO_MATCH_UID = 0;
 
     public function __construct(
-        private TokenParser $tokenParser,
-        private FacetRegistry $facetRegistry,
-        private FilterResolutionService $filterResolutionService,
-        private MatchedPageRegistry $matchedPages,
+        private TreeFilterResolver $treeFilterResolver,
     ) {}
 
     public function __invoke(BeforePageTreeIsFilteredEvent $event): void
     {
-        $backendUser = $this->getBackendUser();
-        if (null === $backendUser || $this->facetRegistry->isDisabledForUser($backendUser)) {
-            return;
-        }
-
-        $tokens = $this->tokenParser->parse($this->getSearchPhrase($event));
-        if (!$this->tokenParser->hasKeyedTokens($tokens)) {
-            // Freetext only -> core title/uid search stays untouched.
-            return;
-        }
-
-        $context = new FilterContext(
-            $backendUser,
-            $backendUser->workspace,
-            $this->extractSiteScope($tokens),
-        );
-
-        $uids = $this->filterResolutionService->resolve($tokens, $context);
+        $uids = $this->treeFilterResolver->resolve($this->getSearchPhrase($event));
         if (null === $uids) {
-            return; // only unknown/scope tokens -> behave like core
+            return;
         }
-
-        // Hand the hit list to the rendering phase before the no-match
-        // substitution below turns it into something the tree can query but
-        // nobody should see marked. SearchResultLabelListener picks it up from
-        // there to tell hits apart from the rootline rendered around them.
-        $this->matchedPages->record($uids);
 
         $this->applyResult($event, [] === $uids ? [self::NO_MATCH_UID] : $uids);
-    }
-
-    /**
-     * @param list<Token> $tokens
-     */
-    private function extractSiteScope(array $tokens): ?string
-    {
-        foreach ($tokens as $token) {
-            if ('site' === $token->key) {
-                return $token->firstValue();
-            }
-        }
-
-        return null;
     }
 
     // --- Adapter around the core event (single place for core-API coupling) ---
@@ -139,10 +93,5 @@ final readonly class PageTreeFilterListener
         // Replacing it with a constant-false OR term leaves the effective
         // filter as `uid IN ($searchUids)` - exactly our result set.
         $event->searchParts = CompositeExpression::or('1=0');
-    }
-
-    private function getBackendUser(): ?BackendUserAuthentication
-    {
-        return $GLOBALS['BE_USER'] ?? null;
     }
 }

@@ -42,6 +42,15 @@ concurrency:
 
 jobs:
   e2e:
+    # Both supported majors, because they reach the page tree filter through
+    # different core APIs: v14 through BeforePageTreeIsFilteredEvent, v13
+    # through PageTreeFilterMiddleware. A green run on one says nothing about
+    # the other.
+    strategy:
+      fail-fast: false
+      matrix:
+        typo3-version: ['13', '14']
+    name: E2E (TYPO3 ${{ matrix.typo3-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -50,8 +59,8 @@ jobs:
       - name: Install ddev
         uses: ddev/github-action-setup-ddev@v1
 
-      - name: Install TYPO3 14
-        run: ddev install 14
+      - name: Install TYPO3 ${{ matrix.typo3-version }}
+        run: ddev install ${{ matrix.typo3-version }}
 
       - name: Install npm dependencies
         run: ddev exec npm ci
@@ -64,12 +73,12 @@ jobs:
       # the container, so CI-specific config (retries, html reporter) would never
       # activate.
       - name: Run Playwright tests
-        run: ddev exec env CI=true npx playwright test
+        run: ddev exec env CI=true TYPO3_VERSION=${{ matrix.typo3-version }} npx playwright test
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-typo3-${{ matrix.typo3-version }}
           path: playwright-report/
           retention-days: 14

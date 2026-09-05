@@ -5,6 +5,19 @@ includes:
 parameters:
 	level: 8
 
+	# Typed class constants are PHP 8.3+ syntax; the preset's 100% constant
+	# type-coverage requirement would otherwise force a floor of 8.3, one major
+	# above what TYPO3 v13/v14 themselves require.
+	type_coverage:
+		constant: 0
+
+	typo3:
+		requestGetAttributeMapping:
+			# Set by typo3/cms-backend/backend-routing for every backend request
+			# that matched a route; PageTreeFilterMiddleware reads it to tell the
+			# page tree's filter endpoint from the rest of the backend stack.
+			route: TYPO3\CMS\Backend\Routing\Route|null
+
 	type_perfect:
 		# PSR-7 request handlers must accept the ServerRequestInterface, not a
 		# concrete request class - narrowing framework entry-point parameters

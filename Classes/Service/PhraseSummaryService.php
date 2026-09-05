@@ -227,8 +227,12 @@ final readonly class PhraseSummaryService
 
     private function label(string $key, string $fallback): string
     {
+        // Classic LLL: path rather than the shorter "typo3_pagetree_facets.messages:"
+        // translation domain: domains are a v14 addition, and v13's sL() hands
+        // anything without an LLL: prefix straight back, so every summary would
+        // silently fall through to its English fallback there.
         $translated = $this->getLanguageService()->sL(
-            'typo3_pagetree_facets.messages:pagetreeFacets.modal.'.$key,
+            'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:pagetreeFacets.modal.'.$key,
         );
 
         return '' !== $translated ? $translated : $fallback;

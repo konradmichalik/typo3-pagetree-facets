@@ -11,7 +11,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Pagetree Facets',
-    'description' => 'Filterable page tree with an extensible filter tab API, built on the TYPO3 v14 BeforePageTreeIsFilteredEvent.',
+    'description' => 'Filterable page tree with an extensible filter tab API, for TYPO3 v13 and v14.',
     'category' => 'be',
     'author' => 'Konrad Michalik',
     'author_email' => 'hej@konradmichalik.dev',
@@ -19,8 +19,8 @@ $EM_CONF[$_EXTKEY] = [
     'version' => '0.3.0',
     'constraints' => [
         'depends' => [
-            'php' => '8.3.0-8.5.99',
-            'typo3' => '14.0.0-14.99.99',
+            'php' => '8.2.0-8.5.99',
+            'typo3' => '13.4.0-14.99.99',
         ],
         'conflicts' => [],
         'suggests' => [

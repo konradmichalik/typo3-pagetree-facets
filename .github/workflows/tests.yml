@@ -8,8 +8,8 @@ jobs:
   tests:
     uses: konradmichalik/reusable-github-actions/.github/workflows/tests-typo3.yml@main
     with:
-      php-versions: '["8.3", "8.4", "8.5"]'
-      typo3-versions: '["14.0", "14.3"]'
+      php-versions: '["8.2", "8.3", "8.4", "8.5"]'
+      typo3-versions: '["13.4", "14.0", "14.3"]'
       dependencies: '["highest", "lowest"]'
 
   # Separate from the reusable TYPO3 workflow above, which only takes PHP and
