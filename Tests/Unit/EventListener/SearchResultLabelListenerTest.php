@@ -18,6 +18,7 @@ use KonradMichalik\PagetreeFacets\Service\MatchedPageRegistry;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionClass;
 use TYPO3\CMS\Backend\Controller\Event\AfterPageTreeItemsPreparedEvent;
 use TYPO3\CMS\Backend\Dto\Tree\Label\Label;
 use TYPO3\CMS\Core\Information\Typo3Version;
@@ -218,10 +219,22 @@ final class SearchResultLabelListenerTest extends TestCase
     }
 
     /**
+     * A core patch release added a $searchQuery parameter between $request
+     * and $items - built via newInstanceArgs() rather than a hardcoded
+     * version boundary or a direct call with either shape, since the break
+     * landed in a patch (14.3.7, not a place a major/minor check would catch)
+     * and static analysis can only ever see one of the two shapes installed.
+     *
      * @param list<array<string, mixed>> $items
      */
     private function createEvent(array $items): AfterPageTreeItemsPreparedEvent
     {
-        return new AfterPageTreeItemsPreparedEvent(self::createStub(ServerRequestInterface::class), $items);
+        $request = self::createStub(ServerRequestInterface::class);
+        $reflection = new ReflectionClass(AfterPageTreeItemsPreparedEvent::class);
+        $arguments = 3 === $reflection->getMethod('__construct')->getNumberOfParameters()
+            ? [$request, null, $items]
+            : [$request, $items];
+
+        return $reflection->newInstanceArgs($arguments);
     }
 }

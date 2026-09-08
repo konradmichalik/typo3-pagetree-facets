@@ -16,6 +16,7 @@ namespace KonradMichalik\PagetreeFacets\Tests\Functional\EventListener;
 use KonradMichalik\PagetreeFacets\EventListener\PageTreeFilterListener;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use ReflectionClass;
 use TYPO3\CMS\Backend\Controller\Event\AfterPageTreeItemsPreparedEvent;
 use TYPO3\CMS\Backend\Dto\Tree\Label\Label;
 use TYPO3\CMS\Backend\Tree\Repository\BeforePageTreeIsFilteredEvent;
@@ -122,11 +123,22 @@ final class PageTreeFilterListenerTest extends FunctionalTestCase
         // renders around them (1).
         $this->get(PageTreeFilterListener::class)($this->createEvent('doktype:1 under:2'));
 
-        $event = new AfterPageTreeItemsPreparedEvent(new ServerRequest(), [
+        $items = [
             ['identifier' => '1', '_page' => ['uid' => 1]],
             ['identifier' => '2', '_page' => ['uid' => 2]],
             ['identifier' => '3', '_page' => ['uid' => 3]],
-        ]);
+        ];
+        // A core patch release added a $searchQuery parameter between $request
+        // and $items - built via newInstanceArgs() rather than a hardcoded
+        // version boundary or a direct call with either shape, since the
+        // break landed in a patch (14.3.7, not a place a major/minor check
+        // would catch) and static analysis can only ever see one of the two
+        // shapes installed.
+        $reflection = new ReflectionClass(AfterPageTreeItemsPreparedEvent::class);
+        $arguments = 3 === $reflection->getMethod('__construct')->getNumberOfParameters()
+            ? [new ServerRequest(), null, $items]
+            : [new ServerRequest(), $items];
+        $event = $reflection->newInstanceArgs($arguments);
         $this->get(EventDispatcherInterface::class)->dispatch($event);
 
         $items = $event->getItems();
