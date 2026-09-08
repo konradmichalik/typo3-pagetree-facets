@@ -43,7 +43,7 @@ tree through different core APIs — v14's `BeforePageTreeIsFilteredEvent` does 
 exist in v13, so there the filter is applied by a request middleware
 (`Compatibility\V13\PageTreeFilterMiddleware`) that rewrites the tree's search
 phrase into the resolved page UIDs before `TreeController` sees it. Criteria
-resolution itself is the same engine on both, but two details differ:
+resolution itself is the same engine on both, but three details differ:
 
 - **The core title search still runs on v13, at a cost.**
   `PageTreeRepository::fetchFilteredTree()` ORs the UID list with a
@@ -65,3 +65,14 @@ resolution itself is the same engine on both, but two details differ:
   transparent placeholder label while a facet filter is active; the core joins
   label texts into the node tooltip unconditionally, hence the trailing
   separator.
+- **The empty-result notice ("No pages match the current filter.") does not
+  appear on v13.** It is driven entirely by two custom events the tree
+  component dispatches once a filter finishes, `typo3:tree:filter-applied` and
+  `typo3:tree:filter-reset`; both were added to the core tree in v14, so v13's
+  tree never fires them. v13 applies a filter through a reactive Lit property
+  instead, with no completion signal to hook into short of watching the tree's
+  internal component state, the kind of DOM coupling the extension avoids
+  everywhere else. `BackendAssetsListener::isEmptyResultNoticeEnabled()` turns
+  the feature off outright on v13 rather than reaching in; see
+  `Tests/Playwright/tests/empty-result.spec.ts`, skipped on v13 for the same
+  reason.
