@@ -156,8 +156,11 @@ export function resetHarness() {
  * assertion about chips or the Apply button means anything.
  *
  * @param {{phrase?: string, pageId?: number|null, configuration?: object|Function,
- *   favorites?: Array, onApply?: Function}} options - `configuration` may be a
- *   function of the requested phrase, which is what the token view needs.
+ *   favorites?: Array, onApply?: Function, show?: boolean}} options - `configuration`
+ *   may be a function of the requested phrase, which is what the token view needs.
+ *   `show: false` skips the 'typo3-modal-shown' dispatch, for the handful of tests
+ *   about the narrow window before it - baseline/#resetButton/#pendingNotice are
+ *   all still null there, which core's own async "shown" timing makes reachable.
  * @returns {Promise<{modal: HTMLElement|null, onApply: Function}>} `modal` is null
  *   when the configuration offered no tabs and nothing was opened.
  */
@@ -168,6 +171,7 @@ export async function openModal({
   favorites = [],
   count = null,
   onApply = vi.fn(),
+  show = true,
 } = {}) {
   const configurationFor = 'function' === typeof configuration ? configuration : () => configuration;
   let stored = [...favorites];
@@ -205,7 +209,9 @@ export async function openModal({
 
   await FacetsModal.open(phrase, pageId, onApply);
   const modal = lastModal()?.element ?? null;
-  modal?.show();
+  if (show) {
+    modal?.show();
+  }
 
   return { modal, onApply };
 }

@@ -8,6 +8,7 @@ import {
   configurationFixture,
   control,
   knownUser,
+  lastModal,
   navItem,
   openModal,
   openedModals,
@@ -29,6 +30,8 @@ import {
  * Tests/Playwright, as the vitest config explains.
  */
 
+const favoritesItem = (modal) => navItem(modal, '__favorites').closest('li');
+
 beforeEach(() => {
   resetHarness();
 });
@@ -41,6 +44,16 @@ describe('opening', () => {
 
     expect(modal).toBeNull();
     expect(openedModals()).toEqual([]);
+  });
+
+  it('treats no phrase at all the same as an empty one', async () => {
+    respondWith((payload) => {
+      expect(payload.phrase).toBe('');
+
+      return configurationFixture();
+    });
+
+    await expect(FacetsModal.open(undefined, 5, vi.fn())).resolves.toBeUndefined();
   });
 
   it('hydrates the phrase server-side and starts on the first usable tab', async () => {
@@ -96,6 +109,87 @@ describe('opening', () => {
     const { modal } = await openModal({ configuration });
 
     expect(navItem(modal, 'example').disabled).toBe(true);
+  });
+
+  it('tolerates a tab configuration without a fields list at all, same as an empty one', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs.push({ identifier: 'example', label: 'Example', state: {}, configuration: {} });
+
+    const { modal } = await openModal({ configuration });
+
+    expect(navItem(modal, 'example').disabled).toBe(true);
+    expect(panel(modal, 'example').children).toHaveLength(0);
+  });
+
+  it('treats a choice field without an options list as optionless, not as a crash', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs.push({
+      identifier: 'example',
+      label: 'Example',
+      state: {},
+      configuration: { fields: [{ type: 'checkbox-group', name: 'flag', label: 'Flag' }] },
+    });
+
+    const { modal } = await openModal({ configuration });
+
+    expect(navItem(modal, 'example').disabled).toBe(true);
+  });
+
+  it('falls back to the first tab when every one of them is unusable', async () => {
+    const allEmpty = configurationFixture({
+      tabs: [
+        {
+          identifier: 'doktype',
+          label: 'Page type',
+          state: {},
+          configuration: { fields: [{ type: 'checkbox-group', name: 'doktype', label: 'Page type', options: [] }] },
+        },
+        {
+          identifier: 'state',
+          label: 'Page state',
+          state: {},
+          configuration: { fields: [{ type: 'checkbox-group', name: 'is', label: 'State', options: [] }] },
+        },
+      ],
+    });
+
+    const { modal } = await openModal({ configuration: allEmpty });
+
+    expect(navItem(modal, 'doktype').classList.contains('active')).toBe(true);
+    // Neither tab offers a stop for the roving tabindex, so arrowing through the
+    // nav must not throw trying to focus a non-existent item.
+    expect(() => navItem(modal, 'doktype')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))).not.toThrow();
+  });
+
+  it('renders without a sites list at all, same as an empty one', async () => {
+    const { modal } = await openModal({ configuration: configurationFixture({ sites: undefined }) });
+
+    expect(modal.querySelector('[data-role="site-scope"]')).toBeNull();
+  });
+
+  it('starts the freetext field empty when the configuration carries none', async () => {
+    const { modal } = await openModal({ configuration: configurationFixture({ freetext: undefined }) });
+
+    expect(modal.querySelector('[data-role="freetext"]').value).toBe('');
+  });
+
+  it('renders with no favorites property at all, same as an empty list', async () => {
+    // openModal()'s own stub always merges a `favorites` array into whatever
+    // the fixture returns, so this goes straight through respondWith() to
+    // prove the server response itself may omit the key.
+    respondWith(() => {
+      const configuration = configurationFixture();
+      delete configuration.favorites;
+
+      return configuration;
+    });
+
+    await FacetsModal.open('', 5, vi.fn());
+    const modal = lastModal().element;
+
+    expect(favoritesItem(modal).hidden).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__favorites-list').children).toHaveLength(0);
   });
 
   it('opens once when clicked again while the configuration is still in flight', async () => {
@@ -259,6 +353,19 @@ describe('the active-filter chips', () => {
     await expect.poll(() => chipLabels(modal)).toContain('Last updated: 7d');
   });
 
+  it('falls back to the checkbox\'s own value when its label carries no dedicated option-label span', async () => {
+    // renderField() always wraps the label text in that span, but a
+    // third-party facet's own markup is not obliged to - the chip must not
+    // silently disappear just because the span is missing.
+    const { modal } = await openModal();
+    const empty = control(modal, 'state[is]', 'empty');
+    empty.closest('label').querySelector('.pagetree-facets__option-label').remove();
+
+    empty.click();
+
+    expect(chipLabels(modal)).toContain('Page state: empty');
+  });
+
   it('never leak an option description into the chip', async () => {
     // The description is a visually-hidden span inside the same <label>.
     const { modal } = await openModal();
@@ -291,6 +398,44 @@ describe('the active-filter chips', () => {
 
     expect(input.value).toBe('');
     expect(chipLabels(modal)).toEqual(['Page state: Hidden']);
+  });
+
+  it('builds a chip from a selected option in a select field, bucketed by source', async () => {
+    // Mirrors RecordsTab's real shape: several same-named `table` fields, one
+    // per source, so the tab label (not either field's own label) prefixes the
+    // chip - and a <select> control's own selectedOptions is the source, unlike
+    // a checkbox's checked state.
+    const configuration = configurationFixture({
+      tabs: [{
+        identifier: 'records',
+        label: 'Records',
+        state: {},
+        configuration: {
+          fields: [
+            {
+              type: 'select',
+              name: 'table',
+              label: 'TYPO3 Core',
+              options: [{ value: 'tt_content', label: 'Content' }, { value: '123', label: '' }],
+            },
+            { type: 'select', name: 'table', label: 'News', options: [{ value: 'tx_news', label: 'News' }] },
+          ],
+        },
+      }],
+    });
+    const { modal } = await openModal({ configuration });
+    const [firstSelect] = modal.querySelectorAll('select[name="records[table]"]');
+    // The second option has no label at all - falls back to its raw value,
+    // same as an unlabelled checkbox option would.
+    firstSelect.options[1].selected = true;
+
+    firstSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(chipLabels(modal)).toEqual(['Records: 123']);
+
+    modal.querySelector('.pagetree-facets__chip-remove').click();
+
+    expect(firstSelect.options[1].selected).toBe(false);
+    expect(chipLabels(modal)).toEqual([]);
   });
 
   it('reveal the filter-wide actions as soon as anything is savable', async () => {
@@ -340,6 +485,17 @@ describe('a user-picker criterion', () => {
     const { modal } = await openModal({ configuration: withPicker([String(knownUser.uid)]) });
 
     await expect.poll(() => chipLabels(modal)).toContain(`Edited by: ${knownUser.label}`);
+  });
+
+  it('reparents its dropdown against the modal root the panel hands it', async () => {
+    // Proves the real getRoot() wired up in #renderPanel(), not the isolated
+    // deps stub Filter/user-picker.test.js uses for its own unit coverage.
+    const { modal } = await openModal({ configuration: withPicker() });
+
+    control(modal, 'activity[editedBy]').dispatchEvent(new Event('focus'));
+
+    expect(modal.querySelector('.pagetree-facets__user-results').parentElement)
+      .toBe(modal.querySelector('.pagetree-facets'));
   });
 
   it('never counts mid-typing text as a criterion', async () => {

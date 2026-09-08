@@ -74,6 +74,18 @@ describe('checkbox groups', () => {
   it('tolerates a field without options', () => {
     expect(render({ name: 'is', type: 'checkbox-group' }).querySelectorAll('input')).toHaveLength(0);
   });
+
+  it('renders a decorative icon next to an option that declares one', () => {
+    const group = render({
+      name: 'is',
+      type: 'checkbox-group',
+      options: [{ value: 'hidden', label: 'Hidden', icon: 'actions-eye-slash' }],
+    });
+
+    const icon = group.querySelector('typo3-backend-icon');
+    expect(icon).not.toBeNull();
+    expect(icon.getAttribute('identifier')).toBe('actions-eye-slash');
+  });
 });
 
 describe('radio presets', () => {
@@ -125,12 +137,26 @@ describe('select fields', () => {
 
     expect([...select.selectedOptions].map((o) => o.value)).toEqual(['sys_file']);
   });
+
+  it('tolerates a field without options', () => {
+    const select = render({ name: 'table', type: 'select' }).querySelector('select');
+
+    expect(select.options).toHaveLength(0);
+  });
 });
 
 describe('text fields', () => {
   it('seeds from state, whether scalar or a single-element list', () => {
     expect(render({ name: 'q', type: 'text' }, { q: 'plain' }).querySelector('input').value).toBe('plain');
     expect(render({ name: 'q', type: 'text' }, { q: ['listed'] }).querySelector('input').value).toBe('listed');
+  });
+
+  it('starts empty when the tab has no hydrated state for it at all', () => {
+    expect(render({ name: 'q', type: 'text' }).querySelector('input').value).toBe('');
+  });
+
+  it('starts empty for an empty state list too', () => {
+    expect(render({ name: 'q', type: 'text' }, { q: [] }).querySelector('input').value).toBe('');
   });
 
   it('comes with the clear button', () => {

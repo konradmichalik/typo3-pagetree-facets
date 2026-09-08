@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import {
   applyButton,
   chipLabels,
@@ -30,12 +31,11 @@ const enterTokenMode = async (modal) => {
 const tokenField = (modal) => modal.querySelector('[data-role="token-query"]');
 
 /** A configuration whose hydrated Page state depends on the requested phrase. */
-const hydratingFixture = (phrase) => {
-  const configuration = configurationFixture();
+const hydratingFixture = (phrase, base = configurationFixture()) => {
   const values = ['hidden', 'empty'].filter((value) => phrase.includes(`is:${value}`));
-  configuration.tabs[1].state = values.length ? { is: values } : {};
+  base.tabs[1].state = values.length ? { is: values } : {};
 
-  return configuration;
+  return base;
 };
 
 beforeEach(() => {
@@ -92,6 +92,48 @@ describe('typing a phrase', () => {
     expect(chipLabels(modal)).toEqual(['Page state: Empty']);
   });
 
+  it('tolerates having no site scope or page scope control to re-hydrate', async () => {
+    const singleSite = (phrase) => hydratingFixture(phrase, configurationFixture({ sites: [{ identifier: 'main' }] }));
+    const { modal } = await openModal({ pageId: null, configuration: singleSite });
+    const field = await enterTokenMode(modal);
+
+    expect(() => type(field, 'is:empty')).not.toThrow();
+
+    await expect.poll(() => control(modal, 'state[is]', 'empty').checked).toBe(true);
+  });
+
+  it('clears the site dropdown when the re-hydrated configuration carries no activeSite at all', async () => {
+    const { modal } = await openModal({
+      phrase: 'site:main',
+      configuration: (phrase) => hydratingFixture(
+        phrase,
+        configurationFixture({ activeSite: phrase.includes('site:main') ? 'main' : undefined }),
+      ),
+    });
+    const field = await enterTokenMode(modal);
+    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('main');
+
+    type(field, 'is:hidden');
+
+    await expect.poll(() => modal.querySelector('[data-role="site-scope"]').value).toBe('');
+  });
+
+  it('clears freetext when the re-hydrated configuration carries none at all', async () => {
+    const { modal } = await openModal({
+      phrase: 'contact',
+      configuration: (phrase) => hydratingFixture(
+        phrase,
+        configurationFixture({ freetext: phrase.includes('contact') ? 'contact' : undefined }),
+      ),
+    });
+    const field = await enterTokenMode(modal);
+    expect(modal.querySelector('[data-role="freetext"]').value).toBe('contact');
+
+    type(field, 'is:hidden');
+
+    await expect.poll(() => modal.querySelector('[data-role="freetext"]').value).toBe('');
+  });
+
   it('drops a response overtaken by a later keystroke', async () => {
     let releaseFirst;
     const gate = new Promise((resolve) => { releaseFirst = resolve; });
@@ -146,6 +188,42 @@ describe('editing the form in token view', () => {
     control(modal, 'doktype[doktype]', '1').click();
 
     await expect.poll(() => field.value).toBe('doktype:1 is:hidden');
+  });
+
+  it('drops a sync back to the phrase if token view was left while the request was in flight', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+
+    let release;
+    respondWith(() => new Promise((resolve) => { release = resolve; }));
+    control(modal, 'doktype[doktype]', '1').click();
+    // Past the 250ms form -> field debounce, so the serialize request is the one
+    // now in flight against the promise above.
+    await new Promise((resolve) => { setTimeout(resolve, 300); });
+
+    modal.querySelector('.pagetree-facets__token-toggle').click();
+    release({ phrase: 'doktype:1 is:hidden' });
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+
+    expect(field.value).toBe('is:hidden');
+  });
+});
+
+describe('loading a favorite while in token view', () => {
+  it('writes the favorite straight into the typed field, not just the form', async () => {
+    // The typed field is authoritative in token view - Apply reads it, not the
+    // form - so it has to carry the favorite too.
+    const saved = [{ label: 'Shortcuts', tokenString: 'doktype:4', criteria: ['Page type: Shortcut'] }];
+    const { modal } = await openModal({
+      phrase: 'is:hidden',
+      configuration: hydratingFixture('is:hidden'),
+      favorites: saved,
+    });
+    const field = await enterTokenMode(modal);
+
+    modal.querySelector('.pagetree-facets__favorite-load').click();
+
+    expect(field.value).toBe('doktype:4');
   });
 });
 

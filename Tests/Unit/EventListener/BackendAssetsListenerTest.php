@@ -102,6 +102,29 @@ final class BackendAssetsListenerTest extends TestCase
         self::assertArrayNotHasKey('emptyResultNotice', $inlineSettings);
     }
 
+    /**
+     * The notice hangs off tree lifecycle events the core only dispatches from
+     * v14 on (see the class docblock) - it must stay off on v13 even when the
+     * extension configuration says it should be on.
+     */
+    #[Test]
+    public function neverAnnouncesTheEmptyResultNoticeOnV13(): void
+    {
+        $GLOBALS['BE_USER'] = $this->createBackendUser();
+
+        $inlineSettings = [];
+        $pageRenderer = self::createStub(PageRenderer::class);
+        $pageRenderer->method('addInlineSetting')->willReturnCallback(
+            static function (string $namespace, string $key, string $value) use (&$inlineSettings): void {
+                $inlineSettings[$key] = $value;
+            },
+        );
+
+        ($this->createListener($pageRenderer, '0', '1', '1', 13))($this->createEvent());
+
+        self::assertArrayNotHasKey('emptyResultNotice', $inlineSettings);
+    }
+
     #[Test]
     public function announcesTheLivePreviewCountUnlessItIsTurnedOff(): void
     {
@@ -147,6 +170,7 @@ final class BackendAssetsListenerTest extends TestCase
             $this->createFacetRegistry(),
             $this->createSessionFilterService(),
             $extensionConfiguration,
+            $this->typo3Version(14),
         ))($this->createEvent());
 
         self::assertSame(self::defaultInlineSettings(), $inlineSettings);
@@ -175,21 +199,15 @@ final class BackendAssetsListenerTest extends TestCase
     }
 
     /**
-     * The inline settings a default installation publishes. The empty-result
-     * notice is missing before v14: it is driven by the core tree's
-     * typo3:tree:filter-applied / -reset events, which only exist from v14 on,
-     * so BackendAssetsListener does not announce a feature that cannot work.
+     * The inline settings a default installation publishes on v14, the version
+     * every test in this file targets unless it explicitly injects a v13
+     * Typo3Version.
      *
      * @return array<string, string>
      */
     private static function defaultInlineSettings(): array
     {
-        $settings = ['livePreviewCount' => '1'];
-        if ((new Typo3Version())->getMajorVersion() >= 14) {
-            $settings = ['emptyResultNotice' => '1'] + $settings;
-        }
-
-        return $settings;
+        return ['emptyResultNotice' => '1', 'livePreviewCount' => '1'];
     }
 
     private function createListener(
@@ -197,6 +215,7 @@ final class BackendAssetsListenerTest extends TestCase
         string $persistFilter = '0',
         string $emptyResultNotice = '1',
         string $livePreviewCount = '1',
+        int $typo3MajorVersion = 14,
     ): BackendAssetsListener {
         $extensionConfiguration = self::createStub(ExtensionConfiguration::class);
         $extensionConfiguration->method('get')->willReturnCallback(
@@ -212,7 +231,20 @@ final class BackendAssetsListenerTest extends TestCase
             $this->createFacetRegistry(),
             $this->createSessionFilterService($persistFilter),
             $extensionConfiguration,
+            $this->typo3Version($typo3MajorVersion),
         );
+    }
+
+    private function typo3Version(int $majorVersion): Typo3Version
+    {
+        return new class($majorVersion) extends Typo3Version {
+            public function __construct(private readonly int $major) {}
+
+            public function getMajorVersion(): int
+            {
+                return $this->major;
+            }
+        };
     }
 
     private function createEvent(): AfterBackendPageRenderEvent

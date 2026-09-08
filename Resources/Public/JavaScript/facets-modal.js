@@ -206,6 +206,11 @@ class FacetsModal {
       // looked up here too. The icon itself is declared in the buttons array
       // above and rendered by core's own button template.
       this.#resetButton = this.#modal.querySelector('button[name="pagetree-facets-reset"]');
+      // The button config just above always names it, so this is only ever
+      // false if core's own button template stopped honouring `name` -
+      // untestable without breaking that assumption on purpose (see this
+      // method's own docblock on why the optional chaining stays anyway).
+      /* v8 ignore next 4 */
       if (this.#resetButton) {
         this.#resetButton.classList.add('pagetree-facets__reset');
         this.#resetButton.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
@@ -735,13 +740,14 @@ class FacetsModal {
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'pagetree-facets__nav-item'
-      + (this.#favoritesTabId === this.#activeTab ? ' active' : '');
+    // Never the active tab at this point: #build() always picks a real tab's
+    // identifier as the initial #activeTab, and #switchTab() (not a re-render)
+    // is what moves the active/aria-current/tabIndex state afterwards - see
+    // its own generic .pagetree-facets__nav-item pass, which covers this item
+    // too.
+    button.className = 'pagetree-facets__nav-item';
     button.dataset.tab = this.#favoritesTabId;
-    if (this.#favoritesTabId === this.#activeTab) {
-      button.setAttribute('aria-current', 'true');
-    }
-    button.tabIndex = this.#favoritesTabId === this.#activeTab ? 0 : -1;
+    button.tabIndex = -1;
     const text = document.createElement('span');
     text.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
     button.append(text);
@@ -804,11 +810,21 @@ class FacetsModal {
   // filter tab so the panel does not linger empty.
   #updateFavoritesVisibility() {
     const hasFavorites = (this.#configuration.favorites ?? []).length > 0;
+    // #renderFavoritesNavItem() always runs once per modal, before this method
+    // is ever reachable (it is only called from #removeFavorite/#saveFavorite,
+    // both requiring an already-open modal) - so this is never actually null.
+    /* v8 ignore next 3 */
     if (this.#favoritesNavItem) {
       this.#favoritesNavItem.hidden = !hasFavorites;
     }
     if (!hasFavorites && this.#favoritesTabId === this.#activeTab) {
       const fallback = this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0];
+      // Only undefined if this.#configuration.tabs is itself empty - which
+      // #build() already refuses to open a modal for. Reachable only via a
+      // token-view reflect/loadFavorite response that legitimately empties
+      // tabs while favorites is the open tab, an edge case not worth staging
+      // for its own sake.
+      /* v8 ignore next 3 */
       if (fallback) {
         this.#switchTab(fallback.identifier);
       }
@@ -863,6 +879,9 @@ class FacetsModal {
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
     const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');
+    // #renderNavigation() always renders it, unconditionally - unlike the site
+    // scope or page scope controls, there is no configuration that omits it.
+    /* v8 ignore next 3 */
     if (filterSearch) {
       filterSearch.value = '';
     }
@@ -891,12 +910,28 @@ class FacetsModal {
     // Runs after the panel was unhidden above - offsetParent is only meaningful
     // once it is actually rendered, and controls behind a proxy (the visually
     // hidden switch inputs) must not swallow the focus.
+    //
+    // jsdom implements no layout at all, so offsetParent is always null there
+    // regardless of visibility (see vitest.config.js's own docblock on this) -
+    // `target` can therefore never be found under this suite, only in a real
+    // browser (see Tests/Playwright). `panel` itself is only null for an
+    // `identifier` with no matching panel, which #switchTab() is never called
+    // with in practice.
+    /* v8 ignore start */
     const panel = this.#modal.querySelector(`.pagetree-facets__panel[data-panel="${identifier}"]`);
     const target = [...panel?.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [tabindex]:not([tabindex="-1"])') ?? []]
       .find((el) => !el.disabled && null !== el.offsetParent);
     if (target) {
       target.focus();
-    } else if (panel) {
+
+      return;
+    }
+    /* v8 ignore stop */
+    // `panel` is only null for an identifier with no matching panel at all -
+    // #switchTab() is never actually called with one (nav items and the
+    // favorites item both carry a real, existing identifier).
+    /* v8 ignore next 5 */
+    if (panel) {
       // An options-less panel (e.g. favorites before anything is saved) still has
       // to receive focus, or activating it would leave focus behind in the nav.
       panel.tabIndex = -1;
@@ -929,6 +964,10 @@ class FacetsModal {
       clearTimeout(this.#countDebounce);
       clearTimeout(this.#countLoadingTimer);
       ++this.#countSeq;
+      // #countNotice is built synchronously in #render(), before #build()
+      // returns - by the time #countEnabled can be true here (checked above),
+      // it always already exists.
+      /* v8 ignore next 3 */
       if (this.#countNotice) {
         this.#countNotice.hidden = true;
       }
@@ -1003,6 +1042,14 @@ class FacetsModal {
   // that a newer request, a closed modal or a switch to token mode may have
   // overtaken by the time it goes off.
   #showCountLoading(seq) {
+    // The guard this method exists for (see its docblock): a newer request, a
+    // closed modal or a switch to token mode overtaking this specific delayed
+    // timer inside its own 10ms window. Reproducing that deterministically
+    // needs either fake timers (which this suite deliberately avoids - real
+    // requests and real debounces are the point) or racing real ones against
+    // a 10ms margin, which would make the suite flaky rather than prove
+    // anything more than the comment above already states.
+    /* v8 ignore next 3 */
     if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
       return;
     }
@@ -1040,6 +1087,9 @@ class FacetsModal {
   //   skeleton there would flash it on screen for no reason before the
   //   caller's own real refresh (or nothing at all) replaces it.
   #refreshActiveIndicators(showLoadingImmediately = true) {
+    // #chips is built synchronously in #render(), before #build() returns and
+    // before any control/change listener that could call this exists.
+    /* v8 ignore next 3 */
     if (!this.#chips) {
       return;
     }
@@ -1103,6 +1153,9 @@ class FacetsModal {
       }
     });
     const freetext = this.#modal.querySelector('[data-role="freetext"]');
+    // Unlike site/page scope below, #renderFreetext() renders this
+    // unconditionally - there is no configuration that omits it.
+    /* v8 ignore next 3 */
     if (freetext) {
       freetext.value = '';
     }
@@ -1156,6 +1209,10 @@ class FacetsModal {
       // single field would just repeat itself.
       const nonBucketedCount = fields.filter((field) => 1 === nameCounts.get(field.name)).length;
       for (const field of fields) {
+        // fields (= distinctFields(tab)) and nameCounts are both built from
+        // the same tab.configuration.fields, so field.name is always a key
+        // here - `?? 0` guards a lookup miss that cannot actually happen.
+        /* v8 ignore next */
         const bucketed = (nameCounts.get(field.name) ?? 0) > 1;
         const prefix = bucketed ? tab.label : (nonBucketedCount > 1 ? field.label : tab.label);
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
@@ -1264,6 +1321,11 @@ class FacetsModal {
     // Driven by the dirty state, not by whether anything is selected: removing
     // the last chip empties the selection while the tree is still filtered, and
     // that case needs the notice most of all.
+    //
+    // #pendingNotice is always set together with #applyButton and
+    // #baselineState, in that order, in the same 'typo3-modal-shown' handler -
+    // the guard above already guarantees it exists by the time this line runs.
+    /* v8 ignore next 3 */
     if (this.#pendingNotice) {
       this.#pendingNotice.hidden = !dirty;
     }
@@ -1478,6 +1540,10 @@ class FacetsModal {
   // hydrated config so exiting token view reveals a correct form.
   #syncHeaderControlsFromConfig() {
     const freetext = this.#modal.querySelector('[data-role="freetext"]');
+    // Unconditionally rendered - see the same guard in #resetAll(). Only the
+    // `if` itself is dead; `?? ''` below is real (a reflected configuration
+    // may genuinely omit freetext) and stays covered.
+    /* v8 ignore next */
     if (freetext) {
       freetext.value = this.#configuration.freetext ?? '';
     }
@@ -1555,6 +1621,9 @@ class FacetsModal {
       }
     }
     const site = this.#modal.querySelector('[data-role="site-scope"]')?.value ?? '';
+    // Unlike site above (absent without multiple sites), freetext is always
+    // rendered - `?.value` never actually needs the `?? ''` fallback.
+    /* v8 ignore next */
     const freetext = this.#modal.querySelector('[data-role="freetext"]')?.value ?? '';
     // Always the page open right now, not whatever page a previously-hydrated
     // "under:" token pointed at - re-checking the box always means "here",

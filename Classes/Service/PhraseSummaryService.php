@@ -139,14 +139,12 @@ final readonly class PhraseSummaryService
                 $fields,
                 static fn (array $field): bool => $key === (string) ($field['name'] ?? ''),
             ));
-            if ([] === $matching) {
-                continue;
+            if ([] !== $matching) {
+                return [
+                    'prefix' => $this->prefix($tab, $fields, $matching),
+                    'options' => $this->mergeOptions($matching),
+                ];
             }
-
-            return [
-                'prefix' => $this->prefix($tab, $fields, $matching),
-                'options' => $this->mergeOptions($matching),
-            ];
         }
 
         return null;

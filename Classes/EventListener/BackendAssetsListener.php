@@ -42,6 +42,7 @@ final readonly class BackendAssetsListener
         private FacetRegistry $facetRegistry,
         private SessionFilterService $sessionFilterService,
         private ExtensionConfiguration $extensionConfiguration,
+        private Typo3Version $typo3Version,
     ) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
@@ -83,7 +84,7 @@ final readonly class BackendAssetsListener
         // state instead, and reaching into that is the kind of DOM coupling this
         // extension keeps to the single spot in #findFilterInput() - so the
         // notice stays off there rather than being wired up on internals.
-        if ((new Typo3Version())->getMajorVersion() < 14) {
+        if ($this->typo3Version->getMajorVersion() < 14) {
             return false;
         }
 

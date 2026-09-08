@@ -312,10 +312,9 @@ final readonly class FacetsModalController
         $sites = [];
         foreach ($this->siteFinder->getAllSites() as $site) {
             $rootPageId = $site->getRootPageId();
-            if (!$backendUser->isAdmin() && null === $backendUser->isInWebMount($rootPageId)) {
-                continue;
+            if ($backendUser->isAdmin() || null !== $backendUser->isInWebMount($rootPageId)) {
+                $sites[] = ['identifier' => $site->getIdentifier(), 'rootPageId' => $rootPageId];
             }
-            $sites[] = ['identifier' => $site->getIdentifier(), 'rootPageId' => $rootPageId];
         }
 
         return $sites;
