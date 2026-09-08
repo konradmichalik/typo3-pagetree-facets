@@ -117,8 +117,15 @@ final class SearchResultLabelListenerTest extends TestCase
         // Same colour the core uses for its own "Search result" label.
         self::assertSame('#F5A770', $label->color);
         self::assertSame(0, $label->priority);
-        // Would otherwise spill the stripe onto every child of a hit.
-        self::assertFalse($label->inheritByChildren);
+        // The injected Typo3Version(14) above only controls the listener's own
+        // branching - it says nothing about which real Label class Composer
+        // actually installed for this test run. inheritByChildren only exists
+        // on the real v14+ DTO, so reading it against a real v13 install (as
+        // CI's own dependency matrix does) would silently return null.
+        if (self::realCoreIsV14OrNewer()) {
+            // Would otherwise spill the stripe onto every child of a hit.
+            self::assertFalse($label->inheritByChildren);
+        }
     }
 
     /**
@@ -188,6 +195,15 @@ final class SearchResultLabelListenerTest extends TestCase
                 return $this->major;
             }
         };
+    }
+
+    /**
+     * The real, Composer-installed core version - independent of whatever
+     * Typo3Version instance a test injects into the listener itself.
+     */
+    private static function realCoreIsV14OrNewer(): bool
+    {
+        return (new Typo3Version())->getMajorVersion() >= 14;
     }
 
     /**
