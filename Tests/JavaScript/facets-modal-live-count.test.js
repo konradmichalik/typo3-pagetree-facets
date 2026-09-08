@@ -302,6 +302,36 @@ describe('when the setting is on', () => {
     expect(text(modal).textContent).toBe('3 matching pages');
   });
 
+  it('does not let an older, now-failing request clobber a newer one that already resolved', async () => {
+    enableLivePreviewCount();
+    let calls = 0;
+    const { modal } = await openModal({
+      count: async () => {
+        calls += 1;
+        if (1 === calls) {
+          return 3; // initial population
+        }
+        if (2 === calls) {
+          await new Promise((resolve) => { setTimeout(resolve, 500); }); // superseded before it fails
+          throw new Error('stale failure');
+        }
+
+        return 7; // 3rd call: newer, resolves fast
+      },
+    });
+    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+
+    control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, will fail later
+    await new Promise((resolve) => { setTimeout(resolve, 400); }); // past the debounce, now in flight
+    control(modal, 'state[is]', 'hidden').click(); // 3rd call supersedes it
+    await expect.poll(() => text(modal)?.textContent).toBe('7 matching pages');
+
+    await new Promise((resolve) => { setTimeout(resolve, 600); }); // let the 2nd call's failure land
+
+    expect(text(modal).textContent).toBe('7 matching pages');
+    expect(skeleton(modal).hidden).toBe(true);
+  });
+
   it('cancels a pending skeleton show when entering token mode before it fires', async () => {
     enableLivePreviewCount();
     let calls = 0;

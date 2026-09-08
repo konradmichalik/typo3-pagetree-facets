@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import { shownNotifications } from './Stubs/typo3/backend/notification.js';
 import {
   applyButton,
@@ -162,6 +163,35 @@ describe('removing a favorite', () => {
 
     await expect.poll(() => panel(modal, 'doktype').hidden).toBe(false);
     expect(panel(modal, '__favorites').hidden).toBe(true);
+  });
+
+  it('falls back to the first tab even when none of them offer a usable criterion', async () => {
+    // #isTabEmpty rejects every tab here, so the fallback has to fall further
+    // back to the first one, same as the initial-open case.
+    const configuration = configurationFixture({
+      tabs: [{
+        identifier: 'doktype',
+        label: 'Page type',
+        state: {},
+        configuration: { fields: [{ type: 'checkbox-group', name: 'doktype', label: 'Page type', options: [] }] },
+      }],
+    });
+    const { modal } = await openModal({ configuration, favorites: saved });
+    navItem(modal, '__favorites').click();
+
+    modal.querySelector('.pagetree-facets__favorite-remove').click();
+
+    await expect.poll(() => panel(modal, 'doktype').hidden).toBe(false);
+  });
+
+  it('tolerates a removal response with no favorites property at all', async () => {
+    const { modal } = await openModal({ favorites: saved });
+    navItem(modal, '__favorites').click();
+    respondWith(() => ({}));
+
+    expect(() => modal.querySelector('.pagetree-facets__favorite-remove').click()).not.toThrow();
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    expect(panel(modal, 'doktype').hidden).toBe(false);
   });
 
   it('keeps the tab while others remain', async () => {

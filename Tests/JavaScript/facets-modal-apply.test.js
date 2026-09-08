@@ -120,6 +120,29 @@ describe('Enter inside the modal', () => {
   });
 });
 
+describe('before the modal reports itself shown', () => {
+  // Core dispatches 'typo3-modal-shown' asynchronously (its own open animation),
+  // so there is a real window after the modal is built and in the DOM where
+  // #resetButton/#pendingNotice/#baselineState are still their build-time null -
+  // both the close guard and any control change reachable in that window have
+  // to tolerate it.
+  it('closes without a confirmation if closed before a baseline was ever established', async () => {
+    const { modal } = await openModal({ show: false });
+
+    modal.hideModal();
+
+    expect(document.body.contains(modal)).toBe(false);
+    expect(openedModals()).toHaveLength(1);
+  });
+
+  it('reacts to a control change without the reset button wired up yet', async () => {
+    const { modal } = await openModal({ show: false });
+
+    expect(() => control(modal, 'doktype[doktype]', '1').click()).not.toThrow();
+    expect(document.body.contains(modal)).toBe(true);
+  });
+});
+
 describe('closing with an unapplied selection', () => {
   it('closes straight away while nothing is pending', async () => {
     const { modal } = await openModal();
@@ -208,6 +231,18 @@ describe('Reset', () => {
     modal.querySelector('.pagetree-facets__reset').click();
 
     expect(control(modal, 'doktype[doktype]').selectedOptions).toHaveLength(0);
+    expect(chipLabels(modal)).toEqual([]);
+  });
+
+  it('tolerates having no site scope or page scope control to clear', async () => {
+    // Neither control is rendered without a page open and more than one site
+    // (see "the scope controls") - Reset must not assume they exist.
+    const { modal } = await openModal({
+      pageId: null,
+      configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
+    });
+
+    expect(() => modal.querySelector('.pagetree-facets__reset').click()).not.toThrow();
     expect(chipLabels(modal)).toEqual([]);
   });
 });
