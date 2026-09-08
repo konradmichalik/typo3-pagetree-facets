@@ -30,14 +30,14 @@ use function is_array;
  */
 final class FavoriteService
 {
-    private const string UC_KEY = 'typo3_pagetree_facets';
+    private const UC_KEY = 'typo3_pagetree_facets';
 
     // Bounds on what a single BE user can persist into their own uc, so a
     // scripted client cannot bloat be_users.uc without limit. Generous enough
     // that no realistic manual use ever hits them.
-    private const int MAX_FAVORITES = 50;
-    private const int MAX_LABEL_LENGTH = 255;
-    private const int MAX_TOKEN_LENGTH = 2000;
+    private const MAX_FAVORITES = 50;
+    private const MAX_LABEL_LENGTH = 255;
+    private const MAX_TOKEN_LENGTH = 2000;
 
     /**
      * @return list<array{label: string, tokenString: string, createdAt: int}>

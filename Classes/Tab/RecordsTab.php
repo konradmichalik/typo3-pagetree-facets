@@ -38,8 +38,8 @@ use function strlen;
  */
 final class RecordsTab extends AbstractPagesQueryTab
 {
-    private const array CORE_TABLES = ['pages', 'tt_content'];
-    private const array CORE_TABLE_PREFIXES = ['sys_', 'be_', 'fe_'];
+    private const CORE_TABLES = ['pages', 'tt_content'];
+    private const CORE_TABLE_PREFIXES = ['sys_', 'be_', 'fe_'];
 
     public function __construct(
         ContentQueryHelper $queryHelper,

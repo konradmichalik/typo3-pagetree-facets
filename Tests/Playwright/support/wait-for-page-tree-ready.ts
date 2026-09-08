@@ -23,13 +23,19 @@ const TREE_SELECTOR = 'typo3-backend-navigation-component-pagetree-tree';
  * `this.__loadPromise = new Promise(...)` in tree.js). Reading that getter
  * after the initial load has already resolved and rolled over - with no
  * second load ever triggered - means awaiting a promise nothing will ever
- * settle. Only reading `tree.loadComplete` in the same microtask as the
- * existence check keeps this safe: an intermediate round trip (e.g. a
- * separate `page.waitForFunction()` before the `page.evaluate()` that reads
- * the getter) reintroduces exactly this race, by giving the initial load
- * time to finish and roll over in between the two calls - confirmed by
- * reproducing three intermittent hangs across a single suite run while
- * fixing this helper.
+ * settle. Reading it in the same microtask as the existence check narrows
+ * that window but cannot close it: if the load finishes before this helper
+ * runs at all, the very first read already returns the rolled-over promise.
+ * That is not hypothetical - it hangs several tests per suite run against the
+ * faster-booting v13 instance.
+ *
+ * So the promise is raced against the state it stands for. `loadData()` raises
+ * `loading` before fetching and lowers it after the node map has been
+ * assigned, so "not loading, and nodes present" is true exactly when a load has
+ * completed - including one that completed before this helper was called - and
+ * never during the pre-`firstUpdated()` window, where the tree has no nodes
+ * yet. Whichever arrives first is the same condition; the poll only exists
+ * because a resolved promise leaves no trace to await a second time.
  */
 export async function waitForPageTreeReady(page: Page): Promise<void> {
   await page.evaluate(async (selector) => {
@@ -53,6 +59,25 @@ export async function waitForPageTreeReady(page: Page): Promise<void> {
       tree = document.querySelector(selector) as (Element & { loadComplete?: Promise<unknown> }) | null;
     }
 
-    await (tree as Element & { loadComplete: Promise<unknown> }).loadComplete;
+    const loaded = tree as Element & {
+      loadComplete: Promise<unknown>;
+      loading?: boolean;
+      nodes?: ReadonlyArray<unknown>;
+    };
+
+    await Promise.race([
+      loaded.loadComplete,
+      (async () => {
+        while (true) {
+          if (false === loaded.loading && (loaded.nodes?.length ?? 0) > 0) {
+            return;
+          }
+          if (Date.now() > deadline) {
+            throw new Error(`"${selector}" did not finish its initial load within ${TIMEOUT_MS}ms.`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        }
+      })(),
+    ]);
   }, TREE_SELECTOR);
 }

@@ -67,7 +67,7 @@ use function strlen;
  */
 final class FormTab extends AbstractPagesQueryTab
 {
-    private const string SOFTREF_KEY = 'formPersistenceIdentifier';
+    private const SOFTREF_KEY = 'formPersistenceIdentifier';
 
     public function getIdentifier(): string
     {

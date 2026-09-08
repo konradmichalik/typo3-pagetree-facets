@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
+import { BackendPage, PageTreePage, resolveTypo3Version } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { searchTree } from '../support/search-tree.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
+
+const IS_V13 = resolveTypo3Version() === '13';
 
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
@@ -18,7 +20,16 @@ test('an existing phrase hydrates the modal state', async ({ page }) => {
 
   await expect(modal.option('doktype', 'doktype', '3')).toBeChecked();
   await expect(modal.navCount('doktype')).toHaveText('1');
-  expect(await modal.chipLabels()).toEqual(['Page type: Link']);
+  // The option label is core TCA, which renamed doktype 3 from "Link to
+  // External URL" (v13) to "Link" (v14) - a prefix match is only needed on
+  // v13; v14's exact string is fully known and worth asserting precisely.
+  const chipLabels = await modal.chipLabels();
+  expect(chipLabels).toHaveLength(1);
+  if (IS_V13) {
+    expect(chipLabels[0]).toMatch(/^Page type: Link/);
+  } else {
+    expect(chipLabels[0]).toBe('Page type: Link');
+  }
 });
 
 test('opening and closing the modal does not rewrite the phrase', async ({ page }) => {

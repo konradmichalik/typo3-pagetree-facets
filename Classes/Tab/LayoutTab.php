@@ -50,7 +50,7 @@ use TYPO3\CMS\Core\Site\SiteFinder;
 final class LayoutTab extends AbstractPagesQueryTab
 {
     /** Token key => the pages column it matches. */
-    private const array FIELDS = [
+    private const FIELDS = [
         'layout' => 'backend_layout',
         'pagelayout' => 'layout',
     ];

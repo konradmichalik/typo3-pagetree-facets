@@ -1,6 +1,7 @@
 type: php
 docroot: .Build
 additional_hostnames:
+  - 13.pagetree-facets
   - 14.pagetree-facets
 hooks:
    post-start:

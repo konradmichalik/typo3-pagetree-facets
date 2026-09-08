@@ -41,7 +41,7 @@ final class RawQueryTab extends AbstractPagesQueryTab
      * fixed literal: it is what makes the identifier safe to put into SQL, so
      * it must never become configurable or derived from user input.
      */
-    private const array SCHEMA_FIELDS = ['uid'];
+    private const SCHEMA_FIELDS = ['uid'];
 
     public function getIdentifier(): string
     {

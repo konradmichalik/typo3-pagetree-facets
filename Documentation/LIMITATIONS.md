@@ -35,3 +35,59 @@
   UID match. That set is broader than the core's title/`nav_title` search but does
   **not** cover translated titles or `http(s)://` frontend URIs; search for those
   on their own, without a token.
+
+## TYPO3 v13
+
+The extension supports v13 and v14 from one code base, but the two reach the page
+tree through different core APIs — v14's `BeforePageTreeIsFilteredEvent` does not
+exist in v13, so there the filter is applied by a request middleware
+(`Compatibility\V13\PageTreeFilterMiddleware`) that rewrites the tree's search
+phrase into the resolved page UIDs before `TreeController` sees it. Criteria
+resolution itself is the same engine on both, but four details differ:
+
+- **The core title search still runs on v13, at a cost.**
+  `PageTreeRepository::fetchFilteredTree()` ORs the UID list with a
+  `title`/`nav_title` `LIKE` and offers no way to drop it; on v14 the event lets
+  the extension neutralize that term, making the filter an exact `uid IN (…)`.
+  The extension keeps the `LIKE` from widening the result by appending a
+  sentinel to the rewritten phrase — it contributes no UID but makes the pattern
+  one no page title can contain. What remains is the cost: a broad criterion on
+  a large installation produces a pattern as long as its own result list, which
+  the database evaluates against every row the `uid IN (…)` branch did not
+  already satisfy. Pair a broad criterion with a narrower one if it ever feels
+  slow; the v14 path does not have this cost at all.
+- **Hit markers cost unmarked pages a trailing `"; "` in their tooltip on v13.**
+  A filtered tree renders the hits plus the rootline leading to them, and the
+  orange stripe tells the two apart. v13's tree lets any node without labels of
+  its own inherit its parent's, with no opt-out (`Label::$inheritByChildren`
+  only exists from v14 on), which would put the stripe on every rendered
+  descendant of a hit. The extension prevents that by giving unmarked nodes a
+  transparent placeholder label while a facet filter is active; the core joins
+  label texts into the node tooltip unconditionally, hence the trailing
+  separator.
+- **The empty-result notice ("No pages match the current filter.") does not
+  appear on v13.** It is driven entirely by two custom events the tree
+  component dispatches once a filter finishes, `typo3:tree:filter-applied` and
+  `typo3:tree:filter-reset`; both were added to the core tree in v14, so v13's
+  tree never fires them. v13 applies a filter through a reactive Lit property
+  instead, with no completion signal to hook into short of watching the tree's
+  internal component state, the kind of DOM coupling the extension avoids
+  everywhere else. `BackendAssetsListener::isEmptyResultNoticeEnabled()` turns
+  the feature off outright on v13 rather than reaching in; see
+  `Tests/Playwright/tests/empty-result.spec.ts`, skipped on v13 for the same
+  reason.
+- **A workspace-only new or moved page can be missing from a v13 filter result.**
+  `fetchFilteredTree()`'s third workspace OR-branch (matching a record that
+  exists only inside the current workspace, with no live counterpart) compares
+  `uid` against the *raw, whole* search string cast to an integer, not against
+  the parsed per-part UID list its other two branches use. The middleware
+  always appends `NO_MATCH_SENTINEL` to that string (see its class docblock),
+  which is required to keep the core's own `LIKE` from over-matching but also
+  means the whole string is never a bare integer any more, so this branch never
+  fires through this extension. The result: filtering while working in a
+  non-live workspace silently omits a matched page that was newly created or
+  moved *only* in that workspace and has no live version yet. Fixing this
+  branch specifically would need the resolved UIDs kept separate from the
+  string handed to `fetchFilteredTree()`, which the string-rewrite approach
+  this middleware deliberately chose (see its class docblock) cannot do without
+  the XCLASS or query-rebuild it was written to avoid.

@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Controller\Event\AfterPageTreeItemsPreparedEvent;
 use TYPO3\CMS\Backend\Dto\Tree\Label\Label;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
 /**
@@ -70,9 +71,20 @@ final class SearchResultLabelListenerTest extends TestCase
         (new SearchResultLabelListener($registry))($event);
 
         $items = $event->getItems();
-        // Untouched entirely rather than given an empty labels array: other
-        // listeners on this event should see the item exactly as it was.
-        self::assertArrayNotHasKey('labels', $items[0]);
+        if (self::supportsInheritanceFlag()) {
+            // Untouched entirely rather than given an empty labels array: other
+            // listeners on this event should see the item exactly as it was.
+            self::assertArrayNotHasKey('labels', $items[0]);
+        } else {
+            // On v13 the ancestor is the one item that must carry something -
+            // an invisible label is the only way to stop it inheriting the hit
+            // stripe from a marked parent.
+            self::assertCount(1, $items[0]['labels']);
+            $blocker = $items[0]['labels'][0];
+            self::assertInstanceOf(Label::class, $blocker);
+            self::assertSame('', $blocker->label);
+            self::assertSame('transparent', $blocker->color);
+        }
         self::assertCount(1, $items[1]['labels']);
     }
 
@@ -94,8 +106,13 @@ final class SearchResultLabelListenerTest extends TestCase
         // and against the core's translation label (priority 1) - the stripe is
         // context, not the headline.
         self::assertSame(0, $label->priority);
-        // Would otherwise spill the stripe onto every child of a hit.
-        self::assertFalse($label->inheritByChildren);
+        if (self::supportsInheritanceFlag()) {
+            // Would otherwise spill the stripe onto every child of a hit. The
+            // property does not exist on v13's Label at all - reading it there
+            // raises an Error, which is why this is guarded rather than just
+            // asserted differently.
+            self::assertFalse($label->inheritByChildren);
+        }
     }
 
     #[Test]
@@ -130,6 +147,18 @@ final class SearchResultLabelListenerTest extends TestCase
         foreach ($event->getItems() as $item) {
             self::assertArrayNotHasKey('labels', $item);
         }
+    }
+
+    /**
+     * v13's tree.js inherits a parent's labels to any node carrying none of its
+     * own and Label has no inheritByChildren flag to stop it, so the listener
+     * gives unmarked nodes a transparent placeholder there. The assertions that
+     * differ between the two are the ones about what an *unmarked* node looks
+     * like - the marked one is the same shape either way.
+     */
+    private static function supportsInheritanceFlag(): bool
+    {
+        return (new Typo3Version())->getMajorVersion() >= 14;
     }
 
     /**

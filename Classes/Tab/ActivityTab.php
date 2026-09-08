@@ -32,7 +32,7 @@ use TYPO3\CMS\Core\DataHandling\History\RecordHistoryStore;
  */
 final class ActivityTab extends AbstractPagesQueryTab
 {
-    private const array PRESETS = ['<7d', '<30d', '<6m', '<1y', '>6m', '>1y'];
+    private const PRESETS = ['<7d', '<30d', '<6m', '<1y', '>6m', '>1y'];
 
     public function getIdentifier(): string
     {

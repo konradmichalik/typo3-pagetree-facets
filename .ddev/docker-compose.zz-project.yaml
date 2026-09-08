@@ -1,0 +1,15 @@
+# Project-owned overrides for the typo3-multi-version-extension add-on.
+#
+# docker-compose.typo3-setup.yaml is add-on managed (#ddev-generated) and gets
+# rewritten by `ddev add-on get`, so anything this repo needs to keep lives
+# here. Loaded after it (alphabetically), so identical keys win.
+#
+# TYPO3_VERSIONS drives `ddev install` / `ddev install all` and the per-version
+# exec commands (`ddev 13 ...`, `ddev 14 ...`). The extension supports v13 and
+# v14, and the two take different code paths into the page tree filter - the
+# v14 PSR-14 event vs. the v13 request middleware - so both need an instance to
+# be testable at all.
+services:
+    web:
+        environment:
+            - TYPO3_VERSIONS=13 14

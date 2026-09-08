@@ -38,7 +38,7 @@ use function in_array;
  */
 final class TokenParser
 {
-    private const string PATTERN = '/(?<key>[a-z][a-z0-9_-]*):(?:"(?<quoted>[^"]*)"|(?<bare>[^\s"]+))|"(?<freequoted>[^"]*)"|(?<word>\S+)/i';
+    private const PATTERN = '/(?<key>[a-z][a-z0-9_-]*):(?:"(?<quoted>[^"]*)"|(?<bare>[^\s"]+))|"(?<freequoted>[^"]*)"|(?<word>\S+)/i';
 
     /**
      * @return list<Token>

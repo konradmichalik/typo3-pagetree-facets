@@ -80,8 +80,9 @@ End-to-end tests need the TYPO3 instance from the section below and must run
 ddev exec npm ci                                     # first time only
 ddev exec sudo npx playwright install-deps chromium  # after every container rebuild
 ddev exec npx playwright install chromium            # after every container rebuild
-ddev exec npx playwright test                        # whole E2E suite
+ddev exec npx playwright test                        # whole E2E suite (against v14)
 ddev exec npx playwright test Tests/Playwright/tests/toolbar.spec.ts
+ddev exec env TYPO3_VERSION=13 npx playwright test    # against the v13 instance
 ```
 
 Chromium and its system libraries are installed into the container's own
@@ -96,8 +97,12 @@ cost of installing them for everyone who never runs the E2E suite.
 For testing the extension in a running backend, you need to set up the TYPO3 instance.
 
 ```bash
-# Install the supported TYPO3 version
+# Install a supported TYPO3 version
 ddev install 14
+ddev install 13
+
+# Install both at once
+ddev install all
 
 # Open the overview page
 ddev launch

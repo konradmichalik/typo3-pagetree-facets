@@ -73,5 +73,6 @@ Public (implement/consume freely, changes get a note in the release):
 
 Explicitly **not** public: subject to change without notice, do not depend on internals:
 
-- `Classes/Service/*`, `Classes/Tab/*`, `Classes/Option/*`, `Classes/EventListener/*`
+- `Classes/Service/*`, `Classes/Tab/*`, `Classes/Option/*`, `Classes/EventListener/*`,
+  `Classes/Compatibility/*`
 - The JavaScript modules under `Resources/Public/JavaScript/`

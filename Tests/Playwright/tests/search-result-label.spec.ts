@@ -3,6 +3,9 @@ import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { DEMO_PAGES } from '../support/demo-pages.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
 import { searchTree } from '../support/search-tree.js';
+import { resolveTypo3Version } from '@konradmichalik/ptu';
+
+const IS_V13 = resolveTypo3Version() === '13';
 
 /**
  * The one thing neither PHP nor the JS unit suite can show: that the Label the
@@ -17,6 +20,12 @@ import { searchTree } from '../support/search-tree.js';
  * marker as a `<span class="node-label">` with the label colour as an inline
  * background, plus every label's text appended to the node's `title` attribute
  * (`tree.js#getNodeTitle()`).
+ *
+ * v13 renders the same markup but differs twice, both of which show up here:
+ * an unmarked node carries a transparent placeholder label instead of none (the
+ * only way to stop v13's unconditional label inheritance - see
+ * SearchResultLabelListener), and the core has no search-result marker of its
+ * own to compare against, because PageTreeFilter is a v14 class.
  */
 test.beforeEach(async ({ page }) => {
   await new BackendPage(page).openModule('web/layout');
@@ -37,8 +46,17 @@ test('a matched page is marked, the rootline around it is not', async ({ page })
   await expect(match.locator('.node-label')).toHaveCSS('background-color', 'rgb(245, 167, 112)');
 
   // "Home" is only rendered because the match hangs below it.
-  await expect(tree.node(DEMO_PAGES.home)).toBeVisible();
-  await expect(tree.node(DEMO_PAGES.home).locator('.node-label')).toHaveCount(0);
+  const rootline = tree.node(DEMO_PAGES.home);
+  await expect(rootline).toBeVisible();
+  if (IS_V13) {
+    // The placeholder that blocks v13's label inheritance: present in the DOM,
+    // invisible on screen. Asserting it is transparent is what proves the
+    // rootline is not being marked.
+    await expect(rootline.locator('.node-label')).toHaveCount(1);
+    await expect(rootline.locator('.node-label')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  } else {
+    await expect(rootline.locator('.node-label')).toHaveCount(0);
+  }
 });
 
 test('the marker names itself in the node tooltip', async ({ page }) => {
@@ -62,7 +80,14 @@ test('the core title search keeps its own marker instead of ours', async ({ page
   await searchTree(page, tree, DEMO_PAGES.externalLink);
 
   const match = tree.node(DEMO_PAGES.externalLink);
-  await expect(match.locator('.node-label')).toHaveCount(1);
-  await expect(match).toHaveAttribute('title', /Search result/);
+  if (IS_V13) {
+    // v13 has no search-result marker of its own (PageTreeFilter arrived with
+    // v14), so there is no stripe to keep - what matters is that a core-only
+    // search is left alone entirely, placeholder labels included.
+    await expect(match.locator('.node-label')).toHaveCount(0);
+  } else {
+    await expect(match.locator('.node-label')).toHaveCount(1);
+    await expect(match).toHaveAttribute('title', /Search result/);
+  }
   await expect(match).not.toHaveAttribute('title', /Matches the filter/);
 });

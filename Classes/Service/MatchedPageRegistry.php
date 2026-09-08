@@ -17,13 +17,15 @@ namespace KonradMichalik\PagetreeFacets\Service;
  * MatchedPageRegistry.
  *
  * Carries the filter's hit list from the query phase to the rendering phase of
- * one tree request: PageTreeFilterListener records it while handling
- * BeforePageTreeIsFilteredEvent, SearchResultLabelListener reads it while
- * handling AfterPageTreeItemsPreparedEvent. The two events are dispatched by
- * the same TreeController request but share no payload, and the second one only
- * receives the raw search phrase - which is why the set has to be handed over
- * rather than derived again (re-resolving it would mean running every tab's
- * query a second time).
+ * one tree request: TreeFilterResolver::resolve() fills it - via either core
+ * adapter, PageTreeFilterListener handling BeforePageTreeIsFilteredEvent on
+ * v14 or PageTreeFilterMiddleware rewriting the request on v13 - and
+ * SearchResultLabelListener reads it while handling
+ * AfterPageTreeItemsPreparedEvent. Whichever adapter ran and the label listener
+ * are dispatched by the same TreeController request but share no payload, and
+ * the label listener only receives the raw search phrase - which is why the
+ * set has to be handed over rather than derived again (re-resolving it would
+ * mean running every tab's query a second time).
  *
  * The core solves the identical problem with the runtime cache (see
  * PageTreeFilter's translation/URI match caches); a dedicated service keeps the
@@ -51,10 +53,10 @@ final class MatchedPageRegistry
     private bool $active = false;
 
     /**
-     * Called once per web mount: the core dispatches
-     * BeforePageTreeIsFilteredEvent per entry point, while the hit list is
-     * derived from the phrase alone and comes out the same every time. Adding to
-     * the lookup rather than replacing it is simply what that shape asks for.
+     * Called once per request, from TreeFilterResolver::resolve() on either
+     * adapter, while the hit list is derived from the phrase alone and comes
+     * out the same every time. Adding to the lookup rather than replacing it
+     * is simply what that shape asks for.
      *
      * @param list<int> $uids
      */
