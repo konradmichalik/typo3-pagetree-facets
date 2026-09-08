@@ -127,6 +127,25 @@ final class FacetsModalControllerTest extends FunctionalTestCase
         self::assertSame([['identifier' => 'main', 'rootPageId' => 1]], $payload['sites']);
     }
 
+    /**
+     * A non-admin user only ever sees the sites their web mounts actually
+     * cover - the editor fixture has none configured, so every site (even one
+     * that exists) is filtered out rather than defaulting to "show all".
+     */
+    #[Test]
+    public function excludesSitesOutsideANonAdminUsersWebMounts(): void
+    {
+        $this->get(SiteWriter::class)->write('main', [
+            'rootPageId' => 1,
+            'base' => '/',
+        ]);
+        $GLOBALS['BE_USER'] = $this->setUpBackendUser(4);
+
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+
+        self::assertSame([], $payload['sites']);
+    }
+
     #[Test]
     public function usersSearchesByUsernameAndRealName(): void
     {

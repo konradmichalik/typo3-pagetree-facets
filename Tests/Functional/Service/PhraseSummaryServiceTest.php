@@ -71,6 +71,20 @@ final class PhraseSummaryServiceTest extends FunctionalTestCase
         self::assertSame(['Last updated: Within the last 7 days', 'Created: Within the last 7 days'], $criteria);
     }
 
+    /**
+     * findField() walks $tabs in order and skips a tab that does not own the
+     * key - this is only observable when a LATER tab is the one that matches,
+     * unlike keepsTheRawTokenForAKeyNoTabOwns() below where no tab ever does.
+     */
+    #[Test]
+    public function findsTheFieldInATabThatIsNotFirst(): void
+    {
+        self::assertSame(
+            ['Page state: Hidden'],
+            $this->subject->describe('is:hidden', [$this->activityTab(), $this->pageStateTab()]),
+        );
+    }
+
     #[Test]
     public function keepsTheRawTokenForAKeyNoTabOwns(): void
     {
