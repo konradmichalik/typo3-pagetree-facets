@@ -990,6 +990,12 @@
 .pagetree-facets-search-group .tree-toolbar__search {
     flex: 1 1 auto;
     min-width: 0;
+    /* TYPO3 v13's core .tree-toolbar__search carries its own margin (v14's
+     * doesn't - it spaces toolbar items via the menu's flex `gap` instead),
+     * which reopened the exact gap this wrapper's `gap: 0` is meant to close.
+     * Neutralize it here rather than in core; the parent's spacing to the
+     * OTHER toolbar items is untouched since this only targets our wrapper. */
+    margin: 0;
 }
 
 .pagetree-facets-search-group .search-input {
