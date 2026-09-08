@@ -37,6 +37,21 @@
     position: relative;
 }
 
+/* TYPO3 v14's core CSS makes .modal-body a flex column with min-height: 0, so
+ * a flex child shrinks to whatever space the modal actually has left. TYPO3
+ * v13's .modal-body is plain display: block - it sizes itself to this
+ * component's content height instead. That lets our own viewport-based
+ * max-height above end up taller than the space really left over inside the
+ * modal, and .modal-body's own overflow-y: auto (present in both core
+ * versions) then scrolls the WHOLE component as a third scrollbar, on top of
+ * the nav and panels' own. Mirroring v14's declaration here fixes it
+ * identically on both core versions instead of forking the layout. */
+.modal-body:has(.pagetree-facets) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
 /* Auto mode: the backend follows the OS via this media query. */
 @media (prefers-color-scheme: dark) {
     .pagetree-facets {
