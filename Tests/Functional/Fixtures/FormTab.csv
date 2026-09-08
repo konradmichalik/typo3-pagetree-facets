@@ -4,8 +4,10 @@
 ,2,1,"Contact page",1,0
 ,3,1,"Page without a form",1,0
 ,4,1,"Newsletter page",1,0
+,5,1,"FAL form page",1,0
 "tt_content"
 ,"uid","pid","CType","header","pi_flexform","deleted"
 ,200,2,"form_formframework","Contact form","<T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""settings.persistenceIdentifier""><value index=""vDEF"">EXT:typo3_pagetree_facets/Tests/Functional/Fixtures/contact.form.yaml</value></field></language></sheet></data></T3FlexForms>",0
 ,201,3,"text","Unrelated text",,0
 ,202,4,"form_formframework","Newsletter form","<T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""settings.persistenceIdentifier""><value index=""vDEF"">999</value></field></language></sheet></data></T3FlexForms>",0
+,300,5,"form_formframework","FAL-stored form","<T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""settings.persistenceIdentifier""><value index=""vDEF"">__FAL_IDENTIFIER__</value></field></language></sheet></data></T3FlexForms>",0

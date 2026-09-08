@@ -15,9 +15,14 @@ namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
 use KonradMichalik\PagetreeFacets\Tab\FormTab;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Database\ReferenceIndex;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\{ConnectionPool, ReferenceIndex};
 use TYPO3\CMS\Core\Information\Typo3Version;
+use TYPO3\CMS\Core\Resource\StorageRepository;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Form\Slot\FilePersistenceSlot;
 
+use function is_string;
 use function sprintf;
 
 /**
@@ -135,6 +140,48 @@ final class FormTabTest extends AbstractTabTestCase
         self::assertContains('Form #999', $labels);
     }
 
+    /**
+     * The third persistenceIdentifier shape (see the class docblock): a FAL
+     * combined identifier for a form stored in a file storage rather than as
+     * an EXT: path or a database-stored form_definition. Exercised through a
+     * real ResourceStorage/ReferenceIndex round trip for the same reason the
+     * other two shapes are - to prove the real soft-reference parser produces
+     * the ref_table='sys_file' refindex shape FormTab's SQL assumes.
+     */
+    #[Test]
+    public function findsThePageEmbeddingTheFalStoredForm(): void
+    {
+        $combinedIdentifier = $this->createFalStoredForm();
+
+        self::assertSame([5], $this->resolve($this->get(FormTab::class), 'form:'.$combinedIdentifier));
+    }
+
+    #[Test]
+    public function anUnreferencedFalIdentifierResolvesToNoMatches(): void
+    {
+        self::assertSame(
+            [],
+            $this->resolve($this->get(FormTab::class), 'form:1:/does-not-exist.form.yaml'),
+        );
+    }
+
+    /**
+     * referencedForms() reconstructs FAL identifiers from sys_refindex's
+     * ref_table='sys_file'/ref_uid columns via a second query against
+     * sys_file - this is the one shape that needs a real storage/file to
+     * prove that join, unlike the EXT: and form_definition shapes above.
+     */
+    #[Test]
+    public function modalConfigurationIncludesAFalStoredFormWithAnIdentifierDerivedLabel(): void
+    {
+        $combinedIdentifier = $this->createFalStoredForm();
+
+        $configuration = $this->get(FormTab::class)->getModalConfiguration($this->createContext());
+        $options = array_column($configuration['fields'][0]['options'], 'label', 'value');
+
+        self::assertSame('Newsletter Signup', $options[$combinedIdentifier] ?? null);
+    }
+
     #[Test]
     public function identityAndGroupingMetadataIsStable(): void
     {
@@ -144,6 +191,71 @@ final class FormTabTest extends AbstractTabTestCase
         self::assertSame(['form'], $tab->getTokenKeys());
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:tab.form', $tab->getLabel());
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.forms', $tab->getGroup());
+    }
+
+    /**
+     * Creates a real local file storage, adds a form definition file to it,
+     * points fixture content #300 at the resulting combined identifier, and
+     * re-runs the reference index over it - mirroring what saving a
+     * FAL-backed form in the backend actually produces in sys_refindex.
+     */
+    private function createFalStoredForm(): string
+    {
+        $basePath = 'typo3temp/var/tests/pagetree-facets-form-storage/';
+        $absolutePath = Environment::getPublicPath().'/'.$basePath;
+        // The instance's typo3temp/ directory is not reset between test
+        // methods the way the database is - without this, a file left over
+        // from an earlier test in this class would make addFile() below
+        // rename around a collision instead of writing the identifier this
+        // test expects.
+        if (is_dir($absolutePath)) {
+            GeneralUtility::rmdir($absolutePath, true);
+        }
+        GeneralUtility::mkdir_deep($absolutePath);
+        $storageRepository = $this->get(StorageRepository::class);
+        $storageUid = $storageRepository->createLocalStorage('Fixture forms', $basePath, 'relative');
+        $storage = $storageRepository->getStorageObject($storageUid);
+
+        $localFile = GeneralUtility::tempnam('pagetree-facets-form-');
+        $content = 'type: Form';
+        file_put_contents($localFile, $content);
+
+        // EXT:form guards every write to a *.form.yaml file behind a one-time
+        // allowance (see FilePersistenceSlot) so only its own persistence
+        // manager can create form definitions - a plain addFile() must grant
+        // itself the same allowance a real form save would.
+        $combinedIdentifier = sprintf('%d:/newsletter-signup.form.yaml', $storageUid);
+        $filePersistenceSlot = $this->get(FilePersistenceSlot::class);
+        $filePersistenceSlot->allowInvocation(
+            FilePersistenceSlot::COMMAND_FILE_ADD,
+            $combinedIdentifier,
+            $filePersistenceSlot->getContentSignature($content),
+        );
+
+        $file = $storage->addFile($localFile, $storage->getRootLevelFolder(), 'newsletter-signup.form.yaml');
+        $combinedIdentifier = $file->getCombinedIdentifier();
+
+        $this->get(ConnectionPool::class)->getConnectionForTable('tt_content')->update(
+            'tt_content',
+            ['pi_flexform' => str_replace(
+                '__FAL_IDENTIFIER__',
+                $combinedIdentifier,
+                $this->flexformFor(300),
+            )],
+            ['uid' => 300],
+        );
+        $this->get(ReferenceIndex::class)->updateRefIndexTable('tt_content', 300);
+
+        return $combinedIdentifier;
+    }
+
+    private function flexformFor(int $contentUid): string
+    {
+        $flexform = $this->get(ConnectionPool::class)->getConnectionForTable('tt_content')
+            ->select(['pi_flexform'], 'tt_content', ['uid' => $contentUid])
+            ->fetchOne();
+
+        return is_string($flexform) ? $flexform : '';
     }
 
     private function skipUnlessFormDefinitionSoftReferenceIsSupported(): void
