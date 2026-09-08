@@ -43,7 +43,7 @@ tree through different core APIs — v14's `BeforePageTreeIsFilteredEvent` does 
 exist in v13, so there the filter is applied by a request middleware
 (`Compatibility\V13\PageTreeFilterMiddleware`) that rewrites the tree's search
 phrase into the resolved page UIDs before `TreeController` sees it. Criteria
-resolution itself is the same engine on both, but three details differ:
+resolution itself is the same engine on both, but four details differ:
 
 - **The core title search still runs on v13, at a cost.**
   `PageTreeRepository::fetchFilteredTree()` ORs the UID list with a
@@ -76,3 +76,18 @@ resolution itself is the same engine on both, but three details differ:
   the feature off outright on v13 rather than reaching in; see
   `Tests/Playwright/tests/empty-result.spec.ts`, skipped on v13 for the same
   reason.
+- **A workspace-only new or moved page can be missing from a v13 filter result.**
+  `fetchFilteredTree()`'s third workspace OR-branch (matching a record that
+  exists only inside the current workspace, with no live counterpart) compares
+  `uid` against the *raw, whole* search string cast to an integer, not against
+  the parsed per-part UID list its other two branches use. The middleware
+  always appends `NO_MATCH_SENTINEL` to that string (see its class docblock),
+  which is required to keep the core's own `LIKE` from over-matching but also
+  means the whole string is never a bare integer any more, so this branch never
+  fires through this extension. The result: filtering while working in a
+  non-live workspace silently omits a matched page that was newly created or
+  moved *only* in that workspace and has no live version yet. Fixing this
+  branch specifically would need the resolved UIDs kept separate from the
+  string handed to `fetchFilteredTree()`, which the string-rewrite approach
+  this middleware deliberately chose (see its class docblock) cannot do without
+  the XCLASS or query-rebuild it was written to avoid.
