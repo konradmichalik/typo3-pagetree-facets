@@ -155,6 +155,18 @@ describe('buildSaveFavoriteForm', () => {
     expect(onSave).not.toHaveBeenCalled();
     expect(form.hidden).toBe(true);
   });
+
+  it('leaves every other key to do whatever it would do in a plain text input', () => {
+    const { toggle, form, onSave, input } = mount();
+
+    toggle.click();
+    input.value = 'still typing';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(input.value).toBe('still typing');
+    expect(form.hidden).toBe(false);
+  });
 });
 
 describe('the round trips', () => {

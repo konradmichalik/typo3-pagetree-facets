@@ -93,6 +93,25 @@ describe('when a filter matches nothing', () => {
     expect(notice()).not.toBeNull();
   });
 
+  it('treats an event with no detail at all as a non-zero result, falling through to the node check', async () => {
+    await loadToolbar({ nodes: [{ depth: 0 }] });
+
+    document.dispatchEvent(new CustomEvent('typo3:tree:filter-applied', { bubbles: true, composed: true }));
+
+    expect(notice()).not.toBeNull();
+  });
+
+  it('treats a tree element with no nodes set yet as not empty, rather than throwing', async () => {
+    // buildTree() always sets .nodes; undo that to prove the ?? [] fallback,
+    // which is what a tree element still mid-render would look like. An empty
+    // array reads the same as "nothing below the entry points yet", not "empty".
+    await loadToolbar();
+    delete treeElement().nodes;
+
+    expect(() => filterApplied(1)).not.toThrow();
+    expect(notice()).toBeNull();
+  });
+
   it('stays away while anything matched below the entry points', async () => {
     await loadToolbar({ nodes: [{ depth: 0 }, { depth: 1 }] });
 

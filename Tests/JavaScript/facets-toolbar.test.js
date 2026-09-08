@@ -193,6 +193,22 @@ describe('the toolbar button', () => {
     expect(toggleButton().parentElement.className).toBe('tree-toolbar__menu');
   });
 
+  it('falls back to the input\'s own parent when there is no toolbar menu wrapper at all', async () => {
+    window.history.replaceState(null, '', '/typo3/module/web/layout');
+    document.body.innerHTML = `
+      <typo3-backend-navigation-component-pagetree>
+        <div class="tree-toolbar">
+          <input type="search" name="searchTerm">
+        </div>
+        <typo3-backend-navigation-component-pagetree-tree></typo3-backend-navigation-component-pagetree-tree>
+      </typo3-backend-navigation-component-pagetree>
+    `;
+    vi.resetModules();
+    await import('@konradmichalik/pagetree-facets/facets-toolbar.js');
+
+    expect(toggleButton().parentElement.className).toBe('tree-toolbar');
+  });
+
   it('waits out the asynchronously rendered tree instead of racing it', async () => {
     await loadToolbarAt('/typo3/module/web/layout', { tree: false });
     expect(toggleButton()).toBeNull();
@@ -211,6 +227,25 @@ describe('the toolbar button', () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
 
     expect(document.querySelectorAll('.pagetree-facets-toggle')).toHaveLength(1);
+  });
+
+  it('waits for DOMContentLoaded instead of initializing early when the document is still loading', async () => {
+    window.history.replaceState(null, '', '/typo3/module/web/layout');
+    buildTree();
+    const readyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
+    Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+
+    try {
+      vi.resetModules();
+      await import('@konradmichalik/pagetree-facets/facets-toolbar.js');
+      // Nothing runs yet - only the DOMContentLoaded listener was registered.
+      expect(toggleButton()).toBeNull();
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await expect.poll(() => toggleButton()).not.toBeNull();
+    } finally {
+      Object.defineProperty(document, 'readyState', readyState);
+    }
   });
 });
 
@@ -333,6 +368,21 @@ describe('opening the modal', () => {
     expect(toggleButton().hasAttribute('aria-busy')).toBe(false);
   });
 
+  it('tolerates the search field disappearing between opening and applying', async () => {
+    // The toggle button, once injected, outlives the input it was built next to
+    // if the tree re-renders its toolbar - #openModal and the apply callback
+    // both have to cope with #findFilterInput() coming back empty.
+    await loadToolbarAt('/typo3/module/web/layout');
+    const modal = await facetsModal();
+    searchInput().remove();
+
+    toggleButton().click();
+    await Promise.resolve();
+
+    expect(modal.open).toHaveBeenCalledWith('', null, expect.any(Function));
+    expect(() => modal.open.mock.calls[0][2]('is:hidden')).not.toThrow();
+  });
+
   it('writes an applied phrase into the tree search field and rebadges', async () => {
     await loadToolbarAt('/typo3/module/web/layout');
     const modal = await facetsModal();
@@ -403,5 +453,16 @@ describe('session persistence', () => {
 
     await new Promise((resolve) => { setTimeout(resolve, 500); });
     expect(await ajaxRequests()).toEqual([]);
+  });
+
+  it('treats a persistFilter setting without a stored phrase as nothing to restore', async () => {
+    // persistFilter on but persistedFilter never sent - an upgrade edge case, not
+    // a real "restore an empty phrase" request.
+    TYPO3.settings.PagetreeFacets = { persistFilter: '1' };
+
+    await loadToolbarAt('/typo3/module/web/layout');
+
+    expect(searchInput().value).toBe('');
+    expect(badge()).toBeNull();
   });
 });

@@ -143,6 +143,15 @@ describe('renderSearchResults', () => {
     expect(list.querySelector('input').disabled).toBe(true);
   });
 
+  it('does nothing if a disabled proxy is toggled anyway', () => {
+    // Real UI cannot fire this on a disabled control, but the listener still
+    // has to guard against it directly rather than assume the DOM enforces it.
+    const list = renderSearchResults([match()], deps(null));
+    const proxy = list.querySelector('input');
+
+    expect(() => proxy.dispatchEvent(new Event('change'))).not.toThrow();
+  });
+
   it('renders radio presets as a synthetic group, away from the real field name', () => {
     const list = renderSearchResults(
       [match({ field: { name: 'age', type: 'radio-presets' } })],

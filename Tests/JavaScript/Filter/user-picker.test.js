@@ -77,6 +77,42 @@ describe('renderUserPicker', () => {
     expect(onLabelResolved).toHaveBeenCalled();
   });
 
+  it('seeds nothing for an empty state list, same as a missing value', () => {
+    const { input } = mount([]);
+
+    expect(input.value).toBe('');
+    expect(requests()).toHaveLength(0);
+  });
+
+  it('leaves "me" unresolved as a literal value when the field carries no current user', () => {
+    // pinnedLabel() only special-cases "me" when field.currentUser was given -
+    // without it, "me" falls through to the real uid lookup like any other value.
+    const { input } = mount('me', { currentUser: undefined });
+
+    expect(input.dataset.value).toBe('me');
+    expect(input.value).toBe('me');
+  });
+
+  it('leaves the visible uid alone when the lookup finds no matching user', async () => {
+    respondWith(() => ({ users: [] }));
+    const { input } = mount('7');
+
+    await vi.waitFor(() => expect(requests()).toHaveLength(1));
+    expect(input.value).toBe('7');
+    expect(onLabelResolved).not.toHaveBeenCalled();
+  });
+
+  it('resolves to null instead of throwing when the lookup request fails', async () => {
+    respondWith(() => {
+      throw new Error('network down');
+    });
+    const { input } = mount('7');
+
+    await vi.waitFor(() => expect(requests()).toHaveLength(1));
+    expect(input.value).toBe('7');
+    expect(onLabelResolved).not.toHaveBeenCalled();
+  });
+
   it('discards a resolved label if the value moved on meanwhile', async () => {
     let release;
     respondWith(() => new Promise((resolve) => {
@@ -135,6 +171,29 @@ describe('renderUserPicker', () => {
     expect(options(results)).toEqual(['Me (admin)', 'hit for bb']);
   });
 
+  it('ignores a stale response that arrives after a newer one already rendered', async () => {
+    const releasers = {};
+    respondWith(({ q }) => new Promise((resolve) => {
+      releasers[q] = () => resolve({ users: [{ uid: 1, label: `hit for ${q}` }] });
+    }));
+    const { input, results } = mount(undefined);
+
+    input.value = 'aa';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+    input.value = 'bb';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    // The newer request settles first; the older one is still in flight.
+    releasers.bb();
+    await vi.waitFor(() => expect(options(results)).toContain('hit for bb'));
+
+    releasers.aa();
+    await Promise.resolve();
+    expect(options(results)).toEqual(['Me (admin)', 'hit for bb']);
+  });
+
   it('typing invalidates a previous selection', () => {
     const { input } = mount('me');
 
@@ -167,6 +226,52 @@ describe('renderUserPicker', () => {
 
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
     expect(highlighted()).toBe('Erika Editor');
+  });
+
+  it('reopens the existing suggestions on ArrowDown after Escape, without searching again', async () => {
+    respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
+    const { input, results } = mount(undefined);
+    input.value = 'er';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(results().hidden).toBe(true);
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(results().hidden).toBe(false);
+    expect(options(results)).toEqual(['Me (admin)', 'Erika Editor']);
+    expect(requests()).toHaveLength(1);
+  });
+
+  it('clears the highlight rather than leaving a stale descendant when there is nothing to highlight', () => {
+    const element = renderUserPicker(tab, { name: 'editor' }, undefined, {
+      getRoot: () => root,
+      clearable: (input) => input,
+      onLabelResolved,
+    });
+    root.append(element);
+    const input = element.querySelector('input');
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  it('ignores ArrowUp while the list is not open', () => {
+    const { input } = mount(undefined);
+
+    expect(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))).not.toThrow();
+  });
+
+  it('ignores Enter when nothing is highlighted yet', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('focus'));
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(input.dataset.value).toBeUndefined();
+    expect(results().hidden).toBe(false);
   });
 
   it('selects the highlighted suggestion on Enter and stops the event there', () => {
@@ -207,6 +312,47 @@ describe('renderUserPicker', () => {
 
     expect(results().hidden).toBe(true);
     expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes on blur, delayed so a click on a suggestion can register first', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('blur'));
+    // Blurring without ever having opened the list must not throw even though
+    // there is no scroll listener yet to tear down.
+    expect(results().hidden).toBe(true);
+
+    input.dispatchEvent(new Event('focus'));
+    expect(results().hidden).toBe(false);
+
+    input.dispatchEvent(new Event('blur'));
+    expect(results().hidden).toBe(false);
+    vi.advanceTimersByTime(150);
+    expect(results().hidden).toBe(true);
+  });
+
+  it('keeps focus on the input for a mouse selection instead of letting it blur first', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('focus'));
+    const option = results().querySelector('[role="option"]');
+
+    const mousedown = new MouseEvent('mousedown', { cancelable: true });
+    option.dispatchEvent(mousedown);
+
+    expect(mousedown.defaultPrevented).toBe(true);
+  });
+
+  it('selects a real search result by its uid, not by a value field it does not have', async () => {
+    respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
+    const { input, results } = mount(undefined);
+    input.value = 'er';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    const [, searchResult] = results().querySelectorAll('[role="option"]');
+    searchResult.click();
+
+    expect(input.dataset.value).toBe('7');
+    expect(input.value).toBe('Erika Editor');
   });
 
   it('reparents the dropdown to the root so the scrolling panel cannot clip it', () => {
