@@ -72,6 +72,7 @@ final readonly class SearchResultLabelListener
 
     public function __construct(
         private MatchedPageRegistry $registry,
+        private Typo3Version $typo3Version,
     ) {}
 
     public function __invoke(AfterPageTreeItemsPreparedEvent $event): void
@@ -159,7 +160,7 @@ final readonly class SearchResultLabelListener
      */
     private function supportsInheritanceFlag(): bool
     {
-        return (new Typo3Version())->getMajorVersion() >= 14;
+        return $this->typo3Version->getMajorVersion() >= 14;
     }
 
     private function getLanguageService(): LanguageService
