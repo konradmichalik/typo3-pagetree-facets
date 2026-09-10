@@ -24,7 +24,7 @@ $EM_CONF[$_EXTKEY] = [
         ],
         'conflicts' => [],
         'suggests' => [
-            'seo' => '',
+            'seo' => '13.4.0-14.99.99',
         ],
     ],
 ];
