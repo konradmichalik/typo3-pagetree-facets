@@ -11,6 +11,16 @@
 				"npm"
 			],
 			"rangeStrategy": "bump"
+		},
+		{
+			"description": "typo3/cms-core 14.3 requires doctrine/dbal ~4.4.4, so a newer minor cannot be installed until core widens its constraint",
+			"matchManagers": [
+				"composer"
+			],
+			"matchPackageNames": [
+				"doctrine/dbal"
+			],
+			"allowedVersions": "<4.5"
 		}
 	]
 }
