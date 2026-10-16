@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Service;
 
-use KonradMichalik\PagetreeFacets\Api\FilterContext;
+use KonradMichalik\PagetreeFacets\Api\{FacetInterface, FilterContext};
 use KonradMichalik\PagetreeFacets\Token\Token;
 
 use function count;
@@ -124,16 +124,7 @@ final readonly class FilterResolutionService
      */
     private function resolveUidSets(array $tokens, FilterContext $context): array
     {
-        // Resolve the (per-user config-filtered) facet set once for the whole
-        // phrase and index it by token key, instead of re-running getFacets() via
-        // findFacetForToken() for every token. First-seen wins, mirroring the
-        // priority order findFacetForToken() would return.
-        $facetByKey = [];
-        foreach ($this->facetRegistry->getFacets($context->backendUser) as $facet) {
-            foreach ($facet->getTokenKeys() as $key) {
-                $facetByKey[$key] ??= $facet;
-            }
-        }
+        $facetByKey = $this->indexFacetsByTokenKey($context);
 
         $uidSets = [];
         $seen = [];
@@ -145,21 +136,51 @@ final readonly class FilterResolutionService
                 continue;
             }
             $seen[$token->raw] = true;
-            if ($token->isFreetext()) {
-                $uidSets[] = $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
-                continue;
+            $uids = $this->resolveToken($token, $facetByKey, $context);
+            if (null !== $uids) {
+                $uidSets[] = $uids;
             }
-            if ('site' === $token->key || 'under' === $token->key) {
-                continue; // scope, not a criterion - handled separately
-            }
-            $facet = $facetByKey[$token->key] ?? null;
-            if (null === $facet) {
-                continue; // unknown token (e.g. uninstalled provider) -> ignored, never an error
-            }
-            $uidSets[] = $facet->resolvePageUids($token, $context);
         }
 
         return $uidSets;
+    }
+
+    /**
+     * Resolve the (per-user config-filtered) facet set once for the whole
+     * phrase and index it by token key, instead of re-running getFacets() via
+     * findFacetForToken() for every token. First-seen wins, mirroring the
+     * priority order findFacetForToken() would return.
+     *
+     * @return array<string, FacetInterface>
+     */
+    private function indexFacetsByTokenKey(FilterContext $context): array
+    {
+        $facetByKey = [];
+        foreach ($this->facetRegistry->getFacets($context->backendUser) as $facet) {
+            foreach ($facet->getTokenKeys() as $key) {
+                $facetByKey[$key] ??= $facet;
+            }
+        }
+
+        return $facetByKey;
+    }
+
+    /**
+     * @param array<string, FacetInterface> $facetByKey
+     *
+     * @return list<int>|null null when the token is not a criterion
+     */
+    private function resolveToken(Token $token, array $facetByKey, FilterContext $context): ?array
+    {
+        if ($token->isFreetext()) {
+            return $this->queryHelper->getMatchingPageUids($token->firstValue(), $context);
+        }
+        if ('site' === $token->key || 'under' === $token->key) {
+            return null; // scope, not a criterion - handled separately
+        }
+
+        // An unknown token (e.g. uninstalled provider) is ignored, never an error.
+        return ($facetByKey[$token->key] ?? null)?->resolvePageUids($token, $context);
     }
 
     /**

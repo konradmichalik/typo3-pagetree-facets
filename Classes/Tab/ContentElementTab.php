@@ -71,10 +71,44 @@ final class ContentElementTab extends AbstractPagesQueryTab
         /** @var array<string, string> $itemGroups */
         $itemGroups = $config['itemGroups'] ?? [];
 
-        // CType choices from TCA items incl. icons/labels (the "new content
-        // element" wizard set) - custom CTypes appear automatically. Options are
-        // bucketed by their TCA "group", the same source NewContentElementController
-        // groups the wizard by, so both stay in sync by construction.
+        $buckets = $this->bucketItems($config, $itemGroups, $context);
+
+        // One field per group, each labelled with its group - the same shape the
+        // Activity tab uses for its two presets, so the generic renderer turns
+        // the labels into fieldset legends. All fields share the "ce" name, which
+        // is what keeps this a single criterion for serialize()/hydrate() and for
+        // the modal's value collection. Fields keep the itemGroups order; a group
+        // used by an item but missing from itemGroups falls back to its own
+        // identifier as the label, same as the core wizard does.
+        $fields = [];
+        foreach ($buckets as $group => $groupOptions) {
+            if ([] === $groupOptions) {
+                continue;
+            }
+            $fields[] = [
+                'type' => 'checkbox-group',
+                'name' => 'ce',
+                'label' => $itemGroups[$group] ?? $group,
+                'options' => $groupOptions,
+            ];
+        }
+
+        return ['fields' => $fields];
+    }
+
+    /**
+     * CType choices from TCA items incl. icons/labels (the "new content
+     * element" wizard set) - custom CTypes appear automatically. Options are
+     * bucketed by their TCA "group", the same source NewContentElementController
+     * groups the wizard by, so both stay in sync by construction.
+     *
+     * @param array<string, mixed>  $config
+     * @param array<string, string> $itemGroups
+     *
+     * @return array<string, list<array{value: string, label: string, icon: string}>>
+     */
+    private function bucketItems(array $config, array $itemGroups, FilterContext $context): array
+    {
         // CType carries authMode "explicitAllow" in the core TCA, so a non-admin
         // only ever sees the element types their groups grant - offering a facet
         // for a type the user cannot work with is noise. The guard mirrors the
@@ -105,26 +139,6 @@ final class ContentElementTab extends AbstractPagesQueryTab
             ];
         }
 
-        // One field per group, each labelled with its group - the same shape the
-        // Activity tab uses for its two presets, so the generic renderer turns
-        // the labels into fieldset legends. All fields share the "ce" name, which
-        // is what keeps this a single criterion for serialize()/hydrate() and for
-        // the modal's value collection. Fields keep the itemGroups order; a group
-        // used by an item but missing from itemGroups falls back to its own
-        // identifier as the label, same as the core wizard does.
-        $fields = [];
-        foreach ($buckets as $group => $groupOptions) {
-            if ([] === $groupOptions) {
-                continue;
-            }
-            $fields[] = [
-                'type' => 'checkbox-group',
-                'name' => 'ce',
-                'label' => $itemGroups[$group] ?? $group,
-                'options' => $groupOptions,
-            ];
-        }
-
-        return ['fields' => $fields];
+        return $buckets;
     }
 }
