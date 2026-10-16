@@ -17,6 +17,5 @@ phpstan.xml
 .Build/
 .phpunit.result.cache
 /Tests/CGL/.build/
-/Tests/CGL/composer.lock
 /Tests/CGL/var/
 /Tests/CGL/vendor/
