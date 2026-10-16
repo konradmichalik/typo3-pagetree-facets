@@ -18,6 +18,7 @@ use KonradMichalik\PagetreeFacets\Service\ContentQueryHelper;
 use KonradMichalik\PagetreeFacets\Token\Token;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\SiteFinder;
 
 /**
@@ -104,33 +105,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
      */
     public function getModalConfiguration(FilterContext $context): array
     {
-        // Language options from the site languages - pairs naturally with the
-        // site: scope; without one, offer the union of all accessible sites.
-        $options = [];
-        $seen = [];
-        $backendUser = $context->backendUser;
-        foreach ($this->siteFinder->getAllSites() as $site) {
-            // Same web-mount boundary as the modal's site options: a non-admin
-            // must not see language titles of sites outside their mounts.
-            if (!$backendUser->isAdmin() && null === $backendUser->isInWebMount($site->getRootPageId())) {
-                continue;
-            }
-            if (null !== $context->siteIdentifier && $site->getIdentifier() !== $context->siteIdentifier) {
-                continue;
-            }
-            foreach ($site->getAllLanguages() as $language) {
-                $languageId = $language->getLanguageId();
-                if (0 === $languageId || isset($seen[$languageId])) {
-                    continue;
-                }
-                $seen[$languageId] = true;
-                $options[] = [
-                    'value' => (string) $languageId,
-                    'label' => $language->getTitle(),
-                    'icon' => $language->getFlagIdentifier(),
-                ];
-            }
-        }
+        $options = $this->collectLanguageOptions($context);
 
         $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:translations.';
 
@@ -155,5 +130,50 @@ final class TranslationsTab extends AbstractPagesQueryTab
                 ],
             ],
         ];
+    }
+
+    /**
+     * Language options from the site languages - pairs naturally with the
+     * site: scope; without one, offer the union of all accessible sites.
+     *
+     * @return list<array{value: string, label: string, icon: string}>
+     */
+    private function collectLanguageOptions(FilterContext $context): array
+    {
+        $options = [];
+        $seen = [];
+        foreach ($this->accessibleSites($context) as $site) {
+            foreach ($site->getAllLanguages() as $language) {
+                $languageId = $language->getLanguageId();
+                if (0 === $languageId || isset($seen[$languageId])) {
+                    continue;
+                }
+                $seen[$languageId] = true;
+                $options[] = [
+                    'value' => (string) $languageId,
+                    'label' => $language->getTitle(),
+                    'icon' => $language->getFlagIdentifier(),
+                ];
+            }
+        }
+
+        return $options;
+    }
+
+    /**
+     * Same web-mount boundary as the modal's site options: a non-admin must
+     * not see language titles of sites outside their mounts.
+     *
+     * @return list<Site>
+     */
+    private function accessibleSites(FilterContext $context): array
+    {
+        $backendUser = $context->backendUser;
+
+        return array_values(array_filter(
+            $this->siteFinder->getAllSites(),
+            static fn (Site $site): bool => ($backendUser->isAdmin() || null !== $backendUser->isInWebMount($site->getRootPageId()))
+                && (null === $context->siteIdentifier || $site->getIdentifier() === $context->siteIdentifier),
+        ));
     }
 }
