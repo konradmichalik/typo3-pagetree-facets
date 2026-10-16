@@ -77,7 +77,7 @@ final class SeoTabTest extends AbstractTabTestCase
         $tab = $this->get(SeoTab::class);
 
         self::assertSame('seo', $tab->getIdentifier());
-        self::assertSame('quality', $tab->getGroup());
+        self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.quality', $tab->getGroup());
         self::assertSame(['seo'], $tab->getTokenKeys());
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:tab.seo', $tab->getLabel());
     }

@@ -59,6 +59,21 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function configurationResolvesLllGroupLabels(): void
+    {
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+
+        $groups = array_column($payload['tabs'], 'group');
+
+        foreach (['Content', 'Quality', 'State'] as $group) {
+            self::assertContains($group, $groups);
+        }
+        foreach ($groups as $group) {
+            self::assertStringNotContainsString('LLL:', (string) $group);
+        }
+    }
+
+    #[Test]
     public function configurationResolvesLllLabels(): void
     {
         $payload = $this->decode($this->subject->configuration(new ServerRequest()));

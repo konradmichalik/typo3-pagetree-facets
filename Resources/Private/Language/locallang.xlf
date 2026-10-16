@@ -3,6 +3,7 @@
 	<file source-language="en" datatype="plaintext" original="EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf" date="2026-07-16T12:00:00Z" product-name="typo3_pagetree_facets">
 		<body>
 			<trans-unit id="pagetreeFacets.modal.title"><source>Filter page tree</source></trans-unit>
+			<trans-unit id="pagetreeFacets.toolbar.buttonLabel"><source>%s (Ctrl/Cmd+Shift+L)</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source></trans-unit>
@@ -85,6 +86,9 @@
 			<trans-unit id="translations.untranslated"><source>Translation missing in</source></trans-unit>
 			<trans-unit id="translations.translated"><source>Translation exists in</source></trans-unit>
 			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
+			<trans-unit id="group.content"><source>Content</source></trans-unit>
+			<trans-unit id="group.state"><source>State</source></trans-unit>
+			<trans-unit id="group.quality"><source>Quality</source></trans-unit>
 			<trans-unit id="group.forms"><source>Forms</source></trans-unit>
 			<trans-unit id="tab.form"><source>Form</source></trans-unit>
 			<trans-unit id="records.group.core"><source>TYPO3 Core</source></trans-unit>

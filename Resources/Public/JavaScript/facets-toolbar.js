@@ -173,7 +173,8 @@ class FacetsToolbar {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-sm btn-icon btn-default btn-borderless pagetree-facets-toggle';
-    const buttonLabel = `${TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree'} (Ctrl/Cmd+Shift+L)`;
+    const title = TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree';
+    const buttonLabel = (TYPO3.lang?.['pagetreeFacets.toolbar.buttonLabel'] ?? '%s (Ctrl/Cmd+Shift+L)').replace('%s', () => title);
     button.title = buttonLabel;
     // Icon-only, and the icon is hidden from assistive technology - so the name has
     // to be explicit rather than left to `title`, the weakest source there is.
