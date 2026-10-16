@@ -74,7 +74,7 @@
 			},
 			"cms-package-dir": "{$vendor-dir}/typo3/cms",
 			"extension-key": "typo3_pagetree_facets",
-			"version": "1.0.0",
+			"version": "1.0.1",
 			"web-dir": "public"
 		}
 	},
