@@ -20,7 +20,7 @@ TYPO3 extension `pagetree_facets` (`konradmichalik/typo3-pagetree-facets`). It a
 - `Classes/Controller/FacetsModalController.php` AJAX endpoints for the modal (routes in `Configuration/Backend/AjaxRoutes.php`)
 - `Classes/Compatibility/V13/` TYPO3 13 compatibility code
 - `Resources/Public/JavaScript/` `facets-modal.js`, `facets-toolbar.js` and `Filter/` modules
-- `Resources/Private/Language/` `locallang.xlf` (shipped inline to the client, keep server-only labels out), `locallang_settings.xlf` (`ext_conf_template.txt` labels, each reads `Title: Description`), `locallang_tree.xlf`
+- `Resources/Private/Language/` `locallang.xlf` (shipped inline to the client, keep server-only labels out), `locallang_settings.xlf` (`ext_conf_template.txt` labels, each reads `Title: Description`), `locallang_tree.xlf`; each has a `de.` counterpart, keep their unit ids in sync
 - `Tests/Unit/`, `Tests/Functional/`, `Tests/JavaScript/`, `Tests/Playwright/`
 - `Tests/Functional/Fixtures/Extensions/` local-only fixture extensions: `example_tab` (third-party facet example) and `demo_content` (seeds demo pages)
 - `Tests/CGL/` separate Composer project with linters, PHPStan and Rector

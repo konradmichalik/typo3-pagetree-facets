@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" target-language="de" datatype="plaintext" original="EXT:typo3_pagetree_facets/Resources/Private/Language/locallang_tree.xlf" date="2026-08-07T12:00:00Z" product-name="typo3_pagetree_facets">
+		<body>
+			<trans-unit id="tree.match">
+				<source>Matches the filter</source>
+				<target>Entspricht dem Filter</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
