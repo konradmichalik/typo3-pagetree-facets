@@ -186,6 +186,18 @@ describe('the toolbar button', () => {
     expect(toggleButton().querySelector('typo3-backend-icon').getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('takes its name, shortcut hint included, from the language labels', async () => {
+    globalThis.TYPO3.lang = {
+      'pagetreeFacets.modal.title': 'Seitenbaum filtern',
+      'pagetreeFacets.toolbar.buttonLabel': '%s (Strg/Cmd+Umschalt+L)',
+    };
+
+    await loadToolbarAt('/typo3/module/web/layout');
+
+    expect(toggleButton().getAttribute('aria-label')).toBe('Seitenbaum filtern (Strg/Cmd+Umschalt+L)');
+    expect(toggleButton().title).toBe('Seitenbaum filtern (Strg/Cmd+Umschalt+L)');
+  });
+
   it('falls back to the toolbar menu when the search wrapper is missing', async () => {
     await loadToolbarAt('/typo3/module/web/layout', { searchWrapper: false });
 

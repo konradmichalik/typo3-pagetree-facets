@@ -51,7 +51,7 @@ final class PageStateTab extends AbstractPagesQueryTab
 
     public function getGroup(): string
     {
-        return 'state';
+        return 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.state';
     }
 
     public function getTokenKeys(): array

@@ -60,7 +60,7 @@ final class RecordsTab extends AbstractPagesQueryTab
 
     public function getGroup(): string
     {
-        return 'content';
+        return 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.content';
     }
 
     public function getTokenKeys(): array

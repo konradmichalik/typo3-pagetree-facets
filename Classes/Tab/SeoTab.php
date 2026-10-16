@@ -52,7 +52,7 @@ final class SeoTab extends AbstractPagesQueryTab
 
     public function getGroup(): string
     {
-        return 'quality';
+        return 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.quality';
     }
 
     public function getTokenKeys(): array
