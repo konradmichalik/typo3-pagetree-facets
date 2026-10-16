@@ -106,7 +106,16 @@ final readonly class SearchResultLabelListener
             : new Label($text, self::LABEL_COLOR, 0);
         $blocker = $supportsInheritanceFlag ? null : new Label('', self::BLOCKER_COLOR, 0);
 
-        $items = $event->getItems();
+        $event->setItems($this->annotateItems($event->getItems(), $matchLabel, $blocker));
+    }
+
+    /**
+     * @param array<array-key, array<string, mixed>> $items
+     *
+     * @return array<array-key, array<string, mixed>>
+     */
+    private function annotateItems(array $items, Label $matchLabel, ?Label $blocker): array
+    {
         foreach ($items as &$item) {
             $uid = $this->pageUid($item);
             if (null === $uid) {
@@ -128,7 +137,7 @@ final readonly class SearchResultLabelListener
         }
         unset($item);
 
-        $event->setItems($items);
+        return $items;
     }
 
     /**
