@@ -28,7 +28,6 @@
 			"typo3/class-alias-loader": false,
 			"typo3/cms-composer-installers": false
 		},
-		"lock": false,
 		"sort-packages": true
 	},
 	"extra": {
