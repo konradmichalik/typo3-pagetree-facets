@@ -412,6 +412,42 @@ describe('renderUserPicker', () => {
     expect(results().style.top).toBe('106px');
   });
 
+  it('measures the space below against the visible modal body, not the taller root', () => {
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    document.body.append(modalBody);
+    modalBody.append(root);
+    const { input, results } = mount(undefined);
+    stubRect(modalBody, { top: 0, bottom: 200 });
+    stubRect(root, { top: 0, bottom: 480 });
+    stubRect(input, { top: 150, bottom: 180 });
+    stubRect(results(), { height: 100 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('46px');
+    modalBody.remove();
+  });
+
+  it('keeps root coordinates when the modal body has scrolled the root partly out of view', () => {
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    document.body.append(modalBody);
+    modalBody.append(root);
+    const { input, results } = mount(undefined);
+    stubRect(modalBody, { top: 100, bottom: 300 });
+    stubRect(root, { top: 50, bottom: 530 });
+    stubRect(input, { top: 250, bottom: 280 });
+    stubRect(results(), { height: 100 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    // Above the input, inside the visible body: 250 - 4 - 100 = 146 in the
+    // viewport, which is 96px from the root's own top.
+    expect(results().style.top).toBe('96px');
+    modalBody.remove();
+  });
+
   it('caps the list to the larger side when it fits neither above nor below', () => {
     const { input, results } = mount(undefined);
     stubRect(root, { top: 0, bottom: 300 });

@@ -382,15 +382,18 @@ class UserPicker {
     this.#results.style.maxHeight = '';
     this.#results.hidden = false;
     const listHeight = this.#results.getBoundingClientRect().height;
-    const spaceBelow = rootRect.bottom - inputRect.bottom - DROPDOWN_GAP_PX;
-    const spaceAbove = inputRect.top - rootRect.top - DROPDOWN_GAP_PX;
+    // In a short window the root's min-height outgrows .modal-body, so its own
+    // edges lie outside the visible area.
+    const bodyRect = root.closest('.modal-body')?.getBoundingClientRect() ?? rootRect;
+    const spaceBelow = Math.min(rootRect.bottom, bodyRect.bottom) - inputRect.bottom - DROPDOWN_GAP_PX;
+    const spaceAbove = inputRect.top - Math.max(rootRect.top, bodyRect.top) - DROPDOWN_GAP_PX;
     const above = listHeight > spaceBelow && spaceAbove > spaceBelow;
     const space = above ? spaceAbove : spaceBelow;
     if (listHeight > space) {
       this.#results.style.maxHeight = `${space}px`;
     }
     const top = above
-      ? spaceAbove - Math.min(listHeight, space)
+      ? inputRect.top - rootRect.top - DROPDOWN_GAP_PX - Math.min(listHeight, space)
       : inputRect.bottom - rootRect.top + DROPDOWN_GAP_PX;
     this.#results.style.top = `${top}px`;
     this.#input.setAttribute('aria-expanded', 'true');
