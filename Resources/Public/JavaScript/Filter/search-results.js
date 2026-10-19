@@ -70,8 +70,7 @@ function renderResultItem({ tab, field, option }, { findControl }) {
 
   const item = document.createElement('li');
   const label = document.createElement('label');
-  label.className = 'pagetree-facets__search-result form-check d-flex align-items-center gap-2'
-    + (isRadio ? '' : ' form-switch');
+  label.className = 'pagetree-facets__search-result form-check d-flex align-items-center gap-2';
 
   const proxy = buildProxy(tab, field, option, isRadio, control);
   label.append(proxy);
@@ -144,8 +143,6 @@ function buildProxy(tab, field, option, isRadio, control) {
     // matches for the same field, without colliding with the real field's
     // bracketed name (which the generic collectors key off of).
     proxy.name = `search-radio-${tab.identifier}-${field.name}`;
-  } else {
-    proxy.setAttribute('role', 'switch');
   }
   proxy.checked = Boolean(control?.checked);
   // A match whose control is not in the DOM cannot be toggled through - better

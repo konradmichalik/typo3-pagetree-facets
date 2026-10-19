@@ -73,21 +73,15 @@ function renderChoiceField(tab, field, state) {
 }
 
 function renderChoiceOption(tab, field, option, state, isRadio) {
+  // Plain checkboxes, not core's form-switch: a switch promises an immediate
+  // effect, and nothing here takes effect before Apply. gap-2 matches the
+  // cross-tab search rows.
   const label = document.createElement('label');
-  // Checkboxes render as TYPO3's own toggle-switch style (form-switch, the same
-  // classes core uses for boolean settings) instead of plain browser checkboxes.
-  // Radios stay plain radios - a switch implies an independent on/off, which does
-  // not fit a mutually-exclusive group.
-  // gap-2 matches the cross-tab search rows, and gives the switch enough room
-  // that its label does not read as part of the control.
-  label.className = 'form-check d-flex align-items-center gap-2' + (isRadio ? '' : ' form-switch');
+  label.className = 'form-check d-flex align-items-center gap-2';
 
   const input = document.createElement('input');
   input.className = 'form-check-input';
   input.type = isRadio ? 'radio' : 'checkbox';
-  if (!isRadio) {
-    input.setAttribute('role', 'switch');
-  }
   input.name = controlName(tab, field);
   input.value = option.value;
   input.checked = Array.isArray(state) ? state.includes(option.value) : state === option.value;

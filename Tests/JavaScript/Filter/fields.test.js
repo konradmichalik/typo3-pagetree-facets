@@ -42,12 +42,12 @@ describe('checkbox groups', () => {
     options: [{ value: 'hidden', label: 'Hidden' }, { value: 'empty', label: 'Empty' }],
   };
 
-  it('renders switches, matching how core styles boolean settings', () => {
+  it('renders checkboxes, since nothing applies before Apply', () => {
     const group = render(field);
 
     expect([...group.querySelectorAll('input')].every((i) => 'checkbox' === i.type)).toBe(true);
-    expect(group.querySelector('input').getAttribute('role')).toBe('switch');
-    expect(group.querySelector('label').className).toContain('form-switch');
+    expect(group.querySelector('input').getAttribute('role')).toBeNull();
+    expect(group.querySelector('label').className).not.toContain('form-switch');
   });
 
   it('checks the options the hydrated state names', () => {
