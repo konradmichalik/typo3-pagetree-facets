@@ -377,6 +377,94 @@ describe('renderUserPicker', () => {
     expect(results().hidden).toBe(true);
   });
 
+  it('stays open when the list itself scrolls, by wheel or by the arrow keys', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('focus'));
+
+    results().dispatchEvent(new Event('scroll'));
+
+    expect(results().hidden).toBe(false);
+  });
+
+  const stubRect = (element, rect) => {
+    element.getBoundingClientRect = () => ({ left: 0, width: 200, ...rect });
+  };
+
+  it('opens below the input when the list fits there', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 400 });
+    stubRect(input, { top: 20, bottom: 50 });
+    stubRect(results(), { height: 150 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('54px');
+  });
+
+  it('opens above the input when the list would run into the modal footer', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 300 });
+    stubRect(input, { top: 260, bottom: 290 });
+    stubRect(results(), { height: 150 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('106px');
+  });
+
+  it('caps the list to the larger side when it fits neither above nor below', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 300 });
+    stubRect(input, { top: 160, bottom: 190 });
+    stubRect(results(), { height: 192 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('0px');
+    expect(results().style.maxHeight).toBe('156px');
+  });
+
+  it('measures the list only once it is positioned and sized like the input', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 400 });
+    stubRect(input, { top: 20, bottom: 50, width: 180 });
+    let measuredAs;
+    results().getBoundingClientRect = () => {
+      measuredAs = [results().style.position, results().style.width];
+
+      return { height: 100 };
+    };
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(measuredAs).toEqual(['absolute', '180px']);
+  });
+
+  it('scrolls only the list to reveal the highlighted option, never its ancestors', () => {
+    const { input, results } = mount(undefined, { pinned: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] });
+    input.dispatchEvent(new Event('focus'));
+    const list = results();
+    Object.defineProperty(list, 'clientHeight', { value: 50 });
+    Object.defineProperty(list, 'scrollTop', { value: 0, writable: true });
+    list.querySelectorAll('[role="option"]').forEach((option, index) => {
+      Object.defineProperty(option, 'offsetTop', { value: index * 40 });
+      Object.defineProperty(option, 'offsetHeight', { value: 40 });
+    });
+
+    ['ArrowDown', 'ArrowDown', 'ArrowDown'].forEach((key) => input.dispatchEvent(new KeyboardEvent('keydown', { key })));
+    expect(list.scrollTop).toBe(70);
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(list.scrollTop).toBe(0);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('names the combobox after the field label, not after its placeholder', () => {
+    const { input } = mount(undefined, { label: 'Edited by' });
+
+    expect(input.getAttribute('aria-label')).toBe('Edited by');
+  });
+
   it('closeOpenUserDropdowns closes a list left open, as teardown needs', () => {
     const { input, results } = mount(undefined);
     input.dispatchEvent(new Event('focus'));
