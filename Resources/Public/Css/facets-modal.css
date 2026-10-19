@@ -3,28 +3,15 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  *
- * Styling for the filter modal. Built on the Bootstrap 5 custom properties the
- * TYPO3 v14 backend exposes (--bs-*), so it follows the light/dark theme
- * automatically without hard-coded colours.
+ * Styling for the filter modal. Every colour is one of core's --typo3-*
+ * variables, which carry their light and dark value themselves (light-dark() on
+ * the backend's color-scheme), so there is no palette and no dark mode block of
+ * our own. The two tints below are derived from the primary colour, not literals.
  */
 
-/* Self-contained, theme-aware palette. We do NOT derive colours from the
- * backend --bs-* variables here: inside the modal they do not reliably carry
- * the active dark-scheme values, which made headings render black and chips
- * too dark. Light values are the default. Dark is applied via TWO signals,
- * because the backend uses both: @media (prefers-color-scheme) when the theme
- * is set to "auto" (no data-color-scheme attribute is emitted then), and the
- * [data-color-scheme] attribute when a theme is picked explicitly. The explicit
- * attribute has higher specificity, so it correctly overrides the OS media
- * query for e.g. a light backend on a dark OS. */
 .pagetree-facets {
-    --pl-text: #1e1e1e;
-    --pl-surface: #fff;
-    --pl-muted: #737373;
-    --pl-border: rgba(0, 0, 0, 0.08);
-    --pl-accent: #3085d6;
-    --pl-hover: rgba(0, 0, 0, 0.05);
-    --pl-active: rgba(48, 133, 214, 0.12);
+    --pf-tint: color-mix(in srgb, var(--typo3-state-primary-bg) 16%, transparent);
+    --pf-tint-strong: color-mix(in srgb, var(--typo3-state-primary-bg) 26%, transparent);
 
     /* Fill the modal body and cap to the viewport so the body scrolls
      * internally instead of the content being clipped by the modal. */
@@ -53,37 +40,6 @@
     min-height: 0;
 }
 
-/* Auto mode: the backend follows the OS via this media query. */
-@media (prefers-color-scheme: dark) {
-    .pagetree-facets {
-        --pl-text: #e0e0e0;
-        --pl-surface: #2b2b2b;
-        --pl-muted: #9b9b9b;
-        --pl-border: rgba(255, 255, 255, 0.10);
-        --pl-hover: rgba(255, 255, 255, 0.07);
-        --pl-active: rgba(48, 133, 214, 0.30);
-    }
-}
-
-/* Explicit theme wins over the OS preference above (higher specificity). */
-[data-color-scheme="light"] .pagetree-facets {
-    --pl-text: #1e1e1e;
-    --pl-surface: #fff;
-    --pl-muted: #737373;
-    --pl-border: rgba(0, 0, 0, 0.08);
-    --pl-hover: rgba(0, 0, 0, 0.05);
-    --pl-active: rgba(48, 133, 214, 0.12);
-}
-
-[data-color-scheme="dark"] .pagetree-facets {
-    --pl-text: #e0e0e0;
-    --pl-surface: #2b2b2b;
-    --pl-muted: #9b9b9b;
-    --pl-border: rgba(255, 255, 255, 0.10);
-    --pl-hover: rgba(255, 255, 255, 0.07);
-    --pl-active: rgba(48, 133, 214, 0.30);
-}
-
 /* --- Header region (search + active-filter chips) ---------------------- */
 
 .pagetree-facets__header {
@@ -93,7 +49,7 @@
     gap: 0.75rem;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid var(--pl-border);
+    border-bottom: 1px solid var(--typo3-component-border-color);
 }
 
 .pagetree-facets__search {
@@ -160,8 +116,8 @@
    states come from the same place (see renderHelpToggle). */
 .pagetree-facets__token-toggle[aria-pressed="true"],
 .pagetree-facets__help-toggle[aria-expanded="true"] {
-    background: var(--pl-active);
-    color: var(--pl-text);
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
 }
 
 /* Single-line editor for the whole token phrase. Monospace echoes the tree
@@ -213,7 +169,7 @@
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
     font-size: 1.05rem;
     line-height: 1;
     cursor: pointer;
@@ -224,12 +180,12 @@
 }
 
 .pagetree-facets__clear:hover {
-    background: var(--pl-hover);
-    color: var(--pl-text);
+    background: var(--typo3-component-hover-bg);
+    color: var(--typo3-text-color-base);
 }
 
 .pagetree-facets__clear:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
@@ -268,11 +224,11 @@
 
 .pagetree-facets__help-close:hover {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--typo3-component-hover-bg);
 }
 
 .pagetree-facets__help-close:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
@@ -384,8 +340,8 @@
 }
 
 /* The pending notice is injected into the modal's own footer, left of the
-   buttons, so it sits OUTSIDE .pagetree-facets - the --pl-* custom properties are
-   scoped to that element and are unavailable here. It therefore inherits the
+   buttons, so it sits OUTSIDE .pagetree-facets - the --pf-* tints are scoped to that
+   element and are unavailable here. It therefore inherits the
    footer's own colour (core sets --typo3-modal-color there), which is correct in
    both themes by construction. The footer is a flex row with
    justify-content:flex-end, so the auto trailing margin keeps the buttons right
@@ -405,11 +361,11 @@
 
 /* Grey, because nothing is wrong: this is a status line about something still
    pending, not a warning. It sits in the modal's own footer, outside
-   .pagetree-facets and therefore outside its palette, so the muted tone comes
+   .pagetree-facets and therefore outside its tints, so the muted tone comes
    from the backend's own token here (the dialog carries .pagetree-facets-modal,
    see Modal.advanced()'s additionalCssClasses). */
 .pagetree-facets-modal .pagetree-facets__pending {
-    color: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+    color: var(--typo3-text-color-variant);
 }
 
 /* inline-flex overrides the [hidden] attribute's display:none - restore it. */
@@ -434,7 +390,7 @@
 }
 
 .pagetree-facets-modal .pagetree-facets__match-count {
-    color: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+    color: var(--typo3-text-color-variant);
 }
 
 .pagetree-facets__match-count[hidden] {
@@ -448,10 +404,8 @@
     border-radius: 3px;
     /* Same backend-global token (with fallback) the match-count text itself
      * uses, for consistency with the rest of this row - not a scoping
-     * requirement. --pl-muted would resolve here too now that this element
-     * lives inside .pagetree-facets, but there is no reason to switch a
-     * working, already-reviewed rule just because its surroundings moved. */
-    background: var(--typo3-text-color-variant, rgba(0, 0, 0, 0.65));
+     * requirement. */
+    background: var(--typo3-text-color-variant);
     opacity: 0.3;
     animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
 }
@@ -487,7 +441,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
     font-size: 0.8125rem;
     line-height: 1.4;
 }
@@ -500,18 +454,18 @@
 .pagetree-facets__hint code {
     padding-inline: 0.3em;
     border-radius: 3px;
-    background: var(--pl-active);
-    color: var(--pl-text);
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
     font-size: 0.95em;
 }
 
 .pagetree-facets__hint kbd {
     padding-inline: 0.35em;
     padding-block: 0.05em;
-    border: 1px solid var(--pl-border);
+    border: 1px solid var(--typo3-component-border-color);
     border-radius: 3px;
-    background: var(--pl-hover);
-    color: var(--pl-text);
+    background: var(--typo3-component-hover-bg);
+    color: var(--typo3-text-color-base);
     font-size: 0.85em;
     line-height: 1;
 }
@@ -536,15 +490,15 @@
     /* Accent tint carries the "filter" identity; the label uses the themed text
      * colour so it stays legible in both light and dark (accent-on-accent-tint
      * drops below WCAG contrast in dark mode). */
-    background: var(--pl-active);
-    color: var(--pl-text);
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
     font-size: 0.8125rem;
     line-height: 1.4;
 }
 
 /* The facet name is subordinate to the value the user picked, so it steps back a
    little - but it is real information (which criterion this is), so it still has
-   to clear 4.5:1. Not --pl-muted: against the chip's accent tint that lands near
+   to clear 4.5:1. Not the muted text colour: against the chip's accent tint that lands near
    4.0:1 in light and 3.6:1 in dark, and shrinking it makes that worse. A weakened
    currentColor keeps ~7:1 light / ~6:1 dark while still reading as greyer, and it
    follows the themed text colour automatically. Size in em so it scales with the
@@ -575,7 +529,7 @@
 }
 
 .pagetree-facets__chip-remove:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
@@ -598,7 +552,7 @@
    content height, so overflow-y never engages and long option lists get
    clipped by the body's overflow: hidden instead of scrolling. */
 .pagetree-facets__nav {
-    border-inline-end: 1px solid var(--pl-border);
+    border-inline-end: 1px solid var(--typo3-component-border-color);
     padding-inline-end: 0;
     /* Room for the search input's focus ring, which would otherwise be clipped
        by this scroll container's top edge. */
@@ -619,7 +573,7 @@
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.06em;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
 }
 
 .pagetree-facets__nav-group:first-child {
@@ -645,22 +599,22 @@
 }
 
 .pagetree-facets__nav-item:hover {
-    background: var(--pl-hover);
+    background: var(--typo3-component-hover-bg);
 }
 
 .pagetree-facets__nav-item.active {
-    background: var(--pl-active);
-    color: var(--pl-accent);
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
     font-weight: 500;
 }
 
 .pagetree-facets__nav-item:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
 .pagetree-facets__nav-item.is-empty {
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -675,8 +629,8 @@
     min-width: 1.25rem;
     padding: 0 0.35rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--pl-accent) 24%, transparent);
-    color: var(--pl-text);
+    background: var(--pf-tint-strong);
+    color: var(--typo3-text-color-base);
     font-size: 0.6875rem;
     font-weight: 600;
     line-height: 1.4;
@@ -705,7 +659,7 @@
     padding: 0;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
 }
 
 /* Multiple fieldsets within one tab (e.g. Activity: updated / created / by) get
@@ -719,7 +673,7 @@
  * before it - tripling the visible gap under the heading. */
 .pagetree-facets__panel fieldset + fieldset {
     margin-top: 1.5rem;
-    border-top: 1px solid var(--pl-border);
+    border-top: 1px solid var(--typo3-component-border-color);
 }
 
 .pagetree-facets__panel fieldset + fieldset > legend {
@@ -748,7 +702,7 @@
 
 .pagetree-facets__panel .form-check:hover,
 .pagetree-facets__search-result:hover {
-    background: var(--pl-hover);
+    background: var(--typo3-component-hover-bg);
 }
 
 .pagetree-facets__panel .form-check typo3-backend-icon,
@@ -774,17 +728,17 @@
 
 .pagetree-facets__search-result {
     width: 100%;
-    color: var(--pl-text);
+    color: var(--typo3-text-color-base);
 }
 
 .pagetree-facets__search-result:has(.form-check-input:focus-visible) {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
 .pagetree-facets__search-result:has(.form-check-input:checked) {
-    background: var(--pl-active);
-    color: var(--pl-accent);
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
     font-weight: 500;
 }
 
@@ -796,8 +750,8 @@
     flex: 0 0 auto;
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
-    background: var(--pl-hover);
-    color: var(--pl-muted);
+    background: var(--typo3-component-hover-bg);
+    color: var(--typo3-text-color-variant);
     font-size: 0.75rem;
     font-weight: 400;
 }
@@ -809,7 +763,7 @@
 
 .pagetree-facets__search-empty {
     padding: 0.4rem 0.6rem;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
 }
 
 /* --- Activity "Edited by" user picker ----------------------------------- */
@@ -832,10 +786,10 @@
     padding: 0.25rem;
     max-height: 12rem;
     overflow-y: auto;
-    background: var(--pl-surface);
-    border: 1px solid var(--pl-border);
+    background: var(--typo3-component-bg);
+    border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
 }
 
 .pagetree-facets__user-result {
@@ -845,20 +799,20 @@
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: var(--pl-text);
+    color: var(--typo3-text-color-base);
     text-align: start;
     cursor: pointer;
 }
 
 .pagetree-facets__user-result:hover,
 .pagetree-facets__user-result.is-highlighted {
-    background: var(--pl-hover);
+    background: var(--typo3-component-hover-bg);
 }
 
 /* The faint hover background alone is too weak a marker for the keyboard
  * position and vanishes in forced-colors mode. */
 .pagetree-facets__user-result.is-highlighted {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: -2px;
 }
 
@@ -886,7 +840,7 @@
 }
 
 .pagetree-facets__favorite:hover {
-    background: var(--pl-hover);
+    background: var(--typo3-component-hover-bg);
 }
 
 .pagetree-facets__favorite-load {
@@ -899,13 +853,13 @@
     padding: 0.3rem 0.5rem;
     border: 0;
     background: transparent;
-    color: var(--pl-text);
+    color: var(--typo3-text-color-base);
     text-align: start;
     cursor: pointer;
 }
 
 .pagetree-facets__favorite-load:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: -2px;
     border-radius: 4px;
 }
@@ -921,7 +875,7 @@
 .pagetree-facets__favorite-criteria {
     max-width: 100%;
     overflow: hidden;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
     font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -939,7 +893,7 @@
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: var(--pl-text);
+    color: var(--typo3-text-color-base);
     font-size: 1.05rem;
     line-height: 1;
     cursor: pointer;
@@ -950,7 +904,7 @@
 }
 
 .pagetree-facets__favorite-remove:focus-visible {
-    outline: 2px solid var(--pl-accent);
+    outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
 }
 
@@ -989,7 +943,7 @@
  * gap to the OTHER toolbar buttons (options dropdown, collapse) is untouched.
  * Not overlaid directly on the input - that collided with the browser's
  * native type="search" clear ("x") button. Lives outside .pagetree-facets
- * (the modal scope), so it uses the backend --bs-* vars with safe fallbacks. */
+ * (the modal scope), so it takes core's --typo3-* variables directly. */
 
 .pagetree-facets-search-group {
     display: flex;
@@ -1020,7 +974,7 @@
      * default, so at rest (no hover) the button read as a bare floating icon
      * rather than part of a group. The start (left) edge overlaps the
      * input's own end border by 1px, same as Bootstrap's own input-group. */
-    border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.15));
+    border: 1px solid var(--typo3-component-border-color);
     border-start-start-radius: 0;
     border-end-start-radius: 0;
     margin-inline-start: -1px;
@@ -1051,63 +1005,32 @@
     min-width: 1.05rem;
     padding: 0 0.3rem;
     border-radius: 999px;
-    background: var(--bs-primary, #3085d6);
-    color: #fff;
+    background: var(--typo3-state-primary-bg);
+    color: var(--typo3-state-primary-color);
     font-size: 0.625rem;
     line-height: 1.4;
 }
 
 /* Empty-result notice inside the tree panel, offering the way out of a filter
  * that matched nothing (see #toggleEmptyNotice). This sits OUTSIDE the modal
- * scope, in the page-tree navigation frame, where the backend --bs-* custom
- * properties resolve to their LIGHT-theme values even in dark mode (the same
- * trap documented on .pagetree-facets-toggle above, which left the dashed
- * border, text and buttons barely visible in dark mode). So it carries its own
- * theme-aware --pl-* palette, applied via the same two signals as the modal:
- * @media (prefers-color-scheme) for "auto" and [data-color-scheme] when a theme
- * is picked explicitly. */
+ * scope, in the page-tree navigation frame, so it takes core's --typo3-*
+ * variables directly, which switch with the backend's color-scheme. The --bs-*
+ * ones resolve to their light values there even in dark mode, which left the
+ * dashed border, text and buttons barely visible. */
 .pagetree-facets-empty {
-    --pl-text: #1e1e1e;
-    --pl-muted: #737373;
-    --pl-border: rgba(0, 0, 0, 0.15);
-    --pl-hover: rgba(0, 0, 0, 0.05);
-
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
     margin: 0.75rem;
     padding: 0.75rem;
-    border: 1px dashed var(--pl-border);
+    border: 1px dashed var(--typo3-component-border-color);
     border-radius: 6px;
-}
-
-@media (prefers-color-scheme: dark) {
-    .pagetree-facets-empty {
-        --pl-text: #e0e0e0;
-        --pl-muted: #9b9b9b;
-        --pl-border: rgba(255, 255, 255, 0.20);
-        --pl-hover: rgba(255, 255, 255, 0.07);
-    }
-}
-
-[data-color-scheme="light"] .pagetree-facets-empty {
-    --pl-text: #1e1e1e;
-    --pl-muted: #737373;
-    --pl-border: rgba(0, 0, 0, 0.15);
-    --pl-hover: rgba(0, 0, 0, 0.05);
-}
-
-[data-color-scheme="dark"] .pagetree-facets-empty {
-    --pl-text: #e0e0e0;
-    --pl-muted: #9b9b9b;
-    --pl-border: rgba(255, 255, 255, 0.20);
-    --pl-hover: rgba(255, 255, 255, 0.07);
 }
 
 .pagetree-facets-empty__text {
     margin: 0;
-    color: var(--pl-muted);
+    color: var(--typo3-text-color-variant);
     font-size: 0.8125rem;
     text-align: center;
 }
@@ -1120,16 +1043,16 @@
     gap: 0.5rem;
 }
 
-/* Style the actions from the --pl-* palette rather than trusting .btn-default,
- * whose themed colours resolve light here just like the --bs-* vars do. */
+/* Style the actions from core's --typo3-* variables rather than trusting
+ * .btn-default, whose themed colours resolve light here just like --bs-*. */
 .pagetree-facets-empty__actions .btn {
-    border: 1px solid var(--pl-border);
+    border: 1px solid var(--typo3-component-border-color);
     background: transparent;
-    color: var(--pl-text);
+    color: var(--typo3-text-color-base);
 }
 
 .pagetree-facets-empty__actions .btn:hover,
 .pagetree-facets-empty__actions .btn:focus {
-    background: var(--pl-hover);
-    color: var(--pl-text);
+    background: var(--typo3-component-hover-bg);
+    color: var(--typo3-text-color-base);
 }

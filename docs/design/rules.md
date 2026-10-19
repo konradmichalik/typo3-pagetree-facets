@@ -35,13 +35,15 @@ All colours come from core CSS variables that exist in both v13 and v14 and alre
 | Field and chip-row background | `--typo3-component-bg` |
 | Control and separator borders | `--typo3-component-border-color` |
 | Hover | `--typo3-component-hover-bg` |
-| Selected navigation item, chip, selected option row | `--typo3-component-active-bg` with `--typo3-component-active-color` |
-| Primary accent (badge, links, focus) | `--typo3-state-primary-bg`, `--typo3-component-focus-color` |
+| Selected navigation item, chip, selected option row | A tint of `--typo3-state-primary-bg` via `color-mix()` (16%, 26% for the count badge) with `--typo3-text-color-base` |
+| Focus ring | `--typo3-component-focus-color` |
+| Solid accent (toolbar badge, Apply) | `--typo3-state-primary-bg` with `--typo3-state-primary-color` |
 | Not applied yet | `--typo3-state-warning-bg` |
 | No matching pages | `--typo3-state-danger-bg` |
 | Panel and navigation surface | `--typo3-surface-base`, `--typo3-surface-container-low` |
 
 - **The accent is core's primary.** The active navigation item, the badge, the checked box and the Apply button share one colour. No private blue next to core's violet.
+- **No coloured text on a tint.** `--typo3-component-active-bg` is the solid primary, not a tint, and the primary in dark mode is too dark to carry text on a dark surface. Selected items keep the base text colour and are told apart by the tint, not by a text colour.
 - **Status is never colour alone.** The footer dot always comes with words: `1 matching page · not applied to the tree yet`, `No matching pages`.
 - **Icons come from the core icon registry** (`decorativeIcon()`), never inline SVG or emoji.
 
