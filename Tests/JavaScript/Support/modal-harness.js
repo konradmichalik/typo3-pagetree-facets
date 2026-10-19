@@ -89,6 +89,15 @@ export function configurationFixture(overrides = {}) {
           fields: [
             { type: 'text', name: 'changed', label: 'Last updated', placeholder: '7d' },
             { type: 'text', name: 'created', label: 'Created' },
+            {
+              type: 'radio-presets',
+              name: 'updated',
+              label: 'Updated',
+              options: [
+                { value: '<7d', label: 'Within the last 7 days' },
+                { value: '<30d', label: 'Within the last 30 days' },
+              ],
+            },
           ],
         },
       },

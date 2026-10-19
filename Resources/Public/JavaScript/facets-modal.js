@@ -8,7 +8,7 @@ import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
@@ -1145,7 +1145,7 @@ class FacetsModal {
       if (input.tagName === 'SELECT') {
         Array.from(input.options).forEach((option) => { option.selected = false; });
       } else if (input.type === 'checkbox' || input.type === 'radio') {
-        input.checked = false;
+        clearChoice(input);
       } else {
         input.value = '';
         delete input.dataset.value;
@@ -1222,12 +1222,13 @@ class FacetsModal {
               criteria.push(this.#criterion(prefix, tab, option.textContent.trim() || option.value, () => { option.selected = false; }));
             }
           } else if (input.type === 'checkbox' || input.type === 'radio') {
-            if (input.checked) {
+            // Not the neutral option ("Any time"): it is the absence of a criterion.
+            if (input.checked && '' !== input.value) {
               // Scoped to the dedicated label span, not the whole <label>'s
               // textContent - that would also pick up the visually-hidden
               // option-description span (see optionHelp in Filter/form-controls.js).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
-              criteria.push(this.#criterion(prefix, tab, label, () => { input.checked = false; }));
+              criteria.push(this.#criterion(prefix, tab, label, () => { clearChoice(input); }));
             }
           } else if (this.#effectiveValue(input).trim() !== '') {
             const label = input.dataset.label || input.value.trim();
@@ -1605,7 +1606,7 @@ class FacetsModal {
           if (input.tagName === 'SELECT') {
             values.push(...Array.from(input.selectedOptions).map((o) => o.value));
           } else if (input.type === 'checkbox' || input.type === 'radio') {
-            if (input.checked) {
+            if (input.checked && '' !== input.value) {
               values.push(input.value);
             }
           } else if (this.#effectiveValue(input) !== '') {

@@ -65,11 +65,46 @@ function renderChoiceField(tab, field, state) {
   // heading well beyond any margin we set.
   const optionsWrap = document.createElement('div');
   optionsWrap.className = 'pagetree-facets__options';
+  if (isRadio) {
+    // The way back from a preset: its value is empty, so it is never a criterion
+    // and never a chip (the modal's collectors skip it).
+    optionsWrap.append(renderChoiceOption(tab, field, { value: '', label: anyTimeLabel() }, state, isRadio));
+  }
   for (const option of field.options ?? []) {
     optionsWrap.append(renderChoiceOption(tab, field, option, state, isRadio));
   }
 
   return optionsWrap;
+}
+
+const anyTimeLabel = () => TYPO3.lang?.['pagetreeFacets.modal.anyTime'] ?? 'Any time';
+
+/** The neutral option is the chosen one exactly while the field has no value. */
+function isChosen(option, state) {
+  if ('' === option.value) {
+    return undefined === state || null === state || '' === state || (Array.isArray(state) && 0 === state.length);
+  }
+
+  return Array.isArray(state) ? state.includes(option.value) : state === option.value;
+}
+
+/**
+ * Empties one checkbox or radio. A radio falls back to its group's neutral option
+ * (checking it unchecks the rest), otherwise a cleared preset group would show no
+ * radio selected at all. No event is dispatched: the callers refresh the modal.
+ *
+ * @param {HTMLInputElement} input
+ */
+export function clearChoice(input) {
+  if ('radio' === input.type) {
+    const neutral = input.closest('fieldset')?.querySelector('input[type="radio"][value=""]');
+    if (neutral) {
+      neutral.checked = true;
+
+      return;
+    }
+  }
+  input.checked = false;
 }
 
 function renderChoiceOption(tab, field, option, state, isRadio) {
@@ -84,7 +119,7 @@ function renderChoiceOption(tab, field, option, state, isRadio) {
   input.type = isRadio ? 'radio' : 'checkbox';
   input.name = controlName(tab, field);
   input.value = option.value;
-  input.checked = Array.isArray(state) ? state.includes(option.value) : state === option.value;
+  input.checked = isChosen(option, state);
   label.append(input);
 
   if (option.icon) {

@@ -202,6 +202,48 @@ describe('closing with an unapplied selection', () => {
   });
 });
 
+describe('Any time', () => {
+  const withPreset = () => {
+    const configuration = configurationFixture();
+    configuration.tabs.find((tab) => 'activity' === tab.identifier).state = { updated: ['<7d'] };
+
+    return configuration;
+  };
+  const anyTime = (modal) => control(modal, 'activity[updated]', '');
+
+  it('treats Any time as no criterion', async () => {
+    const { modal, onApply } = await openModal({ configuration: withPreset() });
+    expect(chipLabels(modal)).toContain('Updated: Within the last 7 days');
+
+    anyTime(modal).click();
+
+    expect(chipLabels(modal).some((label) => label.includes('Any time'))).toBe(false);
+    expect(chipLabels(modal).some((label) => label.startsWith('Updated:'))).toBe(false);
+    expect(applyButton(modal).disabled).toBe(false);
+    applyButton(modal).click();
+    await expect.poll(() => onApply.mock.calls).toEqual([['is:hidden']]);
+  });
+
+  it('goes back to Any time when the preset chip is removed', async () => {
+    const { modal } = await openModal({ configuration: withPreset() });
+
+    [...modal.querySelectorAll('.pagetree-facets__chip')]
+      .find((chip) => chip.textContent.includes('Within the last 7 days'))
+      .querySelector('.pagetree-facets__chip-remove').click();
+
+    expect(anyTime(modal).checked).toBe(true);
+    expect(control(modal, 'activity[updated]', '<7d').checked).toBe(false);
+  });
+
+  it('is checked again after Reset', async () => {
+    const { modal } = await openModal({ configuration: withPreset() });
+
+    modal.querySelector('.pagetree-facets__reset').click();
+
+    expect(anyTime(modal).checked).toBe(true);
+  });
+});
+
 describe('Reset', () => {
   it('clears every criterion but stays in the modal', async () => {
     const { modal } = await openModal({

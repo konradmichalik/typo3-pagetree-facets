@@ -6,6 +6,7 @@
 			<trans-unit id="pagetreeFacets.toolbar.buttonLabel"><source>%s (Ctrl/Cmd+Shift+L)</source><target>%s (Strg/Cmd+Umschalt+L)</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source><target>Anwenden</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source><target>Zurücksetzen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.anyTime"><source>Any time</source><target>Beliebig</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source><target>Schließen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source><target>Alle Websites</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source><target>Seitentitel oder UID</target></trans-unit>

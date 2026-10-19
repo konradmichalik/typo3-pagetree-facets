@@ -114,7 +114,29 @@ describe('radio presets', () => {
   it('selects a scalar state value', () => {
     const group = render(field, { age: '30' });
 
-    expect([...group.querySelectorAll('input')].map((i) => i.checked)).toEqual([false, true]);
+    expect([...group.querySelectorAll('input')].map((i) => i.checked)).toEqual([false, false, true]);
+  });
+
+  it('starts with Any time, checked while the state names no value', () => {
+    const inputs = [...render(field).querySelectorAll('input')];
+
+    expect(inputs[0].value).toBe('');
+    expect(inputs[0].closest('label').textContent).toContain('Any time');
+    expect(inputs.map((i) => i.checked)).toEqual([true, false, false]);
+  });
+
+  it('leaves Any time unchecked for a hydrated value, scalar or list', () => {
+    for (const state of ['30', ['30']]) {
+      const inputs = [...render(field, { age: state }).querySelectorAll('input')];
+
+      expect(inputs.map((i) => i.checked)).toEqual([false, false, true]);
+    }
+  });
+
+  it('takes the label of Any time from the language file', () => {
+    globalThis.TYPO3.lang['pagetreeFacets.modal.anyTime'] = 'Beliebig';
+
+    expect(render(field).querySelector('input').closest('label').textContent).toContain('Beliebig');
   });
 });
 
