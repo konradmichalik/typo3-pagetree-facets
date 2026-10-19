@@ -106,6 +106,12 @@
 			<trans-unit id="activity.preset.1y.&lt;"><source>Within the last year</source></trans-unit>
 			<trans-unit id="activity.preset.6m.&gt;"><source>Untouched for more than 6 months</source></trans-unit>
 			<trans-unit id="activity.preset.1y.&gt;"><source>Untouched for more than a year</source></trans-unit>
+			<trans-unit id="activity.created.preset.7d.&lt;"><source>Within the last 7 days</source></trans-unit>
+			<trans-unit id="activity.created.preset.30d.&lt;"><source>Within the last 30 days</source></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&lt;"><source>Within the last 6 months</source></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&lt;"><source>Within the last year</source></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&gt;"><source>Created more than 6 months ago</source></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&gt;"><source>Created more than a year ago</source></trans-unit>
 			<trans-unit id="state.empty"><source>Without content elements</source></trans-unit>
 			<trans-unit id="state.empty.description"><source>No tt_content records on the page - hidden elements still count as content.</source></trans-unit>
 			<trans-unit id="state.restricted"><source>Access restricted</source></trans-unit>

@@ -106,6 +106,12 @@
 			<trans-unit id="activity.preset.1y.&lt;"><source>Within the last year</source><target>Innerhalb des letzten Jahres</target></trans-unit>
 			<trans-unit id="activity.preset.6m.&gt;"><source>Untouched for more than 6 months</source><target>Seit mehr als 6 Monaten unberührt</target></trans-unit>
 			<trans-unit id="activity.preset.1y.&gt;"><source>Untouched for more than a year</source><target>Seit mehr als einem Jahr unberührt</target></trans-unit>
+			<trans-unit id="activity.created.preset.7d.&lt;"><source>Within the last 7 days</source><target>Innerhalb der letzten 7 Tage</target></trans-unit>
+			<trans-unit id="activity.created.preset.30d.&lt;"><source>Within the last 30 days</source><target>Innerhalb der letzten 30 Tage</target></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&lt;"><source>Within the last 6 months</source><target>Innerhalb der letzten 6 Monate</target></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&lt;"><source>Within the last year</source><target>Innerhalb des letzten Jahres</target></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&gt;"><source>Created more than 6 months ago</source><target>Vor mehr als 6 Monaten erstellt</target></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&gt;"><source>Created more than a year ago</source><target>Vor mehr als einem Jahr erstellt</target></trans-unit>
 			<trans-unit id="state.empty"><source>Without content elements</source><target>Ohne Inhaltselemente</target></trans-unit>
 			<trans-unit id="state.empty.description"><source>No tt_content records on the page - hidden elements still count as content.</source><target>Keine tt_content-Datensätze auf der Seite – verborgene Elemente zählen weiterhin als Inhalt.</target></trans-unit>
 			<trans-unit id="state.restricted"><source>Access restricted</source><target>Zugriff beschränkt</target></trans-unit>
