@@ -79,6 +79,8 @@ interface FacetInterface
      *                                             //   for when the label alone isn't enough
      *       'currentUser' => ['uid' => int, 'username' => string], // user-picker only: pins
      *                                             //   "Me" as a suggestion without a search round trip
+     *       'searchable' => bool,                // user-picker only, default true: false offers just
+     *                                             //   "Me" and the pinned entries, no be_users search
      *       'pinned' => [                         // user-picker only: pseudo-values pinned above the
      *         ['value' => string, 'label' => string, 'icon' => ?string],
      *       ],                                   //   search results, next to "Me" - e.g. "Unassigned".

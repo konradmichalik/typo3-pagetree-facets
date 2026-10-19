@@ -78,6 +78,7 @@ class UserPicker {
   #currentUser;
   #currentUserLabel;
   #pinned;
+  #searchable;
   #deps;
   #element;
   #highlighted = -1;
@@ -102,6 +103,7 @@ class UserPicker {
     this.#currentUser = field.currentUser?.uid ? field.currentUser : null;
     this.#currentUserLabel = this.#currentUser ? `${meLabel} (${this.#currentUser.username})` : meLabel;
     this.#pinned = field.pinned ?? [];
+    this.#searchable = field.searchable ?? true;
 
     this.#input = this.#buildInput(tab, field);
     this.#results = this.#buildResults();
@@ -125,7 +127,11 @@ class UserPicker {
     input.type = 'text';
     input.name = `${tab.identifier}[${field.name}]`;
     input.autocomplete = 'off';
-    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…';
+    input.placeholder = this.#searchable
+      ? TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…'
+      : TYPO3.lang?.['pagetreeFacets.modal.userPickPlaceholder'] ?? 'Pick from the list…';
+    // Without search, typed text could only discard the current selection.
+    input.readOnly = !this.#searchable;
     // Marks this control as "dataset.value is the source of truth" - the typed
     // text is a display-only query until a suggestion is picked, so the generic
     // collectors must never treat mid-typing text as a criterion.
@@ -136,7 +142,7 @@ class UserPicker {
       input.setAttribute('aria-label', field.label);
     }
     input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-autocomplete', this.#searchable ? 'list' : 'none');
     input.setAttribute('aria-expanded', 'false');
 
     return input;
@@ -197,7 +203,7 @@ class UserPicker {
     // Pin "Me" as a suggestion the moment the field gains focus, before any typing
     // - the common case (filter by my own edits) needs no search at all.
     this.#input.addEventListener('focus', () => {
-      if (this.#input.value.trim().length < MIN_QUERY_LENGTH) {
+      if (!this.#searchable || this.#input.value.trim().length < MIN_QUERY_LENGTH) {
         this.#searchToken += 1;
         this.#renderSuggestions([]);
       }
@@ -218,7 +224,7 @@ class UserPicker {
     window.clearTimeout(this.#debounceTimer);
     const query = this.#input.value.trim();
     const token = ++this.#searchToken;
-    if (query.length < MIN_QUERY_LENGTH) {
+    if (!this.#searchable || query.length < MIN_QUERY_LENGTH) {
       this.#renderSuggestions([]);
 
       return;

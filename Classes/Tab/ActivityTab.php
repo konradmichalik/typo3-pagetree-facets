@@ -80,6 +80,9 @@ final class ActivityTab extends AbstractPagesQueryTab
             'uid' => (int) ($context->backendUser->user['uid'] ?? 0),
             'username' => (string) ($context->backendUser->user['username'] ?? ''),
         ];
+        // Mirrors the access check of the users endpoint. be_users is adminOnly in
+        // core TCA, so editors usually cannot get the grant and keep only "Me".
+        $searchable = $context->backendUser->check('tables_select', 'be_users');
 
         return [
             'fields' => [
@@ -93,6 +96,7 @@ final class ActivityTab extends AbstractPagesQueryTab
                     // Lets the modal pin "Me" as a suggestion without a round
                     // trip - the current user's own record is already loaded.
                     'currentUser' => $currentUser,
+                    'searchable' => $searchable,
                 ],
                 [
                     'type' => 'user-picker',
@@ -100,6 +104,7 @@ final class ActivityTab extends AbstractPagesQueryTab
                     'label' => $lll.'createdby',
                     'options' => [],
                     'currentUser' => $currentUser,
+                    'searchable' => $searchable,
                 ],
             ],
         ];

@@ -465,6 +465,42 @@ describe('renderUserPicker', () => {
     expect(input.getAttribute('aria-label')).toBe('Edited by');
   });
 
+  it('is a read-only pick list when the field is not searchable', () => {
+    const { input } = mount(undefined, { searchable: false });
+
+    expect(input.readOnly).toBe(true);
+    expect(input.getAttribute('aria-autocomplete')).toBe('none');
+  });
+
+  it('opens on focus even with a value when the field is not searchable', () => {
+    const { input, results } = mount('me', { searchable: false });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().hidden).toBe(false);
+  });
+
+  it('offers only the pinned entries and never searches when the field is not searchable', async () => {
+    const { input, results } = mount(undefined, { searchable: false });
+
+    input.value = 'er';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(requests()).toHaveLength(0);
+    expect(options(results)).toEqual(['Me (admin)']);
+  });
+
+  it('does not invite a search in the placeholder when the field is not searchable', () => {
+    globalThis.TYPO3.lang = {
+      'pagetreeFacets.modal.userSearchPlaceholder': 'Search backend user…',
+      'pagetreeFacets.modal.userPickPlaceholder': 'Pick from the list…',
+    };
+
+    expect(mount(undefined).input.placeholder).toBe('Search backend user…');
+    expect(mount(undefined, { searchable: false }).input.placeholder).toBe('Pick from the list…');
+  });
+
   it('closeOpenUserDropdowns closes a list left open, as teardown needs', () => {
     const { input, results } = mount(undefined);
     input.dispatchEvent(new Event('focus'));

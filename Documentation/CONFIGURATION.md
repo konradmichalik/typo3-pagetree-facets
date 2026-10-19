@@ -27,9 +27,13 @@ Built-in facet identifiers: `records`, `ce`, `activity`, `doktype`, `layout`, `s
 
 > [!NOTE]
 > The Activity facet's "Edited by" / "Created by" picker searches backend user
-> names. For non-admins this requires `be_users` among the group's allowed
-> tables (*Tables (listing)* / `tables_select`); without that grant the picker
-> offers no suggestions (filtering by a known uid, e.g. `by:3`, still works).
+> names only for users with `be_users` among their allowed tables
+> (*Tables (listing)* / `tables_select`), which admins always have. `be_users`
+> is an admin-only table in TYPO3 core, so editors usually lack the grant and
+> get just the "Me" entry and no search. A group that does carry it lets its
+> editors list all account names. Filtering by a known uid, e.g. `by:3`, still
+> works without it. To hide the picker entirely, disable the whole
+> facet with `tx_typo3pagetreefacets.disableFacets = activity`.
 
 ## The `raw:` power-user token
 

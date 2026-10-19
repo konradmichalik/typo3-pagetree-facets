@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
-use KonradMichalik\PagetreeFacets\Tab\{ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RecordsTab, TranslationsTab};
+use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RecordsTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Configuration\SiteWriter;
@@ -104,6 +104,25 @@ final class ModalConfigurationTest extends AbstractTabTestCase
         $configuration = $this->get(ContentElementTab::class)->getModalConfiguration($this->createContext(null, $editor));
 
         self::assertSame(['textmedia'], array_column($this->flattenOptions($configuration), 'value'));
+    }
+
+    #[Test]
+    public function userPickersSearchOnlyWithBeUsersListingPermission(): void
+    {
+        $searchable = static fn (array $configuration): array => array_column(
+            array_filter($configuration['fields'], static fn (array $field): bool => 'user-picker' === $field['type']),
+            'searchable',
+            'name',
+        );
+        $activityTab = $this->get(ActivityTab::class);
+
+        self::assertSame(['by' => true, 'createdby' => true], $searchable($activityTab->getModalConfiguration($this->createContext())));
+
+        $editor = $this->setUpBackendUser(2);
+        self::assertSame(['by' => false, 'createdby' => false], $searchable($activityTab->getModalConfiguration($this->createContext(null, $editor))));
+
+        $editor->groupData['tables_select'] = 'be_users';
+        self::assertSame(['by' => true, 'createdby' => true], $searchable($activityTab->getModalConfiguration($this->createContext(null, $editor))));
     }
 
     #[Test]
