@@ -377,6 +377,166 @@ describe('renderUserPicker', () => {
     expect(results().hidden).toBe(true);
   });
 
+  it('stays open when the list itself scrolls, by wheel or by the arrow keys', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('focus'));
+
+    results().dispatchEvent(new Event('scroll'));
+
+    expect(results().hidden).toBe(false);
+  });
+
+  const stubRect = (element, rect) => {
+    element.getBoundingClientRect = () => ({ left: 0, width: 200, ...rect });
+  };
+
+  it('opens below the input when the list fits there', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 400 });
+    stubRect(input, { top: 20, bottom: 50 });
+    stubRect(results(), { height: 150 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('54px');
+  });
+
+  it('opens above the input when the list would run into the modal footer', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 300 });
+    stubRect(input, { top: 260, bottom: 290 });
+    stubRect(results(), { height: 150 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('106px');
+  });
+
+  it('measures the space below against the visible modal body, not the taller root', () => {
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    document.body.append(modalBody);
+    modalBody.append(root);
+    const { input, results } = mount(undefined);
+    stubRect(modalBody, { top: 0, bottom: 200 });
+    stubRect(root, { top: 0, bottom: 480 });
+    stubRect(input, { top: 150, bottom: 180 });
+    stubRect(results(), { height: 100 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('46px');
+    modalBody.remove();
+  });
+
+  it('keeps root coordinates when the modal body has scrolled the root partly out of view', () => {
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    document.body.append(modalBody);
+    modalBody.append(root);
+    const { input, results } = mount(undefined);
+    stubRect(modalBody, { top: 100, bottom: 300 });
+    stubRect(root, { top: 50, bottom: 530 });
+    stubRect(input, { top: 250, bottom: 280 });
+    stubRect(results(), { height: 100 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    // Above the input, inside the visible body: 250 - 4 - 100 = 146 in the
+    // viewport, which is 96px from the root's own top.
+    expect(results().style.top).toBe('96px');
+    modalBody.remove();
+  });
+
+  it('caps the list to the larger side when it fits neither above nor below', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 300 });
+    stubRect(input, { top: 160, bottom: 190 });
+    stubRect(results(), { height: 192 });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().style.top).toBe('0px');
+    expect(results().style.maxHeight).toBe('156px');
+  });
+
+  it('measures the list only once it is positioned and sized like the input', () => {
+    const { input, results } = mount(undefined);
+    stubRect(root, { top: 0, bottom: 400 });
+    stubRect(input, { top: 20, bottom: 50, width: 180 });
+    let measuredAs;
+    results().getBoundingClientRect = () => {
+      measuredAs = [results().style.position, results().style.width];
+
+      return { height: 100 };
+    };
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(measuredAs).toEqual(['absolute', '180px']);
+  });
+
+  it('scrolls only the list to reveal the highlighted option, never its ancestors', () => {
+    const { input, results } = mount(undefined, { pinned: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] });
+    input.dispatchEvent(new Event('focus'));
+    const list = results();
+    Object.defineProperty(list, 'clientHeight', { value: 50 });
+    Object.defineProperty(list, 'scrollTop', { value: 0, writable: true });
+    list.querySelectorAll('[role="option"]').forEach((option, index) => {
+      Object.defineProperty(option, 'offsetTop', { value: index * 40 });
+      Object.defineProperty(option, 'offsetHeight', { value: 40 });
+    });
+
+    ['ArrowDown', 'ArrowDown', 'ArrowDown'].forEach((key) => input.dispatchEvent(new KeyboardEvent('keydown', { key })));
+    expect(list.scrollTop).toBe(70);
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(list.scrollTop).toBe(0);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('names the combobox after the field label, not after its placeholder', () => {
+    const { input } = mount(undefined, { label: 'Edited by' });
+
+    expect(input.getAttribute('aria-label')).toBe('Edited by');
+  });
+
+  it('is a read-only pick list when the field is not searchable', () => {
+    const { input } = mount(undefined, { searchable: false });
+
+    expect(input.readOnly).toBe(true);
+    expect(input.getAttribute('aria-autocomplete')).toBe('none');
+  });
+
+  it('opens on focus even with a value when the field is not searchable', () => {
+    const { input, results } = mount('me', { searchable: false });
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().hidden).toBe(false);
+  });
+
+  it('offers only the pinned entries and never searches when the field is not searchable', async () => {
+    const { input, results } = mount(undefined, { searchable: false });
+
+    input.value = 'er';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(requests()).toHaveLength(0);
+    expect(options(results)).toEqual(['Me (admin)']);
+  });
+
+  it('does not invite a search in the placeholder when the field is not searchable', () => {
+    globalThis.TYPO3.lang = {
+      'pagetreeFacets.modal.userSearchPlaceholder': 'Search backend user…',
+      'pagetreeFacets.modal.userPickPlaceholder': 'Pick from the list…',
+    };
+
+    expect(mount(undefined).input.placeholder).toBe('Search backend user…');
+    expect(mount(undefined, { searchable: false }).input.placeholder).toBe('Pick from the list…');
+  });
+
   it('closeOpenUserDropdowns closes a list left open, as teardown needs', () => {
     const { input, results } = mount(undefined);
     input.dispatchEvent(new Event('focus'));

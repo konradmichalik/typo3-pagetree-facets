@@ -52,6 +52,7 @@
 			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source><target>Keine übereinstimmenden Filter</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source><target>Ich</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source><target>Backend-Benutzer suchen…</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source><target>Aus der Liste auswählen…</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.copyLink"><source>Copy link</source><target>Link kopieren</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView"><source>Token view</source><target>Token-Ansicht</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.ariaLabel"><source>Filter tokens</source><target>Filter-Tokens</target></trans-unit>

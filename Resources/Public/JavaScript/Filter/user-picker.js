@@ -37,6 +37,7 @@ const MIN_QUERY_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 300;
 /** Long enough for a click outside to register before the list disappears. */
 const BLUR_HIDE_DELAY_MS = 150;
+const DROPDOWN_GAP_PX = 4;
 
 /**
  * Hide-callbacks of currently open dropdowns. Their scroll listeners live on
@@ -77,6 +78,7 @@ class UserPicker {
   #currentUser;
   #currentUserLabel;
   #pinned;
+  #searchable;
   #deps;
   #element;
   #highlighted = -1;
@@ -91,6 +93,7 @@ class UserPicker {
    */
   #searchToken = 0;
   #hideOnScroll = null;
+  #close = () => this.#hide();
 
   constructor(tab, field, state, deps) {
     this.#deps = deps;
@@ -100,6 +103,7 @@ class UserPicker {
     this.#currentUser = field.currentUser?.uid ? field.currentUser : null;
     this.#currentUserLabel = this.#currentUser ? `${meLabel} (${this.#currentUser.username})` : meLabel;
     this.#pinned = field.pinned ?? [];
+    this.#searchable = field.searchable ?? true;
 
     this.#input = this.#buildInput(tab, field);
     this.#results = this.#buildResults();
@@ -123,13 +127,22 @@ class UserPicker {
     input.type = 'text';
     input.name = `${tab.identifier}[${field.name}]`;
     input.autocomplete = 'off';
-    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…';
+    input.placeholder = this.#searchable
+      ? TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…'
+      : TYPO3.lang?.['pagetreeFacets.modal.userPickPlaceholder'] ?? 'Pick from the list…';
+    // Without search, typed text could only discard the current selection.
+    input.readOnly = !this.#searchable;
     // Marks this control as "dataset.value is the source of truth" - the typed
     // text is a display-only query until a suggestion is picked, so the generic
     // collectors must never treat mid-typing text as a criterion.
     input.dataset.picker = '1';
+    // The fieldset legend names the group, not this input, which would otherwise
+    // fall back to its placeholder as accessible name.
+    if (field.label) {
+      input.setAttribute('aria-label', field.label);
+    }
     input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-autocomplete', this.#searchable ? 'list' : 'none');
     input.setAttribute('aria-expanded', 'false');
 
     return input;
@@ -190,7 +203,7 @@ class UserPicker {
     // Pin "Me" as a suggestion the moment the field gains focus, before any typing
     // - the common case (filter by my own edits) needs no search at all.
     this.#input.addEventListener('focus', () => {
-      if (this.#input.value.trim().length < MIN_QUERY_LENGTH) {
+      if (!this.#searchable || this.#input.value.trim().length < MIN_QUERY_LENGTH) {
         this.#searchToken += 1;
         this.#renderSuggestions([]);
       }
@@ -211,7 +224,7 @@ class UserPicker {
     window.clearTimeout(this.#debounceTimer);
     const query = this.#input.value.trim();
     const token = ++this.#searchToken;
-    if (query.length < MIN_QUERY_LENGTH) {
+    if (!this.#searchable || query.length < MIN_QUERY_LENGTH) {
       this.#renderSuggestions([]);
 
       return;
@@ -264,13 +277,26 @@ class UserPicker {
       item.classList.toggle('is-highlighted', isActive);
       item.setAttribute('aria-selected', String(isActive));
       if (isActive) {
-        item.scrollIntoView({ block: 'nearest' });
+        this.#revealInList(item);
       }
     }
     if (this.#highlighted > -1) {
       this.#input.setAttribute('aria-activedescendant', items[this.#highlighted].id);
     } else {
       this.#input.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  /**
+   * Not scrollIntoView(): that also scrolls .modal-body and the panels, and any
+   * scroll outside the list closes it (see #show).
+   */
+  #revealInList(item) {
+    const list = this.#results;
+    if (item.offsetTop < list.scrollTop) {
+      list.scrollTop = item.offsetTop;
+    } else if (item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight;
     }
   }
 
@@ -336,6 +362,10 @@ class UserPicker {
    *
    * The root only has to exist by the time something can be shown, which is after
    * the modal finished rendering - not while the fields are being built.
+   *
+   * Content overflowing the root's edges is clipped by .modal-body, at the bottom
+   * right above the footer buttons. So the list flips above the input when it
+   * does not fit below and there is more room above, and is capped to that side.
    */
   #show() {
     const root = this.#deps.getRoot();
@@ -344,20 +374,42 @@ class UserPicker {
     }
     const rootRect = root.getBoundingClientRect();
     const inputRect = this.#input.getBoundingClientRect();
+    // Positioned and sized before measuring: as an in-flow child of the root the
+    // list would report a different height.
     this.#results.style.position = 'absolute';
     this.#results.style.left = `${inputRect.left - rootRect.left}px`;
-    this.#results.style.top = `${inputRect.bottom - rootRect.top + 4}px`;
     this.#results.style.width = `${inputRect.width}px`;
+    this.#results.style.maxHeight = '';
     this.#results.hidden = false;
+    const listHeight = this.#results.getBoundingClientRect().height;
+    // In a short window the root's min-height outgrows .modal-body, so its own
+    // edges lie outside the visible area.
+    const bodyRect = root.closest('.modal-body')?.getBoundingClientRect() ?? rootRect;
+    const spaceBelow = Math.min(rootRect.bottom, bodyRect.bottom) - inputRect.bottom - DROPDOWN_GAP_PX;
+    const spaceAbove = inputRect.top - Math.max(rootRect.top, bodyRect.top) - DROPDOWN_GAP_PX;
+    const above = listHeight > spaceBelow && spaceAbove > spaceBelow;
+    const space = above ? spaceAbove : spaceBelow;
+    if (listHeight > space) {
+      this.#results.style.maxHeight = `${space}px`;
+    }
+    const top = above
+      ? inputRect.top - rootRect.top - DROPDOWN_GAP_PX - Math.min(listHeight, space)
+      : inputRect.bottom - rootRect.top + DROPDOWN_GAP_PX;
+    this.#results.style.top = `${top}px`;
     this.#input.setAttribute('aria-expanded', 'true');
 
     if (null === this.#hideOnScroll) {
       // Scroll events on inner scrollable containers do not bubble - a capture
       // listener still sees them on the way down, regardless of which ancestor
-      // scrolled.
-      this.#hideOnScroll = () => this.#hide();
+      // scrolled. The list's own scrolling (wheel, or #revealInList from the
+      // arrow keys) must not close it.
+      this.#hideOnScroll = (event) => {
+        if (!this.#results.contains(event.target)) {
+          this.#hide();
+        }
+      };
       document.addEventListener('scroll', this.#hideOnScroll, true);
-      openDropdowns.add(this.#hideOnScroll);
+      openDropdowns.add(this.#close);
     }
   }
 
@@ -367,7 +419,7 @@ class UserPicker {
     this.#input.removeAttribute('aria-activedescendant');
     if (null !== this.#hideOnScroll) {
       document.removeEventListener('scroll', this.#hideOnScroll, true);
-      openDropdowns.delete(this.#hideOnScroll);
+      openDropdowns.delete(this.#close);
       this.#hideOnScroll = null;
     }
   }
