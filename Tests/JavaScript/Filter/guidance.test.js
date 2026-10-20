@@ -39,6 +39,7 @@ describe('the link', () => {
     expect(link.querySelector('typo3-backend-icon').getAttribute('identifier')).toBe('actions-question-circle');
     expect(link.getAttribute('aria-controls')).toBe(panel.id);
     expect(link.getAttribute('aria-expanded')).toBe('false');
+    expect(link.getAttribute('aria-haspopup')).toBe('dialog');
     expect(link.title).toBe('Explains how criteria combine and what each action does.');
   });
 });

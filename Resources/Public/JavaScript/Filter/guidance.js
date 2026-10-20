@@ -58,6 +58,7 @@ function buildLink(panelId) {
   link.className = 'btn btn-link pagetree-facets__help-link';
   link.title = lang('pagetreeFacets.modal.help.description', 'Explains how criteria combine and what each action does.');
   link.setAttribute('aria-controls', panelId);
+  link.setAttribute('aria-haspopup', 'dialog');
   link.append(decorativeIcon('actions-question-circle'), document.createTextNode(lang('pagetreeFacets.modal.help', 'How filtering works')));
 
   return link;
