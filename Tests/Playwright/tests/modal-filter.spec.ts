@@ -136,6 +136,19 @@ test('the footer Cancel and Apply buttons render their icons as real, resolved i
   await expect(applyIcon.locator('svg')).toHaveCount(1);
 });
 
+test('a facet without options keeps readable text instead of being dimmed further', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // Translations has no options on this single-language instance. The muted text
+  // colour already marks it as unavailable; an extra opacity on top of that took
+  // the label below the 4.5:1 the design rules ask for.
+  const unavailable = page.locator('typo3-backend-modal .pagetree-facets__nav-item.is-empty').first();
+  await expect(unavailable).toBeDisabled();
+  await expect(unavailable).toHaveCSS('opacity', '1');
+});
+
 test('the loading skeleton renders with a real, visible color', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 

@@ -612,10 +612,12 @@
     outline-offset: 1px;
 }
 
+/* The muted colour and the cursor mark it as unavailable. No opacity on top: it
+ * took the label below 4.5:1, and a disabled facet is how the editor learns what
+ * this site cannot filter by. */
 .pagetree-facets__nav-item.is-empty {
     color: var(--typo3-text-color-variant);
     cursor: not-allowed;
-    opacity: 0.6;
 }
 
 .pagetree-facets__nav-item.is-empty:hover {
