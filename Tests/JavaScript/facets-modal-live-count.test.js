@@ -73,11 +73,11 @@ describe('when the setting is on', () => {
 
     await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
 
-    // The live region is the status line that stays in the DOM, not the text
-    // span that is hidden while counting: a region that is shown and hidden
-    // itself is not announced reliably.
-    expect(status(modal).getAttribute('role')).toBe('status');
-    expect(status(modal).getAttribute('aria-live')).toBe('polite');
+    // The live region stays in the DOM and holds the count: a region that is
+    // shown and hidden itself is not announced reliably.
+    const live = status(modal).querySelector('[role="status"]');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    expect(live.contains(countText(modal))).toBe(true);
     expect(skeleton(modal).getAttribute('aria-hidden')).toBe('true');
   });
 

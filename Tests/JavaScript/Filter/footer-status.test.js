@@ -14,13 +14,14 @@ const mount = (state = {}) => {
 
   return status;
 };
-/** What is on screen (and announced): the children are toggled with `hidden`, never removed. */
-const text = (status) => [...status.element.children]
+/** What is on screen: the parts are toggled with `hidden`, never removed. */
+const visibleText = (node) => [...node.childNodes]
   .filter((child) => !child.hidden)
-  .map((child) => child.textContent)
-  .join('')
-  .replace(/\s+/g, ' ')
-  .trim();
+  .map((child) => (child.nodeType === Node.TEXT_NODE ? child.textContent : visibleText(child)))
+  .join('');
+const text = (status) => visibleText(status.element).replace(/\s+/g, ' ').trim();
+const live = (status) => status.element.querySelector('[role="status"]');
+const tip = (status) => status.element.querySelector('.pagetree-facets__status-tip');
 const dot = (status) => status.element.querySelector('.pagetree-facets__status-dot');
 const count = (status) => status.element.querySelector('.pagetree-facets__status-count');
 const suffix = (status) => status.element.querySelector('.pagetree-facets__status-text');
@@ -33,12 +34,21 @@ beforeEach(() => {
 });
 
 describe('the element', () => {
-  it('is a polite live region that announces its text, with the bar kept out of it', () => {
+  it('holds a polite live region for the count and the pending text, with the bar kept out of it', () => {
     const status = mount();
 
-    expect(status.element.getAttribute('role')).toBe('status');
-    expect(status.element.getAttribute('aria-live')).toBe('polite');
+    expect(live(status).getAttribute('aria-live')).toBe('polite');
+    expect(live(status).contains(dot(status))).toBe(true);
+    expect(live(status).contains(count(status))).toBe(true);
+    expect(live(status).contains(suffix(status))).toBe(true);
     expect(skeleton(status).getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps the shortcut tip beside the live region, so its return is not announced', () => {
+    const status = mount();
+
+    expect(status.element.contains(tip(status))).toBe(true);
+    expect(live(status).contains(tip(status))).toBe(false);
   });
 
   it('leaves the text nodes alone when the same state renders again, so nothing is announced twice', () => {

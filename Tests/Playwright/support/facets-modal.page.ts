@@ -50,7 +50,7 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
-  /** The footer's status line: live count, pending notice or the shortcut tip (see Filter/footer-status.js). */
+  /** The footer's status line: the live region with count and pending notice, or the shortcut tip beside it (see Filter/footer-status.js). */
   status(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__status`);
   }

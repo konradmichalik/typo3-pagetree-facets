@@ -17,8 +17,10 @@ import { appendRichText } from '@konradmichalik/pagetree-facets/Filter/form-cont
  * tree is still filtered) keeps the pending notice over the tip: that is the
  * state the notice exists for.
  *
- * The element itself is the live region. Its children are toggled, never
- * rebuilt, so the last settled count survives a failed refresh.
+ * The live region is a span inside the element, holding the count and the
+ * pending text; the tip sits beside it so its return is not announced. The
+ * parts are toggled, never rebuilt, so the last settled count survives a
+ * failed refresh.
  */
 
 const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
@@ -35,8 +37,10 @@ export class FooterStatus {
   constructor() {
     this.element = document.createElement('p');
     this.element.className = 'pagetree-facets__status';
-    this.element.setAttribute('role', 'status');
-    this.element.setAttribute('aria-live', 'polite');
+    const live = document.createElement('span');
+    live.className = 'pagetree-facets__status-live';
+    live.setAttribute('role', 'status');
+    live.setAttribute('aria-live', 'polite');
 
     this.#dot = document.createElement('span');
     this.#dot.className = 'pagetree-facets__status-dot';
@@ -49,14 +53,15 @@ export class FooterStatus {
     this.#suffix = document.createElement('span');
     this.#suffix.className = 'pagetree-facets__status-text';
     this.#tip = document.createElement('span');
-    this.#tip.className = 'pagetree-facets__status-text';
+    this.#tip.className = 'pagetree-facets__status-text pagetree-facets__status-tip';
     // Core resolves the modifier per platform; the tip names the same key.
     const tip = 'meta' === Hotkeys.normalizedCtrlModifierKey
       ? lang('pagetreeFacets.modal.status.tip.cmd', 'Tip: open this dialog from anywhere with [[Cmd]] [[Shift]] [[L]]')
       : lang('pagetreeFacets.modal.status.tip.ctrl', 'Tip: open this dialog from anywhere with [[Ctrl]] [[Shift]] [[L]]');
     appendRichText(this.#tip, tip);
 
-    this.element.append(this.#dot, this.#count, this.#skeleton, this.#suffix, this.#tip);
+    live.append(this.#dot, this.#count, this.#skeleton, this.#suffix);
+    this.element.append(live, this.#tip);
     this.#render();
   }
 

@@ -137,10 +137,10 @@ Rules for the row:
 
 ## Footer
 
-- Left: the status element, `role="status"` and `aria-live="polite"`. It holds the live count and whether the selection is applied: `14 matching pages · not applied to the tree yet`. While counting it shows a placeholder bar instead of the number, the layout does not move.
+- Left: the status line. Its live region (`role="status"`, `aria-live="polite"`) holds the live count and whether the selection is applied: `14 matching pages · not applied to the tree yet`. While counting it shows a placeholder bar instead of the number, the layout does not move.
 - Right: `Cancel` (`btn-default`), then `Apply` (`btn-primary`, check icon), the primary action last as in core. Apply is disabled while the selection equals the applied filter.
 - No Reset button in the footer. Clearing lives in the criteria row.
-- While nothing is picked the status shows the shortcut instead: `Tip: open this dialog from anywhere with Ctrl Shift L` (`Cmd` on macOS).
+- While nothing is picked the status shows the shortcut instead: `Tip: open this dialog from anywhere with Ctrl Shift L` (`Cmd` on macOS). The tip sits beside the live region, not inside it, so its return is never announced.
 
 ## No matching pages
 

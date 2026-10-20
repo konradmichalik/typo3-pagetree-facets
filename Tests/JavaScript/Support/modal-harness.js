@@ -259,14 +259,14 @@ export function status(modal) {
   return modal.querySelector('.pagetree-facets__status');
 }
 
-/** What the status line shows: its children are toggled with `hidden`, never removed. */
+/** What the status line shows: its parts are toggled with `hidden`, never removed. */
 export function statusText(modal) {
-  return [...status(modal).children]
+  const visibleText = (node) => [...node.childNodes]
     .filter((child) => !child.hidden)
-    .map((child) => child.textContent)
-    .join('')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .map((child) => (child.nodeType === Node.TEXT_NODE ? child.textContent : visibleText(child)))
+    .join('');
+
+  return visibleText(status(modal)).replace(/\s+/g, ' ').trim();
 }
 
 /** The Text switch built into the search field (see Filter/criteria-row.js). */
