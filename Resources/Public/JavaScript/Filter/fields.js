@@ -153,7 +153,7 @@ function isChosen(option, state) {
 
 // A cleared radio falls back to its group's neutral option, else no radio shows as
 // selected. No event is dispatched, the callers refresh the modal.
-export function clearChoice(input) {
+function clearChoice(input) {
   if ('radio' === input.type) {
     const neutral = input.closest('fieldset')?.querySelector('input[type="radio"][value=""]');
     if (neutral) {

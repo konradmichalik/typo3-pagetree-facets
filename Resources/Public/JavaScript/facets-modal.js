@@ -9,7 +9,7 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { clearChoice, clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
@@ -814,15 +814,11 @@ class FacetsModal {
               // textContent - that would also pick up the visually-hidden
               // option-description span (see optionHelp in Filter/form-controls.js).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
-              criteria.push(this.#criterion(prefix, tab, label, () => { clearChoice(input); }));
+              criteria.push(this.#criterion(prefix, tab, label, () => clearControl(input)));
             }
           } else if (this.#effectiveValue(input).trim() !== '') {
             const label = input.dataset.label || input.value.trim();
-            criteria.push(this.#criterion(prefix, tab, label, () => {
-              input.value = '';
-              delete input.dataset.value;
-              delete input.dataset.label;
-            }));
+            criteria.push(this.#criterion(prefix, tab, label, () => clearControl(input)));
           }
         }
       }
