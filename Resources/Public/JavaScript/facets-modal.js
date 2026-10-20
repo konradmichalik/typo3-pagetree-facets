@@ -14,7 +14,7 @@ import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
-import { renderHelp, renderHelpToggle } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
@@ -57,6 +57,8 @@ class FacetsModal {
   // The scope chip (see Filter/scope-menu.js), null when there is nothing to
   // choose: no page open and a single site.
   #scope = null;
+  // The help popover and its link (see Filter/guidance.js).
+  #help = null;
   #panels = null;
   #currentPhrase = '';
   #reflectSeq = 0;
@@ -169,7 +171,7 @@ class FacetsModal {
       root?.addEventListener('keydown', (event) => {
         // Buttons are excluded: Enter is their own activation key, and
         // preventDefault() here would swallow it - a keyboard user could never
-        // reach the help toggle or "copy link".
+        // reach the help link or "copy link".
         if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
           event.preventDefault();
           this.#serializeAndApply();
@@ -237,12 +239,18 @@ class FacetsModal {
     closeOpenUserDropdowns();
     this.#scope?.close();
     this.#row?.close();
+    this.#help?.close();
   }
 
   #render() {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
-    wrap.append(this.#renderHeader(), this.#renderBody());
+    // Built before the navigation, which holds its link; the popover itself
+    // goes into the content so it can sit over the panels.
+    this.#help = buildHelp({
+      getLayout: () => ({ root: this.#root, nav: this.#root.querySelector('.pagetree-facets__nav') }),
+    });
+    wrap.append(this.#renderHeader(), this.#renderBody(), this.#help.panel);
     // One listener for the whole content: a body-level one would never see the
     // header controls (freetext, site scope, page scope), which change the
     // filter just as much. Text inputs fire per keystroke and get the full
@@ -288,12 +296,7 @@ class FacetsModal {
       this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
     });
     search.append(this.#searchField.element);
-    // Help stays on its own: it explains the dialog rather than switching how
-    // the filter is edited, so grouping it with the toggle would suggest a
-    // kinship the two do not have.
-    const help = renderHelp({ hasPageScope: null !== this.#currentPage });
-    search.append(renderHelpToggle(help));
-    header.append(search, help);
+    header.append(search);
 
     // The scope is picked, not a criterion, so a change here refreshes the
     // indicators directly instead of going through a control's change event.
@@ -355,8 +358,10 @@ class FacetsModal {
     nav.append(buildFilterSearchInput({
       onQuery: (query) => this.#applyFilterSearch(query),
     }));
+    // The list is what scrolls, so the help link below it stays in view
+    // however many facets third parties register.
     const list = document.createElement('ul');
-    list.className = 'list-unstyled';
+    list.className = 'list-unstyled pagetree-facets__nav-list';
 
     // Favorites lead the navigation, above every filter group - quick access to
     // saved filters is the first thing an editor reaches for.
@@ -417,7 +422,12 @@ class FacetsModal {
       this.#switchTab(items[next].dataset.tab);
     });
 
-    nav.append(list);
+    // The last item, pinned to the bottom edge with a separator. Not part of
+    // the roving walk: it is not a facet, Tab reaches it from the active one.
+    const help = document.createElement('div');
+    help.className = 'pagetree-facets__nav-help';
+    help.append(this.#help.link);
+    nav.append(list, help);
     return nav;
   }
 
@@ -711,6 +721,8 @@ class FacetsModal {
    */
   #switchTab(identifier, activated = false) {
     this.#activeTab = identifier;
+    // The popover covers the panel that is about to show.
+    this.#help.close();
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
     const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');

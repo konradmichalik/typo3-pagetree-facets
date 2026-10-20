@@ -164,7 +164,7 @@ describe('Enter inside the modal', () => {
 
   it('is left alone on a button, where it is the activation key', async () => {
     const { modal, onApply } = await openModal();
-    const help = modal.querySelector('.pagetree-facets__help-toggle');
+    const help = modal.querySelector('.pagetree-facets__help-link');
 
     const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     help.dispatchEvent(event);
@@ -361,6 +361,18 @@ describe('the navigation', () => {
 
     return event;
   };
+
+  it('keeps the help link out of the arrow walk, closing its popover when a tab is picked', async () => {
+    const { modal } = await openModal();
+    const link = modal.querySelector('.pagetree-facets__help-link');
+    link.click();
+    expect(modal.querySelector('.pagetree-facets__help').hidden).toBe(false);
+
+    arrow(navItem(modal, 'activity'), 'ArrowDown');
+
+    expect(document.activeElement).toBe(navItem(modal, 'doktype'));
+    expect(modal.querySelector('.pagetree-facets__help').hidden).toBe(true);
+  });
 
   it('moves with the arrows and switches as it goes', async () => {
     const { modal } = await openModal();

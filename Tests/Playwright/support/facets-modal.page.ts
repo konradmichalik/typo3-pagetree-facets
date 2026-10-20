@@ -72,6 +72,15 @@ export class FacetsModalPage {
     return this.panel(tab).locator('.pagetree-facets__select-none');
   }
 
+  /** `How filtering works`, pinned under the navigation list (see Filter/guidance.js). */
+  helpLink(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__help-link`);
+  }
+
+  helpPopover(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__help`);
+  }
+
   /** The footer's status line: the live region with count and pending notice, or the shortcut tip beside it (see Filter/footer-status.js). */
   status(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__status`);

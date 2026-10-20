@@ -158,23 +158,6 @@
     outline-offset: -2px;
 }
 
-/* A square as tall as the field beside it: stretch takes the row's height and
-   the aspect ratio turns it into the width. */
-.pagetree-facets__help-toggle {
-    flex: 0 0 auto;
-    align-self: stretch;
-    aspect-ratio: 1;
-    padding: 0;
-}
-
-/* Keeps the tint while the panel is on screen, so it reads as a sticky switch
-   rather than a one-shot action; the panel's own × cannot leave it looking
-   pressed, since both states come from one place (see renderHelpToggle). */
-.pagetree-facets__help-toggle[aria-expanded="true"] {
-    background: var(--pf-tint);
-    color: var(--typo3-text-color-base);
-}
-
 /* Clear button for text-ish inputs, only present while the field has a value.
    min-width: 0 on both keeps a long value from stretching the flex row. */
 .pagetree-facets__clearable {
@@ -231,23 +214,127 @@
     outline-offset: 1px;
 }
 
-/* Usage help, collapsed by default. Styled as a Bootstrap alert, so only the
-   list layout is ours. The header does not shrink, so an expanded panel is
-   capped and scrolls on its own rather than squeezing the tabs out of view. */
+/* --- Help popover -------------------------------------------------------
+ * Opened from the link pinned under the navigation, placed next to it over
+ * the content (the start and bottom offsets are measured on open, see
+ * Filter/guidance.js). It never pushes the content down. */
+
 .pagetree-facets__help {
-    position: relative;
-    margin: 0;
-    max-height: 40vh;
+    position: absolute;
+    z-index: 1010;
+    width: min(40rem, calc(75% - 2rem));
+    max-height: calc(100% - 1rem);
     overflow-y: auto;
-    /* Room for the × so long lines do not run underneath it. */
-    padding-inline-end: 2.25rem;
+    padding: 1.25rem 1.5rem 1.5rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 8px;
+    background: var(--typo3-component-bg);
+    color: var(--typo3-text-color-base);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--typo3-text-color-base) 18%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.5;
 }
 
-/* The panel's own way out, besides the button that opened it. */
+.pagetree-facets__help[hidden] {
+    display: none;
+}
+
+/* The dialog takes focus; the ring belongs to it, not to its first button. */
+.pagetree-facets__help:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
+}
+
+.pagetree-facets__help-title {
+    margin: 0 2rem 1rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__help-section + .pagetree-facets__help-section {
+    margin-top: 1rem;
+}
+
+.pagetree-facets__help-section h3 {
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__help-section p {
+    margin: 0;
+}
+
+/* The or/and illustration: chips as the criteria row draws them, minus the ×. */
+.pagetree-facets__help-chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.pagetree-facets__help-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding-inline: 0.6rem;
+    border-radius: 999px;
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
+    font-size: 0.8125rem;
+}
+
+/* Token on the left, what it does on the right. Monospace only for the token. */
+.pagetree-facets__help-tokens {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1.5rem;
+    margin: 0.5rem 0 0;
+}
+
+.pagetree-facets__help-tokens dt {
+    font-weight: 400;
+}
+
+.pagetree-facets__help-tokens dd {
+    margin: 0;
+}
+
+.pagetree-facets__help-tokens code {
+    padding: 0;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
+    font-size: 0.8125rem;
+}
+
+/* The one point about leaving this dialog, set off from the rest. */
+.pagetree-facets__help-global {
+    margin: 1rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--typo3-component-border-color);
+    color: var(--typo3-text-color-variant);
+}
+
+.pagetree-facets__help kbd {
+    padding-inline: 0.35em;
+    padding-block: 0.05em;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 3px;
+    background: var(--typo3-component-hover-bg);
+    color: var(--typo3-text-color-base);
+    font-size: 0.85em;
+    line-height: 1;
+}
+
+/* The popover's own way out, besides Escape and the link that opened it. */
 .pagetree-facets__help-close {
     position: absolute;
-    inset-block-start: 0.35rem;
-    inset-inline-end: 0.5rem;
+    inset-block-start: 1rem;
+    inset-inline-end: 1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -257,30 +344,17 @@
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: inherit;
-    font-size: 1.15rem;
-    line-height: 1;
-    opacity: 0.65;
+    color: var(--typo3-text-color-base);
     cursor: pointer;
 }
 
 .pagetree-facets__help-close:hover {
-    opacity: 1;
     background: var(--typo3-component-hover-bg);
 }
 
 .pagetree-facets__help-close:focus-visible {
     outline: 2px solid var(--typo3-component-focus-color);
     outline-offset: 1px;
-}
-
-.pagetree-facets__help-points {
-    margin: 0.5rem 0;
-    padding-inline-start: 1.25rem;
-}
-
-.pagetree-facets__help-points li + li {
-    margin-top: 0.25rem;
 }
 
 .pagetree-facets__filter-search {
@@ -511,7 +585,8 @@
    welcome (see the rules' Motion table). */
 @media (prefers-reduced-motion: no-preference) {
     .pagetree-facets__scope-list:not([hidden]),
-    .pagetree-facets__menu:not([hidden]) {
+    .pagetree-facets__menu:not([hidden]),
+    .pagetree-facets__help:not([hidden]) {
         animation: pagetree-facets-popover-fade 120ms ease-out;
     }
 
@@ -725,18 +800,61 @@
    content height, so overflow-y never engages and long option lists get
    clipped by the body's overflow: hidden instead of scrolling. */
 .pagetree-facets__nav {
+    display: flex;
+    flex-direction: column;
     border-inline-end: 1px solid var(--typo3-component-border-color);
     padding-inline-end: 0;
     /* Room for the search input's focus ring, which would otherwise be clipped
-       by this scroll container's top edge. */
+       by the list's top edge. */
     padding-block-start: 0.25rem;
     min-height: 0;
+}
+
+/* The list scrolls on its own; the search above and the help link below it
+   stay where they are. */
+.pagetree-facets__nav-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    padding-inline-end: 0.75rem;
     overflow-y: auto;
 }
 
-.pagetree-facets__nav ul {
-    margin: 0;
-    padding-inline-end: 0.75rem;
+/* The last item, pinned to the bottom edge behind a separator line. */
+.pagetree-facets__nav-help {
+    flex: 0 0 auto;
+    margin-top: 0.5rem;
+    margin-inline-end: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--typo3-component-border-color);
+}
+
+/* A text button like Clear all, laid out like a navigation item so it lines
+   up with the facets above. */
+.pagetree-facets__help-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 32px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    text-align: start;
+    text-decoration: none;
+}
+
+.pagetree-facets__help-link:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__help-link[aria-expanded="true"] {
+    background: var(--pf-tint);
+}
+
+.pagetree-facets__help-link:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
 }
 
 .pagetree-facets__nav-group {

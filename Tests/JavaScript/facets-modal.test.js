@@ -299,7 +299,7 @@ describe('the scope chip', () => {
     expect(modal.querySelector('.pagetree-facets__criteria').firstElementChild.className).toBe('pagetree-facets__scope');
   });
 
-  it('builds the Text switch into the search field, with the help toggle outside it', async () => {
+  it('builds the Text switch into the search field, which holds nothing else', async () => {
     const { modal } = await openModal();
     const field = modal.querySelector('.pagetree-facets__search-field');
 
@@ -307,10 +307,23 @@ describe('the scope chip', () => {
     // against whichever one is on screen.
     expect([...field.children].map((child) => child.className.split(' ').at(-1)))
       .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__text-switch']);
-    // Help explains the dialog rather than switching how it is edited, so it
-    // stays outside the field.
-    expect(field.querySelector('.pagetree-facets__help-toggle')).toBeNull();
-    expect(modal.querySelector('.pagetree-facets__search > .pagetree-facets__help-toggle')).not.toBeNull();
+    // Help lives in the navigation now, nothing sits beside the field.
+    expect(modal.querySelector('.pagetree-facets__search').children).toHaveLength(1);
+    expect(modal.querySelector('.pagetree-facets__help-toggle')).toBeNull();
+  });
+
+  it('pins the help link under the navigation list, outside the facet items', async () => {
+    const { modal } = await openModal();
+    const nav = modal.querySelector('.pagetree-facets__nav');
+    const link = nav.querySelector('.pagetree-facets__help-link');
+
+    expect(nav.lastElementChild.contains(link)).toBe(true);
+    expect(link.closest('.pagetree-facets__nav-list')).toBeNull();
+    expect(link.classList.contains('pagetree-facets__nav-item')).toBe(false);
+    // The popover lives in the content, over the panels, not inside the nav.
+    const popover = modal.querySelector('.pagetree-facets__help');
+    expect(popover.parentElement.classList.contains('pagetree-facets')).toBe(true);
+    expect(popover.hidden).toBe(true);
   });
 
   it('explains every action on hover rather than repeating its label', async () => {
@@ -321,7 +334,7 @@ describe('the scope chip', () => {
     const titleOf = (selector) => modal.querySelector(selector).title;
 
     expect(titleOf('.pagetree-facets__text-switch')).toBe('Shows the whole filter as editable text.');
-    expect(titleOf('.pagetree-facets__help-toggle')).toBe('Explains how criteria combine and what each action does.');
+    expect(titleOf('.pagetree-facets__help-link')).toBe('Explains how criteria combine and what each action does.');
     // Not icon-only: the word is the name, so no aria-label has to repeat it.
     expect(textSwitch(modal).textContent.trim()).toBe('Text');
     expect(textSwitch(modal).hasAttribute('aria-label')).toBe(false);
