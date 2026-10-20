@@ -95,7 +95,7 @@ Rules for the row:
 ## Navigation
 
 - Order: the criterion search, `Favorites` with its count when favorites exist, then the facet groups in priority order, each under its uppercase heading.
-- A facet with criteria picked shows a filled badge with the number in `--typo3-state-primary-bg`.
+- A facet with criteria picked shows a badge with the number: the 26% tint of `--typo3-state-primary-bg` with the base text colour, as in the Colour table.
 - A facet without options is disabled and says why on a second line in the item itself, for example `Site has only one language`. Never only in a `title` tooltip.
 - `How filtering works` is the last item, pinned to the bottom edge of the navigation with a separator line. It stays visible however many facets third parties register.
 - Arrow keys, Home and End move between items as today (roving tab stop, automatic activation).
