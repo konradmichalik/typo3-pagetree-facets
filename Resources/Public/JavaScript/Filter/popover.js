@@ -13,7 +13,7 @@
  * What the panel does while open (arrow keys, selection) is the caller's part.
  *
  * @param {{trigger: HTMLElement, panel: HTMLElement, onOpen?: () => void}} parts
- * @returns {{show: () => void, close: (returnFocus?: boolean) => void, isOpen: () => boolean}}
+ * @returns {{show: () => void, close: (returnFocus?: boolean) => void}}
  */
 export function attachPopover({ trigger, panel, onOpen }) {
   let open = false;
@@ -70,5 +70,5 @@ export function attachPopover({ trigger, panel, onOpen }) {
   trigger.setAttribute('aria-expanded', 'false');
   trigger.addEventListener('click', () => (open ? close(true) : show()));
 
-  return { show, close, isOpen: () => open };
+  return { show, close };
 }

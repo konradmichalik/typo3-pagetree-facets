@@ -28,20 +28,18 @@ beforeEach(() => {
 
 describe('attachPopover', () => {
   it('starts closed and says so on the trigger', () => {
-    const { trigger, panel, popover } = mount();
+    const { trigger, panel } = mount();
 
     expect(panel.hidden).toBe(true);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(popover.isOpen()).toBe(false);
   });
 
   it('toggles on the trigger and reports each opening', () => {
-    const { trigger, panel, popover, onOpen } = mount();
+    const { trigger, panel, onOpen } = mount();
 
     trigger.click();
     expect(panel.hidden).toBe(false);
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    expect(popover.isOpen()).toBe(true);
     expect(onOpen).toHaveBeenCalledTimes(1);
 
     trigger.click();
@@ -118,13 +116,13 @@ describe('attachPopover', () => {
 
   it('ignores a second show while already open, so onOpen runs once', () => {
     // The scope chip's ArrowDown calls show() whether or not the list is open.
-    const { popover, onOpen } = mount();
+    const { panel, popover, onOpen } = mount();
 
     popover.show();
     popover.show();
 
     expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(popover.isOpen()).toBe(true);
+    expect(panel.hidden).toBe(false);
   });
 
   it('is a no-op to close while already closed', () => {
