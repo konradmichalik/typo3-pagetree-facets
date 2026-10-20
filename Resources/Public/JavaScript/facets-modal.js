@@ -7,7 +7,7 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
+import { buildCriteriaRow, buildSearchField } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
@@ -313,6 +313,7 @@ class FacetsModal {
     // not necessarily applied, which is what the footer status spells out.
     this.#row = buildCriteriaRow({
       scope: this.#scope?.element ?? null,
+      onRemove: (criterion) => this.#removeCriterion(criterion),
       onClearAll: () => this.#resetAll(),
       onSaveFavorite: (label) => this.#saveFavorite(label),
       onCopyLink: () => this.#copyLink(),
@@ -706,10 +707,7 @@ class FacetsModal {
     const criteria = [...this.#titleCriterion(), ...this.#collectActiveCriteria()];
     // Clear all and the actions act on the whole phrase, so they follow whether
     // anything is picked - a scope alone counts, not just chips.
-    this.#row.update({
-      chips: criteria.map((criterion) => this.#renderChip(criterion)),
-      savable: this.#isPicked(),
-    });
+    this.#row.update({ criteria, savable: this.#isPicked() });
     // Covers the programmatic paths (clear all, chip removal, search-result
     // proxies) that change controls without firing events on the wrapper.
     this.#refreshApplyState();
@@ -910,13 +908,12 @@ class FacetsModal {
     return { tab: tab.identifier, prefix, value: valueLabel, label: `${prefix}: ${valueLabel}`, remove };
   }
 
-  #renderChip(criterion) {
-    return renderChip(criterion, () => {
-      criterion.remove();
-      this.#refreshActiveIndicators();
-      // Unsetting a control fires no change event, so the phrase is told here.
-      this.#scheduleTokenFieldSync();
-    });
+  // A chip's ×, on the row or in the `+N more` popover.
+  #removeCriterion(criterion) {
+    criterion.remove();
+    this.#refreshActiveIndicators();
+    // Unsetting a control fires no change event, so the phrase is told here.
+    this.#scheduleTokenFieldSync();
   }
 
   // Enter token view: reveal the editable phrase field seeded from the current

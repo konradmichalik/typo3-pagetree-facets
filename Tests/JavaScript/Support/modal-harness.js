@@ -144,6 +144,9 @@ export function resetHarness() {
   resetAjaxStub();
   resetModalStub();
   resetNotificationStub();
+  // jsdom has no ResizeObserver and no layout: the criteria row's overflow
+  // (see Filter/criteria-overflow.js) never hides a chip under these suites.
+  globalThis.ResizeObserver = class { observe() {} };
   globalThis.TYPO3 = {
     lang: {},
     settings: {
@@ -308,9 +311,9 @@ export function control(modal, name, value) {
     : modal.querySelector(`[name="${name}"][value="${value}"]`);
 }
 
-/** Chip labels as one string each, e.g. `Page state: Hidden`. */
+/** Labels of the chips on the row as one string each, e.g. `Page state: Hidden`. */
 export function chipLabels(modal) {
-  return [...modal.querySelectorAll('.pagetree-facets__chip')].map((chip) => [
+  return [...modal.querySelectorAll('.pagetree-facets__chips .pagetree-facets__chip')].map((chip) => [
     chip.querySelector('.pagetree-facets__chip-prefix').textContent,
     chip.querySelector('.pagetree-facets__chip-value').textContent,
   ].join(' '));

@@ -32,6 +32,9 @@
 			<trans-unit id="pagetreeFacets.modal.clearAll"><source>Clear all</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.moreActions"><source>More actions</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.criteria.empty"><source>Nothing picked yet. Choose a category on the left or type a page title above.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.overflow.more"><source>+%d more</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.overflow.show"><source>Show %d more criteria</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.overflow.title"><source>All %d criteria</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied"><source>Not applied to the tree yet</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied.suffix"><source>not applied to the tree yet</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.tip.ctrl"><source>Tip: open this dialog from anywhere with [[Ctrl]] [[Shift]] [[L]]</source></trans-unit>

@@ -102,16 +102,24 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} input[name="${tab}[${field}]"][value="${value}"]`);
   }
 
+  /** The chips on the row, the hidden ones behind `+N more` included. */
   chips(): Locator {
-    return this.page.locator(`${MODAL} .pagetree-facets__chip`);
+    return this.page.locator(`${MODAL} .pagetree-facets__chips .pagetree-facets__chip`);
   }
 
   async chipLabels(): Promise<string[]> {
-    const labels = await this.page
-      .locator(`${MODAL} .pagetree-facets__chip .pagetree-facets__chip-label`)
-      .allTextContents();
+    const labels = await this.chips().locator('.pagetree-facets__chip-label').allTextContents();
 
     return labels.map((label) => label.trim());
+  }
+
+  /** `+N more`, shown once the chips would take more than two rows (see Filter/criteria-overflow.js). */
+  overflowButton(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__overflow-button`);
+  }
+
+  overflowPopover(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__overflow-panel`);
   }
 
   freetextField(): Locator {
