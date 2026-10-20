@@ -441,8 +441,12 @@ class FacetsModal {
         // its own immediate refresh must not flash a skeleton over it.
         onLabelResolved: () => this.#refreshActiveIndicators(false),
       },
-      // Select none changes controls without firing events, like a chip removal.
-      onChange: () => this.#refreshActiveIndicators(),
+      // Select none changes controls without firing events, like a chip removal,
+      // so the phrase is told here too.
+      onChange: () => {
+        this.#refreshActiveIndicators();
+        this.#scheduleTokenFieldSync();
+      },
     });
     panel.hidden = tab.identifier !== this.#activeTab;
 
