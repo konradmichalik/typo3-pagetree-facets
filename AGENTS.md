@@ -20,7 +20,7 @@ TYPO3 extension `pagetree_facets` (`konradmichalik/typo3-pagetree-facets`). It a
 - `Classes/Service/` registries (`FacetRegistry`, `OptionRegistry`), scope services, query helper, favorites, session filter
 - `Classes/Controller/FacetsModalController.php` AJAX endpoints for the modal (routes in `Configuration/Backend/AjaxRoutes.php`)
 - `Classes/Compatibility/V13/` TYPO3 13 compatibility code
-- `Resources/Public/JavaScript/` `facets-modal.js`, `facets-toolbar.js` and `Filter/` modules
+- `Resources/Public/JavaScript/` `facets-modal.js` (state and orchestration), `facets-toolbar.js` and `Filter/` modules: `criteria-row.js` (search field with the Text switch, chips, Clear all, actions menu), `scope-menu.js` (the `In:` scope chip), `footer-status.js` (count and pending notice in the footer), `popover.js` (open/close plumbing the list and the menu share), `fields.js`, `favorites.js`, `guidance.js`, `search-results.js`, `user-picker.js`
 - `Resources/Private/Language/` `locallang.xlf` (shipped inline to the client, keep server-only labels out), `locallang_settings.xlf` (`ext_conf_template.txt` labels, each reads `Title: Description`), `locallang_tree.xlf`; each has a `de.` counterpart, keep their unit ids in sync
 - `Tests/Unit/`, `Tests/Functional/`, `Tests/JavaScript/`, `Tests/Playwright/`
 - `Tests/Functional/Fixtures/Extensions/` local-only fixture extensions: `example_tab` (third-party facet example) and `demo_content` (seeds demo pages)

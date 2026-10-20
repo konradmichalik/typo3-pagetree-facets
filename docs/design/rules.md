@@ -34,6 +34,7 @@ All colours come from core CSS variables that exist in both v13 and v14 and alre
 | Secondary text, meta, group headings | `--typo3-text-color-variant` |
 | Field and chip-row background | `--typo3-component-bg` |
 | Control and separator borders | `--typo3-component-border-color` |
+| Dashed border of the scope chip | `--typo3-text-color-variant`. The component border is a faint mix of surface and text (`--typo3-border-mix`) and does not reach the 3:1 that 1.4.11 asks of this border; the secondary text colour does in both schemes |
 | Hover | `--typo3-component-hover-bg` |
 | Selected navigation item, chip, selected option row | A tint of `--typo3-state-primary-bg` via `color-mix()` (16%, 26% for the count badge) with `--typo3-text-color-base` |
 | Focus ring | `--typo3-component-focus-color` |
@@ -83,7 +84,7 @@ Left to right:
 1. The scope chip `In: Whole tree`, a button with a chevron and a dashed border so it does not read as a removable criterion. It opens one list: `Whole tree`, `Below "<page title>" [<uid>]` when a page is open, then one entry per site when there is more than one site. Without an open page and with a single site the chip is not rendered.
 2. One chip per picked value, in the order the criteria appear in the navigation: `<Facet>: <value>` with a × button whose accessible name is `Remove <Facet>: <value>`. The freetext is a chip too: `Title: <text>`.
 3. `Clear all`, a text button. It replaces the former footer button Reset.
-4. The actions menu `⋯` (`aria-label="More actions: save as favorite, copy link"`) with `Save as favorite` and `Copy link to this filter`.
+4. The actions menu `⋯` (`aria-label="More actions: save as favorite, copy link"`) with `Save as favorite` and `Copy link to this filter`. The glyph is core's `actions-menu-alternative` (three dots, stacked), since the registry has no horizontal one. `Save as favorite` opens the name form inline under the row.
 
 Rules for the row:
 
