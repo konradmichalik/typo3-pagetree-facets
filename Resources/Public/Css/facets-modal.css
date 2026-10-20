@@ -935,10 +935,73 @@
 .pagetree-facets__panel .form-check,
 .pagetree-facets__search-result {
     margin: 0;
+    /* 40px rows for a field of up to 15 options, as the rules' layout table
+       puts it. */
+    min-height: 40px;
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.12s ease;
+}
+
+/* --- Dense panels -------------------------------------------------------
+ * A criterion with more than 15 options (see Filter/panel.js): 32px rows in
+ * three columns. The heading row stays put by making the field list the
+ * panel's own scroll container; the group headings inside it stick to its
+ * top edge over an opaque surface, so a long list is always labelled. */
+
+.pagetree-facets__panel.is-dense {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.pagetree-facets__panel.is-dense[hidden] {
+    display: none;
+}
+
+.pagetree-facets__panel.is-dense .pagetree-facets__panel-heading {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--typo3-component-border-color);
+}
+
+.pagetree-facets__panel.is-dense .pagetree-facets__panel-fields {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.pagetree-facets__panel.is-dense .pagetree-facets__options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 1rem;
+}
+
+.pagetree-facets__panel.is-dense .form-check {
+    min-height: 32px;
+    padding-block: 0.15rem;
+}
+
+.pagetree-facets__panel.is-dense legend {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: 100%;
+    margin: 0;
+    padding-block: 0.75rem 0.5rem;
+    background: var(--typo3-component-bg);
+}
+
+/* The divider between stacked groups is drawn by the sticky legend itself,
+   so it travels with the heading instead of scrolling away under it. */
+.pagetree-facets__panel.is-dense fieldset + fieldset {
+    margin-top: 0.5rem;
+    border-top: 0;
+}
+
+.pagetree-facets__panel.is-dense fieldset + fieldset > legend {
+    margin-top: 0;
 }
 
 .pagetree-facets__panel .form-check:hover,

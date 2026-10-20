@@ -50,6 +50,28 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
+  /** The facet's panel (see Filter/panel.js). */
+  panel(tab: string): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__panel[data-panel="${tab}"]`);
+  }
+
+  panelTitle(tab: string): Locator {
+    return this.panel(tab).locator('.pagetree-facets__panel-title');
+  }
+
+  panelDescription(tab: string): Locator {
+    return this.panel(tab).locator('.pagetree-facets__panel-description');
+  }
+
+  /** The `<n> of <total> selected.` count a dense panel shows in its heading. */
+  panelCount(tab: string): Locator {
+    return this.panel(tab).locator('.pagetree-facets__panel-count');
+  }
+
+  selectNoneButton(tab: string): Locator {
+    return this.panel(tab).locator('.pagetree-facets__select-none');
+  }
+
   /** The footer's status line: the live region with count and pending notice, or the shortcut tip beside it (see Filter/footer-status.js). */
   status(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__status`);
