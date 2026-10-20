@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { clearControl, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearControl, renderField, syncGroupToggle } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
 /**
@@ -107,6 +107,9 @@ export function buildPanelHeading({ label, description, onSelectNone }) {
 export function refreshPanel(panel) {
   const controls = [...panel.querySelectorAll('[name]')];
   panel.querySelector('.pagetree-facets__select-none').hidden = !controls.some(hasValue);
+  // Programmatic changes (Select none, Clear all, a chip's ×) fire no change
+  // event the group boxes could follow on their own.
+  panel.querySelectorAll('.pagetree-facets__group-toggle').forEach((toggle) => syncGroupToggle(toggle.closest('fieldset')));
 
   const count = panel.querySelector('.pagetree-facets__panel-count');
   const dense = panel.classList.contains('is-dense');

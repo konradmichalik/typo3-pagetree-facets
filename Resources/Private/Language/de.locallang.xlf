@@ -58,6 +58,7 @@
 			<trans-unit id="pagetreeFacets.modal.selectNone"><source>Select none</source><target>Auswahl aufheben</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.selectNone.description"><source>Clears every criterion of this category.</source><target>Entfernt jedes Kriterium dieser Kategorie.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.panel.selected"><source>%d of %d selected.</source><target>%d von %d ausgewählt.</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.selectAllGroup"><source>Select all %s</source><target>Alle auswählen: %s</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.search"><source>Search filters</source><target>Filter suchen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source><target>Keine übereinstimmenden Filter</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source><target>Ich</target></trans-unit>

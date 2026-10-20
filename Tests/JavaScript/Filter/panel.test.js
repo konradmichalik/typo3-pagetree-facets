@@ -189,6 +189,25 @@ describe('a large panel', () => {
     expect(sentence.textContent).toBe('0 of 20 selected.');
   });
 
+  it('gives each group of a split criterion its own checkbox and keeps them in step', () => {
+    const fields = [
+      { type: 'checkbox-group', name: 'ce', label: 'Typical', options: options(8) },
+      { type: 'checkbox-group', name: 'ce', label: 'Menu', options: options(8) },
+      { type: 'checkbox-group', name: 'other', label: 'Other', options: options(2) },
+    ];
+    const { panel } = mount(large(fields));
+    const toggles = [...panel.querySelectorAll('.pagetree-facets__group-toggle')];
+    expect(toggles).toHaveLength(2);
+
+    panel.querySelector('input[name="doktype[ce]"]').checked = true;
+    refreshPanel(panel);
+    expect(toggles[0].indeterminate).toBe(true);
+
+    selectNone(panel).click();
+    expect(toggles[0].indeterminate).toBe(false);
+    expect(toggles[0].checked).toBe(false);
+  });
+
   it('keeps the count out of a small panel', () => {
     const { panel } = mount(tab());
     refreshPanel(panel);

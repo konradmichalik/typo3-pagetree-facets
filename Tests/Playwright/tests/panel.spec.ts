@@ -70,6 +70,31 @@ test('a large list gets dense rows in three columns and counts its selection', a
   await expect(modal.panelCount('ce')).toHaveText(`1 of ${total} selected.`);
 });
 
+test('a group heading selects or clears its whole group', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await modal.navItem('ce').click();
+
+  const group = modal.panel('ce').locator('fieldset').nth(1);
+  const toggle = group.locator('.pagetree-facets__group-toggle');
+  const options = group.locator('input[name]');
+  const size = await options.count();
+  await expect(toggle).toHaveAccessibleName(/^Select all /);
+
+  await options.first().check();
+  await expect(toggle).toHaveJSProperty('indeterminate', true);
+
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+  await expect(modal.navCount('ce')).toHaveText(String(size));
+  await expect(modal.applyButton()).toBeEnabled();
+
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await expect(modal.chips()).toHaveCount(0);
+});
+
 test('the heading and the group headings stay in view while a large list scrolls', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
