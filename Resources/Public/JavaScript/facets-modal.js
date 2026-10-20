@@ -12,6 +12,7 @@ import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pag
 import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
+import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
@@ -79,12 +80,8 @@ class FacetsModal {
   // token view too, but re-querying on every keystroke there would count
   // against a form the token field has not finished reflecting into yet.
   #countEnabled = false;
-  #countDebounce = null;
-  // Delayed-show timer for the skeleton - separate from #countDebounce
-  // (which gates whether a request is sent at all): see #refreshCount().
-  #countLoadingTimer = null;
-  // Guards against out-of-order responses, same pattern as #reflectSeq below.
-  #countSeq = 0;
+  // The timing of that preview (see Filter/live-count.js), writing into #status.
+  #liveCount = null;
   // Guards the async gap between the open request and the modal appearing: on a
   // slow instance a second click arrives while the configuration is still in
   // flight, and would build a second modal.
@@ -124,9 +121,12 @@ class FacetsModal {
     // Fresh per modal: the previous one's status sits in a detached footer.
     this.#status = new FooterStatus();
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
-    // #countSeq, #countDebounce and #countLoadingTimer need no reset here: the
-    // counter is monotonic and both timers were already cleared by
-    // #teardown() on the previous close.
+    this.#liveCount = new LiveCount({
+      status: this.#status,
+      request: () => this.#requestCount(),
+      isActive: () => this.#countEnabled && !this.#tokenMode,
+      hasFilter: () => this.#hasSavableFilter(),
+    });
     // Token view belongs to the modal instance, not to the singleton: the field
     // and the toggle are rebuilt hidden/unpressed by #render() below, so leaving
     // the flag on would describe a view that is not on screen - #computePhrase()
@@ -213,13 +213,10 @@ class FacetsModal {
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
       if (this.#countEnabled && this.#hasSavableFilter()) {
-        // #refreshActiveIndicators() above already armed a debounced refresh via
-        // #scheduleCountRefresh() - cancel it so it cannot fire a second, redundant
-        // request moments after this immediate one. A criterion-less baseline
-        // needs neither: #hasSavableFilter() being false means #scheduleCountRefresh()
-        // already took its own "nothing active" branch and hid the notice.
-        clearTimeout(this.#countDebounce);
-        this.#refreshCount(); // populate immediately - no debounce for the very first value
+        // Populate immediately - no debounce for the very first value. A
+        // criterion-less baseline needs nothing: #refreshActiveIndicators()
+        // above already took the "nothing active" branch for it.
+        this.#liveCount.refreshNow();
       }
     });
     // Core fires this cancelable (doHideModal() bails on defaultPrevented) and
@@ -243,10 +240,8 @@ class FacetsModal {
   #teardown() {
     this.#opened = false;
     clearTimeout(this.#refreshDebounce);
-    clearTimeout(this.#countDebounce);
-    clearTimeout(this.#countLoadingTimer);
     // A count still in flight must not land in the next modal's status.
-    ++this.#countSeq;
+    this.#liveCount?.cancel();
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();
     this.#scope?.close();
@@ -264,7 +259,7 @@ class FacetsModal {
     // immediately and are covered chip-wise by the body's change listener.
     wrap.addEventListener('change', () => {
       this.#refreshApplyState();
-      this.#scheduleCountRefresh();
+      this.#liveCount.schedule();
     });
     wrap.addEventListener('input', (event) => {
       if (event.target.matches('input[type="text"]')) {
@@ -780,113 +775,19 @@ class FacetsModal {
     this.#refreshDebounce = setTimeout(() => this.#refreshActiveIndicators(), 100);
   }
 
-  // Debounced separately from #scheduleRefresh() (chip refresh, 100ms): a
-  // network round trip needs a longer window than a local DOM re-render, so
-  // rapid clicks/keystrokes settle before a request goes out at all.
-  #scheduleCountRefresh(showLoadingImmediately = true) {
-    if (!this.#countEnabled || this.#tokenMode) {
-      return;
-    }
-    if (!this.#hasSavableFilter()) {
-      // Nothing active - the endpoint would resolve this to null anyway (see
-      // FilterResolutionService), so skip the round trip rather than showing
-      // a skeleton just to hide it again once that null comes back. Also
-      // supersedes whatever request is still in flight from a criterion that
-      // was just cleared, so its (now irrelevant) response cannot land later
-      // and reopen the notice.
-      clearTimeout(this.#countDebounce);
-      clearTimeout(this.#countLoadingTimer);
-      ++this.#countSeq;
-      this.#status.setCount(null);
-      return;
-    }
-    // The previous count is stale the instant a criterion changes - showing it
-    // while the debounce/request are still pending would misrepresent it as
-    // current. The skeleton reflects that immediately, rather than waiting on
-    // the debounced #refreshCount() and its own (much shorter) in-flight delay
-    // - which still runs too, but by then the skeleton is already showing.
-    // showLoadingImmediately is false for #refreshActiveIndicators() callers
-    // where nothing actually changed - see its own doc comment.
-    if (showLoadingImmediately) {
-      this.#showCountLoading(this.#countSeq);
-    }
-    clearTimeout(this.#countDebounce);
-    this.#countDebounce = window.setTimeout(() => this.#refreshCount(), 350);
-  }
+  async #requestCount() {
+    const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
+      .post(this.#collectFormState());
+    const { count } = await response.resolve();
 
-  async #refreshCount() {
-    const seq = ++this.#countSeq;
-    // Delayed-show, not immediate: a request that resolves within 10ms never
-    // shows anything but its own result - only a request slow enough to cross
-    // this mark becomes visible as the skeleton in the meantime. Clearing
-    // whatever the previous call's own timer left pending is safe
-    // unconditionally right here: seq was just incremented, so this call is by
-    // definition the newest one, and the synchronous prefix of #refreshCount()
-    // (up to its first await) always runs to completion before any other call
-    // can touch #countLoadingTimer - so whatever this clears can only belong
-    // to a strictly older call. The two clears further down do NOT get that
-    // guarantee for free (time has passed, an await has happened), which is
-    // why each of those is guarded by a seq check first.
-    clearTimeout(this.#countLoadingTimer);
-    this.#countLoadingTimer = window.setTimeout(() => this.#showCountLoading(seq), 10);
-    let count;
-    try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_count)
-        .post(this.#collectFormState());
-      ({ count } = await response.resolve());
-    } catch {
-      // network/parse failure - keep the last known count on screen, no error
-      // surfaced. Only touch the shared timer/notice if no newer call has
-      // superseded this one in the meantime - otherwise this failure would
-      // wrongly cancel a newer, still-legitimate call's own pending "show
-      // skeleton" timer. If the skeleton had already replaced the text (a
-      // slow request that then failed), revert back to it rather than
-      // leaving it shown forever.
-      if (seq === this.#countSeq) {
-        clearTimeout(this.#countLoadingTimer);
-        this.#status.hideLoading();
-      }
-      return;
-    }
-    if (seq !== this.#countSeq || this.#tokenMode) {
-      return; // superseded by a newer request, or token view took over in the meantime
-    }
-    clearTimeout(this.#countLoadingTimer);
-    // Also reverts the skeleton, a no-op if it was never shown (the common,
-    // fast-response case).
-    this.#status.setCount(count);
-  }
-
-  // Two call sites: #scheduleCountRefresh() calls it immediately, synchronously
-  // with the change itself, so the seq check there is a no-op by construction
-  // (nothing can have superseded a call that just happened). #refreshCount()'s
-  // own delayed-show timer calls it again once its in-flight delay elapses -
-  // that one DOES need the check, since it fires from an independent timer
-  // that a newer request, a closed modal or a switch to token mode may have
-  // overtaken by the time it goes off.
-  #showCountLoading(seq) {
-    // The guard this method exists for (see its docblock): a newer request, a
-    // closed modal or a switch to token mode overtaking this specific delayed
-    // timer inside its own 10ms window. Reproducing that deterministically
-    // needs either fake timers (which this suite deliberately avoids - real
-    // requests and real debounces are the point) or racing real ones against
-    // a 10ms margin, which would make the suite flaky rather than prove
-    // anything more than the comment above already states.
-    /* v8 ignore next 3 */
-    if (seq !== this.#countSeq || this.#tokenMode) {
-      return;
-    }
-    this.#status.showLoading();
+    return count;
   }
 
   // Rebuild the active-filter chips and nav dots from the current control state.
   // Called on open and after every change so the header always mirrors reality.
   //
-  // @param {boolean} showLoadingImmediately - forwarded to #scheduleCountRefresh().
-  //   False for callers where nothing the count depends on actually changed
-  //   (the initial open, a field's label resolving late) - showing the
-  //   skeleton there would flash it on screen for no reason before the
-  //   caller's own real refresh (or nothing at all) replaces it.
+  // @param {boolean} showLoadingImmediately - forwarded to LiveCount.schedule():
+  //   false for callers where nothing the count depends on actually changed.
   #refreshActiveIndicators(showLoadingImmediately = true) {
     // #row is built synchronously in #render(), before #build() returns and
     // before any control/change listener that could call this exists.
@@ -904,7 +805,7 @@ class FacetsModal {
     // Covers the programmatic paths (clear all, chip removal, search-result
     // proxies) that change controls without firing events on the wrapper.
     this.#refreshApplyState();
-    this.#scheduleCountRefresh(showLoadingImmediately);
+    this.#liveCount.schedule(showLoadingImmediately);
 
     const counts = new Map();
     for (const criterion of criteria) {
@@ -1136,16 +1037,10 @@ class FacetsModal {
     this.#setTextMode(true);
     this.#tokenField.focus();
     // A count refresh armed just before entering token mode (e.g. during the
-    // #computePhrase() await above) must not land afterwards - #refreshCount()'s
-    // own guard also checks #tokenMode, this is belt-and-suspenders. Same for a
-    // pending "show the skeleton" timer: it must not fire once token mode has
-    // taken over, even though #showCountLoading()'s own guard would no-op it.
-    clearTimeout(this.#countDebounce);
-    clearTimeout(this.#countLoadingTimer);
-    // A request already in flight when token mode takes over is dropped by
-    // #refreshCount()'s own guard, so it can leave the status mid-loading;
-    // withdrawing the count also resets that. Token mode has its own
-    // authoritative source - see #scheduleCountRefresh's guard.
+    // #computePhrase() await above) must not land afterwards; the count's own
+    // guards check text mode too, this is belt-and-suspenders. Withdrawing the
+    // count also resets a skeleton a request in flight may have left behind.
+    this.#liveCount.cancel();
     this.#status.setCount(null);
     this.#refreshActiveIndicators();
     this.#refreshApplyState();
