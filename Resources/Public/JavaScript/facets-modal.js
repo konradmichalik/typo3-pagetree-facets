@@ -434,15 +434,20 @@ class FacetsModal {
       button.setAttribute('aria-current', 'true');
     }
     button.tabIndex = tab.identifier === this.#activeTab ? 0 : -1;
-    if (empty) {
-      button.title = TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available';
-    }
     // Label text kept in its own node so the active-criteria dot can be toggled
     // live (see #setNavDot) without clobbering the label.
     const text = document.createElement('span');
     text.textContent = tab.label;
     button.append(text);
-    if (!empty) {
+    if (empty) {
+      // Why there is nothing to pick, as a second line in the item itself: a
+      // disabled button has no hover a tooltip could rely on.
+      const reason = document.createElement('span');
+      reason.className = 'pagetree-facets__nav-reason';
+      reason.textContent = tab.configuration.emptyReason
+        || (TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available');
+      button.append(reason);
+    } else {
       button.addEventListener('click', () => this.#switchTab(tab.identifier, true));
     }
     item.append(button);

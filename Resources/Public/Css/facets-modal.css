@@ -798,12 +798,22 @@
  * took the label below 4.5:1, and a disabled facet is how the editor learns what
  * this site cannot filter by. */
 .pagetree-facets__nav-item.is-empty {
+    flex-wrap: wrap;
+    row-gap: 0;
     color: var(--typo3-text-color-variant);
     cursor: not-allowed;
 }
 
 .pagetree-facets__nav-item.is-empty:hover {
     background: transparent;
+}
+
+/* The reason takes a full second line under the label. Meta size, and the
+   secondary text colour the rules keep at 4.5:1 in both schemes. */
+.pagetree-facets__nav-reason {
+    flex: 1 0 100%;
+    font-size: 0.75rem;
+    line-height: 1.25;
 }
 
 /* Active-criteria count per tab (kept subtle: a small pill, not a loud badge). */

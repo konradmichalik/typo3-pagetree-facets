@@ -88,13 +88,25 @@ describe('opening', () => {
       .toEqual(['Content']);
   });
 
-  it('disables a tab whose every choice field is optionless', async () => {
-    const { modal } = await openModal();
+  it('disables a tab whose every choice field is optionless and says why on a second line', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs[2].configuration.emptyReason = 'Site has only one language';
+
+    const { modal } = await openModal({ configuration });
     const item = navItem(modal, 'translations');
 
     expect(item.disabled).toBe(true);
     expect(item.classList.contains('is-empty')).toBe(true);
-    expect(item.title).toBe('No options available');
+    // In the item itself, never only in a tooltip.
+    expect(item.querySelector('.pagetree-facets__nav-reason').textContent).toBe('Site has only one language');
+    expect(item.title).toBe('');
+  });
+
+  it('falls back to the generic reason for a facet that gives none', async () => {
+    const { modal } = await openModal();
+
+    expect(navItem(modal, 'translations').querySelector('.pagetree-facets__nav-reason').textContent).toBe('No options available');
+    expect(navItem(modal, 'doktype').querySelector('.pagetree-facets__nav-reason')).toBeNull();
   });
 
   it('keeps a tab usable when it has a freeform field, options or not', async () => {
