@@ -290,6 +290,7 @@ describe('buildCriteriaRow', () => {
 
   it('closes on Escape, handing focus back to the button', () => {
     const { row } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
     more(row).click();
 
     key(items(row)[0], 'Escape');
@@ -300,6 +301,7 @@ describe('buildCriteriaRow', () => {
 
   it('copies the link from the menu and closes it', () => {
     const { row, onCopyLink } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
     more(row).click();
 
     items(row)[1].click();
@@ -311,6 +313,7 @@ describe('buildCriteriaRow', () => {
 
   it('opens the name form under the row from the menu and saves through it', () => {
     const { row, onSaveFavorite } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
     more(row).click();
 
     items(row)[0].click();
