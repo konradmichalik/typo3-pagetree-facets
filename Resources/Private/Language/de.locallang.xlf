@@ -11,7 +11,8 @@
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source><target>Schließen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source><target>Alle Websites</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source><target>Seitentitel oder UID</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source><target>Filter entfernen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.textMode"><source>Text</source><target>Text</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.removeCriterion"><source>Remove %s</source><target>%s entfernen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.favorites"><source>Favorites</source><target>Favoriten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFavorite"><source>Remove favorite</source><target>Favorit entfernen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.saveFavorite"><source>Save current filter</source><target>Aktuellen Filter speichern</target></trans-unit>
@@ -56,7 +57,6 @@
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source><target>Backend-Benutzer suchen…</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source><target>Aus der Liste auswählen…</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.copyLink"><source>Copy link</source><target>Link kopieren</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.tokenView"><source>Token view</source><target>Token-Ansicht</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.ariaLabel"><source>Filter tokens</source><target>Filter-Tokens</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.placeholder"><source>doktype:1 is:empty site:main</source><target>doktype:1 is:empty site:main</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.linkCopied.title"><source>Link copied</source><target>Link kopiert</target></trans-unit>

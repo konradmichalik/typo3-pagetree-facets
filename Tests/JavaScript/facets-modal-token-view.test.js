@@ -8,6 +8,7 @@ import {
   openModal,
   requests,
   resetHarness,
+  textSwitch,
   type,
 } from './Support/modal-harness.js';
 
@@ -22,7 +23,7 @@ import {
  */
 
 const enterTokenMode = async (modal) => {
-  modal.querySelector('.pagetree-facets__token-toggle').click();
+  textSwitch(modal).click();
   await expect.poll(() => tokenField(modal).hidden).toBe(false);
 
   return tokenField(modal);
@@ -49,7 +50,7 @@ describe('entering token view', () => {
     const field = await enterTokenMode(modal);
 
     expect(field.value).toBe('is:hidden');
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('true');
+    expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('true');
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(true);
     expect(modal.querySelector('.pagetree-facets__site').hidden).toBe(true);
   });
@@ -167,7 +168,7 @@ describe('typing a phrase', () => {
 
     type(field, 'is:empty');
     await new Promise((resolve) => { setTimeout(resolve, 300); });
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     // Picked in the restored form: rebuilding the panels would wipe it, which is
     // what makes this assertion say more than "empty is still unchecked".
     control(modal, 'doktype[doktype]', '1').click();
@@ -201,7 +202,7 @@ describe('editing the form in token view', () => {
     // now in flight against the promise above.
     await new Promise((resolve) => { setTimeout(resolve, 300); });
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     release({ phrase: 'doktype:1 is:hidden' });
     await new Promise((resolve) => { setTimeout(resolve, 0); });
 
@@ -249,11 +250,11 @@ describe('leaving token view', () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
 
     expect(field.hidden).toBe(true);
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('false');
     expect(applyButton(modal).disabled).toBe(true);
   });
 

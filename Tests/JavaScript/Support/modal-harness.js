@@ -240,6 +240,11 @@ export function footerButton(modal, text) {
   return [...modal.querySelectorAll('.t3js-modal-footer button')].find((button) => button.textContent === text);
 }
 
+/** The Text switch built into the search field (see Filter/criteria-row.js). */
+export function textSwitch(modal) {
+  return modal.querySelector('.pagetree-facets__text-switch');
+}
+
 export function navItem(modal, identifier) {
   return modal.querySelector(`.pagetree-facets__nav-item[data-tab="${identifier}"]`);
 }

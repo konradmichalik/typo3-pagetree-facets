@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  configurationFixture, control, openModal, requests, resetButton, resetHarness, urls,
+  configurationFixture, control, openModal, requests, resetButton, resetHarness, textSwitch, urls,
 } from './Support/modal-harness.js';
 
 function enableLivePreviewCount() {
@@ -224,10 +224,10 @@ describe('when the setting is on', () => {
     // before flipping #tokenMode and hiding the notice, so this can't be a
     // synchronous assertion right after click() - poll for it like the other
     // assertions in this suite that depend on an AJAX round trip.
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     await expect.poll(() => matchCount(modal)?.hidden).toBe(true);
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     await expect.poll(() => matchCount(modal)?.hidden).toBe(false);
   });
 
@@ -362,7 +362,7 @@ describe('when the setting is on', () => {
         if (1 === calls) {
           return 3;
         }
-        modalRef.querySelector('.pagetree-facets__token-toggle').click();
+        textSwitch(modalRef).click();
         await new Promise((resolve) => { setTimeout(resolve, 250); });
         return 9;
       },

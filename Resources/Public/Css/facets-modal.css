@@ -64,60 +64,49 @@
     display: none;
 }
 
-.pagetree-facets__freetext {
-    flex: 1 1 auto;
-    margin: 0;
-}
-
-/* The token toggle glued to the field it switches, mirroring the page tree
-   toolbar's own button group: zero gap inside, joined radii, and the button's
-   leading border overlapping the input's trailing one by 1px the way Bootstrap's
-   input-group does. Whichever of the two fields is visible (they take turns)
-   ends up flush against the button. */
-.pagetree-facets__search-group {
+/* One box for the page-title field and the Text switch at its trailing edge.
+   The box draws the border, the inputs inside draw none, so the switch reads
+   as part of the field rather than as a button glued to it. */
+.pagetree-facets__search-field {
     display: flex;
     flex: 1 1 auto;
     align-items: stretch;
-    /* Takes the row's full height rather than its own content's. Without a
-       definite height here the toggle inside has none either when its width is
-       resolved, and its 1:1 aspect ratio falls back to the icon's width. */
-    align-self: stretch;
     min-width: 0;
-    gap: 0;
+    min-height: 36px;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: var(--typo3-input-border-radius, 0.25rem);
+    background: var(--typo3-component-bg);
 }
 
-.pagetree-facets__search-group .pagetree-facets__freetext input,
-.pagetree-facets__search-group .pagetree-facets__token-field {
-    border-start-end-radius: 0;
-    border-end-end-radius: 0;
+/* The ring moves to the box while an input inside has focus; the switch keeps
+   its own ring (below), so only one of the two ever shows. */
+.pagetree-facets__search-field:has(.form-control:focus-visible) {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
 }
 
-.pagetree-facets__search-group .pagetree-facets__token-toggle {
-    border-start-start-radius: 0;
-    border-end-start-radius: 0;
-    margin-inline-start: -1px;
+.pagetree-facets__search-field .form-control,
+.pagetree-facets__search-field .form-control:focus {
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
 }
 
-/* Both icon buttons in this row are squares as tall as the field beside them:
-   stretch takes whatever height the input has (so nothing is hard-coded to a
-   pixel size that a theme could change) and the aspect ratio turns that height
-   into the width. */
-.pagetree-facets__token-toggle,
-.pagetree-facets__help-toggle {
+.pagetree-facets__search-icon {
+    display: flex;
     flex: 0 0 auto;
-    align-self: stretch;
-    aspect-ratio: 1;
-    padding: 0;
+    align-items: center;
+    padding-inline-start: 0.75rem;
+    color: var(--typo3-text-color-variant);
 }
 
-/* Both buttons keep the tab-nav "active" tint while what they opened is on
-   screen, so they read as sticky switches rather than one-shot actions - and
-   the help panel's own × cannot leave the button looking pressed, because both
-   states come from the same place (see renderHelpToggle). */
-.pagetree-facets__token-toggle[aria-pressed="true"],
-.pagetree-facets__help-toggle[aria-expanded="true"] {
-    background: var(--pf-tint);
-    color: var(--typo3-text-color-base);
+.pagetree-facets__freetext {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* Single-line editor for the whole token phrase. Monospace echoes the tree
@@ -129,8 +118,59 @@
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
 }
 
+/* All three are flex items, so the attribute needs restating. */
+.pagetree-facets__search-icon[hidden],
+.pagetree-facets__freetext[hidden],
 .pagetree-facets__token-field[hidden] {
     display: none;
+}
+
+/* Labelled, never the icon alone. A separator line marks it off from the text
+   it switches; while pressed it carries the same tint as the active facet. */
+.pagetree-facets__text-switch {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.375rem;
+    padding-inline: 0.75rem;
+    border: 0;
+    border-inline-start: 1px solid var(--typo3-component-border-color);
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.pagetree-facets__text-switch:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__text-switch[aria-pressed="true"] {
+    background: var(--pf-tint);
+}
+
+.pagetree-facets__text-switch:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* A square as tall as the field beside it: stretch takes the row's height and
+   the aspect ratio turns it into the width. */
+.pagetree-facets__help-toggle {
+    flex: 0 0 auto;
+    align-self: stretch;
+    aspect-ratio: 1;
+    padding: 0;
+}
+
+/* Keeps the tint while the panel is on screen, so it reads as a sticky switch
+   rather than a one-shot action; the panel's own × cannot leave it looking
+   pressed, since both states come from one place (see renderHelpToggle). */
+.pagetree-facets__help-toggle[aria-expanded="true"] {
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
 }
 
 /* Clear button for text-ish inputs, only present while the field has a value.
@@ -483,8 +523,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding-inline: 0.6rem 0.2rem;
-    padding-block: 0.15rem;
+    max-width: 300px;
+    min-height: 26px;
+    padding-inline: 0.6rem 0.15rem;
     border-radius: 999px;
     /* Accent tint carries the "filter" identity; the label uses the themed text
      * colour so it stays legible in both light and dark (accent-on-accent-tint
@@ -493,6 +534,20 @@
     color: var(--typo3-text-color-base);
     font-size: 0.8125rem;
     line-height: 1.4;
+}
+
+.pagetree-facets__chip-label {
+    display: flex;
+    min-width: 0;
+    gap: 0.25em;
+    white-space: nowrap;
+}
+
+/* A long value is shortened, the facet prefix is not; the chip's title holds
+   the full text. */
+.pagetree-facets__chip-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* The facet name is subordinate to the value the user picked, so it steps back a
@@ -507,12 +562,14 @@
     font-size: 0.9em;
 }
 
+/* 24px: the smallest target the rules allow, also for the × on a chip. */
 .pagetree-facets__chip-remove {
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
     border: 0;
     border-radius: 50%;

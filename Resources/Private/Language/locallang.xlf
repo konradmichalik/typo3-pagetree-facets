@@ -11,7 +11,8 @@
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.removeFilter"><source>Remove filter</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.textMode"><source>Text</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.removeCriterion"><source>Remove %s</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.favorites"><source>Favorites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFavorite"><source>Remove favorite</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.saveFavorite"><source>Save current filter</source></trans-unit>
@@ -56,7 +57,6 @@
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.copyLink"><source>Copy link</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.tokenView"><source>Token view</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.ariaLabel"><source>Filter tokens</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.placeholder"><source>doktype:1 is:empty site:main</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.linkCopied.title"><source>Link copied</source></trans-unit>

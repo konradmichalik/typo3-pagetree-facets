@@ -14,6 +14,7 @@ import {
   openedModals,
   panel,
   resetHarness,
+  textSwitch,
   type,
 } from './Support/modal-harness.js';
 
@@ -267,17 +268,17 @@ describe('the scope controls', () => {
     expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(true);
   });
 
-  it('glues the token toggle to the two fields it switches between', async () => {
+  it('builds the Text switch into the search field, with the help toggle outside it', async () => {
     const { modal } = await openModal();
-    const group = modal.querySelector('.pagetree-facets__search-group');
+    const field = modal.querySelector('.pagetree-facets__search-field');
 
-    // Both fields belong to the group because they take turns - the button has
-    // to sit against whichever one is on screen.
-    expect([...group.children].map((child) => child.className.split(' ').at(-1)))
-      .toEqual(['pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__token-toggle']);
+    // Both fields share the box because they take turns - the switch sits
+    // against whichever one is on screen.
+    expect([...field.children].map((child) => child.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__text-switch']);
     // Help explains the dialog rather than switching how it is edited, so it
-    // stays outside the group.
-    expect(group.querySelector('.pagetree-facets__help-toggle')).toBeNull();
+    // stays outside the field.
+    expect(field.querySelector('.pagetree-facets__help-toggle')).toBeNull();
     expect(modal.querySelector('.pagetree-facets__search > .pagetree-facets__help-toggle')).not.toBeNull();
   });
 
@@ -293,16 +294,18 @@ describe('the scope controls', () => {
       .toBe('Removes every criterion here. The page tree keeps its current filter until you apply.');
     expect(titleOf('.pagetree-facets__favorite-add'))
       .toBe('Saves the current filter under a name so you can reuse it later.');
-    expect(titleOf('.pagetree-facets__token-toggle')).toBe('Shows the whole filter as editable text.');
+    expect(titleOf('.pagetree-facets__text-switch')).toBe('Shows the whole filter as editable text.');
     expect(titleOf('.pagetree-facets__help-toggle')).toBe('Explains how criteria combine and what each action does.');
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-label')).toBe('Token view');
+    // Not icon-only: the word is the name, so no aria-label has to repeat it.
+    expect(textSwitch(modal).textContent.trim()).toBe('Text');
+    expect(textSwitch(modal).hasAttribute('aria-label')).toBe(false);
   });
 
   it('names the criterion a chip\'s × would drop, there being several in a row', async () => {
     const { modal } = await openModal();
     const remove = modal.querySelector('.pagetree-facets__chip-remove');
 
-    expect(remove.title).toBe('Page state: Hidden – remove filter');
+    expect(remove.title).toBe('Remove Page state: Hidden');
     expect(remove.getAttribute('aria-label')).toBe(remove.title);
   });
 

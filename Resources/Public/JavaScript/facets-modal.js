@@ -7,10 +7,11 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
-import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
@@ -50,8 +51,9 @@ class FacetsModal {
   // already applied to the tree - the Apply baseline this mode diffs against,
   // since the form-state baseline no longer describes what is authoritative.
   #tokenMode = false;
-  #tokenField = null;
-  #tokenToggle = null;
+  // The search field handle (see Filter/criteria-row.js): the page-title input,
+  // the token field and the Text switch that swaps the two.
+  #searchField = null;
   #searchControls = null;
   #panels = null;
   #currentPhrase = '';
@@ -316,20 +318,19 @@ class FacetsModal {
 
     const search = document.createElement('div');
     search.className = 'pagetree-facets__search';
-    // Freetext (and the optional site scope) share the top slot with the token
-    // editor; kept as a group so token view can hide both at once.
-    const freetextRow = this.#renderFreetext();
-    this.#searchControls = [freetextRow];
-    this.#tokenField = this.#renderTokenField();
-    this.#tokenToggle = this.#renderTokenToggle();
-    // The toggle is glued to the field it switches - the same button-group shape
-    // the page tree's own toolbar uses (see facets-toolbar.js). Both fields live
-    // inside it because they take turns: whichever is visible, the button sits
-    // against its trailing edge rather than against a hidden one.
-    const searchGroup = document.createElement('div');
-    searchGroup.className = 'pagetree-facets__search-group';
-    searchGroup.append(freetextRow, this.#tokenField, this.#tokenToggle);
-    search.append(searchGroup);
+    this.#searchField = buildSearchField({
+      freetext: this.#configuration.freetext ?? '',
+      onToggle: () => this.#toggleTokenMode(),
+    });
+    // Editing the phrase is debounced into #reflectTokenQuery so the form
+    // re-hydrates without a round trip per keystroke.
+    this.#tokenField.addEventListener('input', () => {
+      this.#cancelTokenTimers();
+      this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
+    });
+    // The optional site scope leaves the screen with the freetext in text mode.
+    this.#searchControls = [];
+    search.append(this.#searchField.element);
     if ((this.#configuration.sites ?? []).length > 1) {
       const siteRow = this.#renderSiteScope();
       search.append(siteRow);
@@ -608,59 +609,10 @@ class FacetsModal {
     this.#resultsPanel.hidden = false;
   }
 
-  // Single-line editor for the whole token phrase, hidden until token view is
-  // on. Editing is debounced into #reflectTokenQuery so the form re-hydrates
-  // without a round trip per keystroke.
-  #renderTokenField() {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control pagetree-facets__token-field';
-    input.dataset.role = 'token-query';
-    input.hidden = true;
-    input.spellcheck = false;
-    input.autocapitalize = 'off';
-    input.autocomplete = 'off';
-    input.setAttribute('autocorrect', 'off');
-    const aria = TYPO3.lang?.['pagetreeFacets.modal.tokenView.ariaLabel'] ?? 'Filter tokens';
-    input.setAttribute('aria-label', aria);
-    input.placeholder = TYPO3.lang?.['pagetreeFacets.modal.tokenView.placeholder'] ?? '';
-    input.addEventListener('input', () => {
-      this.#cancelTokenTimers();
-      this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
-    });
-    return input;
-  }
-
-  #renderTokenToggle() {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__token-toggle';
-    const label = TYPO3.lang?.['pagetreeFacets.modal.tokenView'] ?? 'Token view';
-    // Icon-only: the short name is what assistive technology announces, the
-    // longer title is the explanation a hover asks for.
-    button.title = TYPO3.lang?.['pagetreeFacets.modal.tokenView.description'] ?? 'Shows the whole filter as editable text.';
-    button.setAttribute('aria-label', label);
-    button.setAttribute('aria-pressed', 'false');
-    button.append(decorativeIcon('actions-code'));
-    button.addEventListener('click', () => this.#toggleTokenMode());
-    return button;
-  }
-
-  #renderFreetext() {
-    // Freetext must survive the modal round trip - it is a first-class
-    // criterion (intersected engine-side), not decoration.
-    const row = document.createElement('div');
-    row.className = 'form-group pagetree-facets__freetext';
-    const input = document.createElement('input');
-    input.className = 'form-control';
-    input.type = 'text';
-    input.dataset.role = 'freetext';
-    const freetextLabel = TYPO3.lang?.['pagetreeFacets.modal.freetext'] ?? 'Page title or UID';
-    input.placeholder = freetextLabel;
-    input.setAttribute('aria-label', freetextLabel);
-    input.value = this.#configuration.freetext ?? '';
-    row.append(clearable(input));
-    return row;
+  // The phrase editor, authoritative in token view. Read through the handle so
+  // the rebuilt field of a reopened modal is always the one in use.
+  get #tokenField() {
+    return this.#searchField.tokenField;
   }
 
   #renderSiteScope() {
@@ -1152,13 +1104,7 @@ class FacetsModal {
         delete input.dataset.label;
       }
     });
-    const freetext = this.#modal.querySelector('[data-role="freetext"]');
-    // Unlike site/page scope below, #renderFreetext() renders this
-    // unconditionally - there is no configuration that omits it.
-    /* v8 ignore next 3 */
-    if (freetext) {
-      freetext.value = '';
-    }
+    this.#searchField.setFreetext('');
     const site = this.#modal.querySelector('[data-role="site-scope"]');
     if (site) {
       site.value = '';
@@ -1393,35 +1339,10 @@ class FacetsModal {
   }
 
   #renderChip(criterion) {
-    const chip = document.createElement('span');
-    chip.className = 'pagetree-facets__chip';
-    // Two spans inside the label wrapper rather than two chip children: the chip's
-    // own gap is what separates the label from the remove button, and reusing it
-    // between prefix and value would space them out like separate items. A real
-    // space keeps the phrase intact for selection and copy.
-    const text = document.createElement('span');
-    text.className = 'pagetree-facets__chip-label';
-    const prefix = document.createElement('span');
-    prefix.className = 'pagetree-facets__chip-prefix';
-    prefix.textContent = `${criterion.prefix}:`;
-    const value = document.createElement('span');
-    value.className = 'pagetree-facets__chip-value';
-    value.textContent = criterion.value;
-    text.append(prefix, document.createTextNode(' '), value);
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'pagetree-facets__chip-remove';
-    const removeLabel = `${criterion.label} – ${TYPO3.lang?.['pagetreeFacets.modal.removeFilter'] ?? 'remove filter'}`;
-    remove.setAttribute('aria-label', removeLabel);
-    // Several × in a row: the tooltip has to name which criterion this one drops.
-    remove.title = removeLabel;
-    remove.textContent = '×';
-    remove.addEventListener('click', () => {
+    return renderChip(criterion, () => {
       criterion.remove();
       this.#refreshActiveIndicators();
     });
-    chip.append(text, remove);
-    return chip;
   }
 
   // Enter token view: reveal the editable phrase field seeded from the current
@@ -1434,12 +1355,11 @@ class FacetsModal {
     }
     const phrase = await this.#computePhrase();
     this.#tokenMode = true;
-    this.#tokenToggle.setAttribute('aria-pressed', 'true');
     this.#tokenField.value = phrase;
+    this.#searchField.setTextMode(true);
     for (const control of this.#searchControls) {
       control.hidden = true;
     }
-    this.#tokenField.hidden = false;
     this.#tokenField.focus();
     // A count refresh armed just before entering token mode (e.g. during the
     // #computePhrase() await above) must not land afterwards - #refreshCount()'s
@@ -1466,8 +1386,7 @@ class FacetsModal {
   #exitTokenMode() {
     this.#cancelTokenTimers();
     this.#tokenMode = false;
-    this.#tokenToggle.setAttribute('aria-pressed', 'false');
-    this.#tokenField.hidden = true;
+    this.#searchField.setTextMode(false);
     for (const control of this.#searchControls) {
       control.hidden = false;
     }
@@ -1545,14 +1464,7 @@ class FacetsModal {
   // #populatePanels leaves them untouched; keep them in step with a freshly
   // hydrated config so exiting token view reveals a correct form.
   #syncHeaderControlsFromConfig() {
-    const freetext = this.#modal.querySelector('[data-role="freetext"]');
-    // Unconditionally rendered - see the same guard in #resetAll(). Only the
-    // `if` itself is dead; `?? ''` below is real (a reflected configuration
-    // may genuinely omit freetext) and stays covered.
-    /* v8 ignore next */
-    if (freetext) {
-      freetext.value = this.#configuration.freetext ?? '';
-    }
+    this.#searchField.setFreetext(this.#configuration.freetext ?? '');
     const site = this.#modal.querySelector('[data-role="site-scope"]');
     if (site) {
       site.value = this.#configuration.activeSite ?? '';
@@ -1627,10 +1539,7 @@ class FacetsModal {
       }
     }
     const site = this.#modal.querySelector('[data-role="site-scope"]')?.value ?? '';
-    // Unlike site above (absent without multiple sites), freetext is always
-    // rendered - `?.value` never actually needs the `?? ''` fallback.
-    /* v8 ignore next */
-    const freetext = this.#modal.querySelector('[data-role="freetext"]')?.value ?? '';
+    const freetext = this.#searchField.freetext.value;
     // Always the page open right now, not whatever page a previously-hydrated
     // "under:" token pointed at - re-checking the box always means "here",
     // same mental model as ticking it fresh.
