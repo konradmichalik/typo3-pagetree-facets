@@ -96,15 +96,22 @@ export class FooterStatus {
     this.#count.hidden = !showCount || loading;
     this.#skeleton.hidden = !showCount || !loading;
     if (null !== count) {
-      this.#count.textContent = matchCountLabel(count);
+      setText(this.#count, matchCountLabel(count));
     }
     this.#suffix.hidden = !dirty;
-    this.#suffix.textContent = showCount
+    setText(this.#suffix, showCount
       ? ` · ${lang('pagetreeFacets.modal.status.notApplied.suffix', 'not applied to the tree yet')}`
-      : lang('pagetreeFacets.modal.status.notApplied', 'Not applied to the tree yet');
+      : lang('pagetreeFacets.modal.status.notApplied', 'Not applied to the tree yet'));
     this.#dot.hidden = !dirty && !none;
     this.#dot.classList.toggle('is-none', none);
     this.#dot.classList.toggle('is-pending', !none && dirty);
+  }
+}
+
+// Assigning textContent replaces the text node, which a live region announces again.
+function setText(node, text) {
+  if (node.textContent !== text) {
+    node.textContent = text;
   }
 }
 

@@ -23,6 +23,7 @@ const text = (status) => [...status.element.children]
   .trim();
 const dot = (status) => status.element.querySelector('.pagetree-facets__status-dot');
 const count = (status) => status.element.querySelector('.pagetree-facets__status-count');
+const suffix = (status) => status.element.querySelector('.pagetree-facets__status-text');
 const skeleton = (status) => status.element.querySelector('.pagetree-facets__status-skeleton');
 const visible = (node) => !node.hidden;
 
@@ -38,6 +39,19 @@ describe('the element', () => {
     expect(status.element.getAttribute('role')).toBe('status');
     expect(status.element.getAttribute('aria-live')).toBe('polite');
     expect(skeleton(status).getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('leaves the text nodes alone when the same state renders again, so nothing is announced twice', () => {
+    const status = mount({ picked: true, dirty: true, countable: true });
+    status.setCount(3);
+    const countNode = count(status).firstChild;
+    const suffixNode = suffix(status).firstChild;
+
+    status.setCount(3);
+    status.update({ picked: true, dirty: true, countable: true });
+
+    expect(count(status).firstChild).toBe(countNode);
+    expect(suffix(status).firstChild).toBe(suffixNode);
   });
 });
 
