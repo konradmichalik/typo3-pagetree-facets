@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import { buildSaveFavoriteForm } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { clearable, decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
@@ -15,8 +15,6 @@ import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js
  * anything is savable, whether text mode is on) and calls back into the handles
  * returned here. Nothing in this module reads the form.
  */
-
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 /**
  * The row under the search field: the scope chip first, one chip per picked

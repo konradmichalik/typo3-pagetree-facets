@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import Hotkeys from '@typo3/backend/hotkeys.js';
-import { appendRichText } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The one status element in the modal footer. It holds the live count and
@@ -22,8 +22,6 @@ import { appendRichText } from '@konradmichalik/pagetree-facets/Filter/form-cont
  * parts are toggled, never rebuilt, so the last settled count survives a
  * failed refresh.
  */
-
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 export class FooterStatus {
   element;

@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
@@ -20,8 +20,6 @@ import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js
  * Listbox pattern (WAI-ARIA APG): the list takes focus, aria-activedescendant
  * marks the entry the arrows moved to, Enter or Space picks it.
  */
-
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 /**
  * @param {{sites?: Array<{identifier: string}>, activeSite: string|null, pageScope: number|null,
