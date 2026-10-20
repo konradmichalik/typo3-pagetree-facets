@@ -5,12 +5,10 @@
  */
 
 /**
- * Open and close plumbing for a panel that a button pops open: the scope list
- * and the actions menu. The trigger reports the state through aria-expanded,
- * Escape and a pointer press outside close the panel, and focus returns to the
- * trigger unless the press itself moved it elsewhere.
- *
- * What the panel does while open (arrow keys, selection) is the caller's part.
+ * Open and close plumbing for a panel a button pops open: aria-expanded on the
+ * trigger, Escape and a press outside close it, focus returns to the trigger
+ * unless the press moved it elsewhere. What the panel does while open is the
+ * caller's part.
  *
  * @param {{trigger: HTMLElement, panel: HTMLElement, onOpen?: () => void}} parts
  * @returns {{show: () => void, close: (returnFocus?: boolean) => void}}

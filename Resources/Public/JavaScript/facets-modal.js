@@ -39,10 +39,8 @@ class FacetsModal {
   #row = null;
   #applyButton = null;
   #baselineState = null;
-  // The footer's status line (see Filter/footer-status.js): the live count and
-  // whether the selection is applied. Injected into the modal's own footer, so
-  // it lives outside our content DOM - see the call site in #build() for why
-  // that is safe.
+  // The footer's status line (see Filter/footer-status.js), injected into the
+  // modal's own footer; #build() says why that is safe.
   #status = null;
   // One-shot escape hatch for the close guard: the apply paths close the modal
   // themselves while the state still counts as dirty (see #apply).
@@ -188,15 +186,8 @@ class FacetsModal {
       brandIcon.className = 'pagetree-facets__brand';
       this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
 
-      // The status talks about the Apply button, so it belongs beside it, in the
-      // modal's own footer rather than in our content. That footer is Lit-
-      // rendered, but its children are a single array part for the buttons,
-      // bounded by marker comments - prepending lands outside that range, so a
-      // button re-render cannot displace the node. `t3js-` is core's own
-      // convention for "JavaScript may target this". Should the markup ever
-      // change, the optional chaining leaves the status detached and it simply
-      // stays absent; the close guard, which is the actual safety net, does not
-      // depend on it.
+      // Core's Lit footer renders the buttons as one bounded array part, so a
+      // prepended node survives button re-renders. Missing markup leaves it absent.
       this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#status.element);
 
       // Populate the active-filter chips from the hydrated state once the modal
@@ -213,9 +204,8 @@ class FacetsModal {
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
       if (this.#countApplies && this.#hasSavableFilter()) {
-        // Populate immediately - no debounce for the very first value. A
-        // criterion-less baseline needs nothing: #refreshActiveIndicators()
-        // above already took the "nothing active" branch for it.
+        // No debounce for the very first value. A criterion-less baseline needs
+        // nothing, #refreshActiveIndicators() above handled it.
         this.#liveCount.refreshNow();
       }
     });
@@ -686,14 +676,14 @@ class FacetsModal {
     this.#updateFavoritesVisibility();
   }
 
-  // Is anything picked at all? In token view the phrase can hold tokens the
-  // form cannot mirror, so the typed field decides there.
   // The one rule for whether a count applies: the setting is on and the form,
   // not the typed phrase, is what would be counted.
   get #countApplies() {
     return this.#countEnabled && !this.#tokenMode;
   }
 
+  // Is anything picked at all? In token view the phrase can hold tokens the
+  // form cannot mirror, so the typed field decides there.
   #isPicked() {
     return this.#tokenMode
       ? '' !== this.#tokenField.value.trim()
@@ -838,9 +828,8 @@ class FacetsModal {
     });
   }
 
-  // Clear all: every criterion in place (all tab controls plus freetext and
-  // scope) and refresh the header. Stays in the modal - Apply still has to
-  // confirm.
+  // Clear all: every criterion in place, freetext and scope included. Stays in
+  // the modal, Apply still has to confirm.
   #resetAll() {
     this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach((input) => {
       if (input.tagName === 'SELECT') {
@@ -969,9 +958,8 @@ class FacetsModal {
     // until something actually differs - which also makes it obvious that
     // picking a criterion is not applying it.
     this.#applyButton.disabled = !dirty;
-    // The pending notice follows the dirty state, not whether anything is
-    // selected: removing the last chip empties the selection while the tree is
-    // still filtered, and that case needs the notice most of all.
+    // The notice follows the dirty state, not the selection: the last chip
+    // removed while the tree is still filtered needs it most of all.
     const picked = this.#isPicked();
     this.#status.update({ picked, dirty, countable: this.#countApplies && picked });
   }
@@ -1054,10 +1042,8 @@ class FacetsModal {
     this.#tokenField.value = phrase;
     this.#setTextMode(true);
     this.#tokenField.focus();
-    // A count refresh armed just before entering token mode (e.g. during the
-    // #computePhrase() await above) must not land afterwards; the count's own
-    // guards check text mode too, this is belt-and-suspenders. Withdrawing the
-    // count also resets a skeleton a request in flight may have left behind.
+    // A refresh armed during the await above must not land in text mode, and
+    // withdrawing the count also clears a skeleton a request left in flight.
     this.#liveCount.cancel();
     this.#status.setCount(null);
     this.#refreshActiveIndicators();
@@ -1147,9 +1133,8 @@ class FacetsModal {
     window.clearTimeout(this.#syncTimer);
   }
 
-  // Freetext and the scope live outside the panels, so #populatePanels leaves
-  // them untouched; keep them in step with a freshly hydrated config so exiting
-  // token view reveals a correct form.
+  // Freetext and the scope live outside the panels #populatePanels rebuilds,
+  // so they are brought in step here for leaving token view to show a correct form.
   #syncHeaderControlsFromConfig() {
     this.#searchField.setFreetext(this.#configuration.freetext ?? '');
     this.#scope?.hydrate(this.#configuration);

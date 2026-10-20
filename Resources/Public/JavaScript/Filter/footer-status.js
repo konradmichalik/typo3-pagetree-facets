@@ -7,20 +7,11 @@ import Hotkeys from '@typo3/backend/hotkeys.js';
 import { appendRichText, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
- * The one status element in the modal footer. It holds the live count and
- * whether the selection is applied, as one line: `14 matching pages · not
- * applied to the tree yet`. While counting a placeholder bar stands in for the
- * number and the rest of the line stays, so nothing moves. While nothing is
- * picked it shows the shortcut tip instead.
- *
- * A pending selection with nothing picked (the last chip was removed while the
- * tree is still filtered) keeps the pending notice over the tip: that is the
- * state the notice exists for.
- *
- * The live region is a span inside the element, holding the count and the
- * pending text; the tip sits beside it so its return is not announced. The
- * parts are toggled, never rebuilt, so the last settled count survives a
- * failed refresh.
+ * The one status line in the modal footer: the live count and whether the
+ * selection is applied, or the shortcut tip while nothing is picked. The count
+ * and the pending text sit in a live region, the tip beside it so its return is
+ * not announced. Parts are toggled, never rebuilt, so the last settled count
+ * survives a failed refresh.
  */
 
 export class FooterStatus {
@@ -65,8 +56,7 @@ export class FooterStatus {
 
   /**
    * @param {{picked: boolean, dirty: boolean, countable: boolean}} state - `countable`
-   *   is whether a count applies at all: the setting is on, the form is the
-   *   source of truth and something is picked
+   *   is whether a count applies at all (setting on, form view, something picked)
    */
   update({ picked, dirty, countable }) {
     this.#state = { ...this.#state, picked, dirty, countable };
@@ -91,6 +81,8 @@ export class FooterStatus {
 
   #render() {
     const { picked, dirty, countable, count, loading } = this.#state;
+    // A pending selection outranks the tip: the last chip removed while the
+    // tree is still filtered is the state the notice exists for.
     const showTip = !picked && !dirty;
     const showCount = countable && (loading || null !== count);
     const none = showCount && !loading && 0 === count;

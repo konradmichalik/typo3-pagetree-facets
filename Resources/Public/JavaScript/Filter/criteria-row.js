@@ -9,18 +9,14 @@ import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js
 
 /**
  * The toolbar between the modal header and the body: the search field with its
- * Text switch, and the criteria row that lists what is picked.
- *
- * The modal owns the state these controls show (which criteria exist, whether
- * anything is savable, whether text mode is on) and calls back into the handles
- * returned here. Nothing in this module reads the form.
+ * Text switch, and the criteria row that lists what is picked. The modal owns
+ * the state shown here and drives the returned handles; nothing here reads the form.
  */
 
 /**
- * The row under the search field: the scope chip first, one chip per picked
- * value, then `Clear all` and the actions menu. With no chip it shows a fixed
- * empty state instead; the actions follow whether anything is savable, which a
- * scope alone already is.
+ * The row under the search field: the scope chip, one chip per picked value,
+ * `Clear all` and the actions menu, or a fixed empty state without chips. The
+ * actions follow whether anything is savable, which a scope alone already is.
  *
  * @param {{scope: HTMLElement|null, onClearAll: () => void, onSaveFavorite: (label: string) => void,
  *   onCopyLink: () => void, focusFallback: () => void}} options - `focusFallback` takes

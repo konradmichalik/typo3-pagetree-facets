@@ -7,16 +7,9 @@ import { decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
- * The scope chip `In: Whole tree` and its list: the whole tree, the page open
- * right now, and one entry per site when there is more than one. A button with
- * a dashed border rather than a removable chip, because a scope is never a
- * criterion that could be taken away.
- *
- * The list is single-select, but the state keeps `site` and `pageScope` apart:
- * a hydrated phrase may carry both, and neither is dropped until the user picks
- * another entry. The page scope is always the page open now (see the modal's
- * #collectFormState for why re-picking "below" means "here").
- *
+ * The scope chip `In: Whole tree` and its list: the whole tree, the open page,
+ * and each site when there is more than one. A dashed button rather than a
+ * removable chip, because a scope is never a criterion that could be taken away.
  * Listbox pattern (WAI-ARIA APG): the list takes focus, aria-activedescendant
  * marks the entry the arrows moved to, Enter or Space picks it.
  */
@@ -40,6 +33,8 @@ class ScopeMenu {
   #entries;
   #currentPage;
   #onChange;
+  // Kept apart although the list is single-select: a hydrated phrase may carry
+  // both, and neither is dropped until the user picks another entry.
   #site = '';
   #below = false;
   #active = 0;

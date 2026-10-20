@@ -5,13 +5,9 @@
  */
 
 /**
- * The live match count: one debounced request per settled change, a
- * placeholder bar for a request slow enough to be noticed, and sequence
- * guards so a response landing out of order never reaches the footer.
- *
- * The modal decides when a count applies at all (the setting, text mode,
- * whether anything is picked) through the callbacks; this class only owns the
- * timing and writes into the footer status.
+ * The live match count: one debounced request per settled change, a placeholder
+ * bar for a slow request, and a sequence guard against out-of-order responses.
+ * Whether a count applies at all is the modal's call, made through the callbacks.
  */
 
 /** A network round trip needs a longer window than a local DOM re-render. */
@@ -34,8 +30,7 @@ export class LiveCount {
   /**
    * @param {{status: import('./footer-status.js').FooterStatus, request: () => Promise<number|null>,
    *   isActive: () => boolean, hasFilter: () => boolean}} deps - `isActive` is whether a
-   *   count applies right now (setting on, form is the source of truth), `hasFilter`
-   *   whether anything is picked
+   *   count applies right now, `hasFilter` whether anything is picked
    */
   constructor({ status, request, isActive, hasFilter }) {
     this.#status = status;
@@ -48,17 +43,15 @@ export class LiveCount {
    * Arms a debounced refresh after a change.
    *
    * @param {boolean} showLoadingImmediately - false where nothing the count
-   *   depends on changed (the initial open, a label resolving late): the
-   *   skeleton would flash for no reason before the real refresh replaces it
+   *   depends on changed, so the skeleton does not flash before the refresh
    */
   schedule(showLoadingImmediately = true) {
     if (!this.#isActive()) {
       return;
     }
     if (!this.#hasFilter()) {
-      // Nothing active - the endpoint would resolve this to null anyway (see
-      // FilterResolutionService), so skip the round trip. Also supersedes a
-      // request still in flight from a criterion that was just cleared.
+      // The endpoint would answer null anyway (FilterResolutionService), and a
+      // request in flight for the just-cleared criterion is superseded.
       this.cancel();
       this.#status.setCount(null);
       return;
@@ -87,8 +80,7 @@ export class LiveCount {
 
   async #refresh() {
     const seq = ++this.#seq;
-    // seq was just incremented, so whatever this clears belongs to an older
-    // call. The clears further down come after an await and need the seq check.
+    // Before the await, so what this clears is always an older call's timer.
     clearTimeout(this.#loadingTimer);
     this.#loadingTimer = window.setTimeout(() => this.#showLoading(), LOADING_DELAY_MS);
     let count;
