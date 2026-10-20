@@ -124,7 +124,7 @@ class FacetsModal {
     this.#liveCount = new LiveCount({
       status: this.#status,
       request: () => this.#requestCount(),
-      isActive: () => this.#countEnabled && !this.#tokenMode,
+      isActive: () => this.#countApplies,
       hasFilter: () => this.#hasSavableFilter(),
     });
     // Token view belongs to the modal instance, not to the singleton: the field
@@ -212,7 +212,7 @@ class FacetsModal {
       this.#applyButton = this.#modal.querySelector('button[name="pagetree-facets-apply"]');
       this.#baselineState = JSON.stringify(this.#collectFormState());
       this.#refreshApplyState();
-      if (this.#countEnabled && this.#hasSavableFilter()) {
+      if (this.#countApplies && this.#hasSavableFilter()) {
         // Populate immediately - no debounce for the very first value. A
         // criterion-less baseline needs nothing: #refreshActiveIndicators()
         // above already took the "nothing active" branch for it.
@@ -688,6 +688,12 @@ class FacetsModal {
 
   // Is anything picked at all? In token view the phrase can hold tokens the
   // form cannot mirror, so the typed field decides there.
+  // The one rule for whether a count applies: the setting is on and the form,
+  // not the typed phrase, is what would be counted.
+  get #countApplies() {
+    return this.#countEnabled && !this.#tokenMode;
+  }
+
   #isPicked() {
     return this.#tokenMode
       ? '' !== this.#tokenField.value.trim()
@@ -967,7 +973,7 @@ class FacetsModal {
     // selected: removing the last chip empties the selection while the tree is
     // still filtered, and that case needs the notice most of all.
     const picked = this.#isPicked();
-    this.#status.update({ picked, dirty, countable: this.#countEnabled && !this.#tokenMode && picked });
+    this.#status.update({ picked, dirty, countable: this.#countApplies && picked });
   }
 
   // Closing with a selection that was never applied. Three options rather than a
