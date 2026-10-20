@@ -117,10 +117,12 @@ function buildActionsMenu({ onSaveFavorite, onCopyLink }) {
 
   const button = document.createElement('button');
   button.type = 'button';
+  button.id = uniqueId('pagetree-facets__more');
   button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__more';
-  button.setAttribute('aria-label', lang('pagetreeFacets.modal.moreActions', 'More actions: save as favorite, copy link'));
+  button.setAttribute('aria-label', lang('pagetreeFacets.modal.moreActions', 'More actions'));
   button.setAttribute('aria-haspopup', 'menu');
   button.setAttribute('aria-controls', panel.id);
+  panel.setAttribute('aria-labelledby', button.id);
   button.append(decorativeIcon('actions-menu-alternative'));
 
   const items = [

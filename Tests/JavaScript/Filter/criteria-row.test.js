@@ -244,13 +244,15 @@ describe('buildCriteriaRow', () => {
     expect(onClearAll).toHaveBeenCalledTimes(1);
   });
 
-  it('names the actions menu after what it holds, being icon-only', () => {
+  it('names the icon-only button and the menu after it', () => {
     const { row } = mount();
 
-    expect(more(row).getAttribute('aria-label')).toBe('More actions: save as favorite, copy link');
+    expect(more(row).getAttribute('aria-label')).toBe('More actions');
     expect(more(row).getAttribute('aria-haspopup')).toBe('menu');
     expect(more(row).getAttribute('aria-expanded')).toBe('false');
     expect(more(row).getAttribute('aria-controls')).toBe(menu(row).id);
+    expect(more(row).id).toMatch(/^pagetree-facets__more-\d+$/);
+    expect(menu(row).getAttribute('aria-labelledby')).toBe(more(row).id);
     expect(more(row).querySelector('typo3-backend-icon').getAttribute('identifier')).toBe('actions-menu-alternative');
     expect(items(row).map((item) => item.textContent.trim())).toEqual(['Save as favorite', 'Copy link to this filter']);
     expect(items(row).map((item) => item.querySelector('typo3-backend-icon').getAttribute('identifier')))

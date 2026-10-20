@@ -30,7 +30,7 @@
 			<trans-unit id="pagetreeFacets.modal.matchCount.one"><source>1 matching page</source><target>1 übereinstimmende Seite</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.matchCount.other"><source>%d matching pages</source><target>%d übereinstimmende Seiten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clearAll"><source>Clear all</source><target>Alles entfernen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.moreActions"><source>More actions: save as favorite, copy link</source><target>Weitere Aktionen: als Favorit speichern, Link kopieren</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.moreActions"><source>More actions</source><target>Weitere Aktionen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.criteria.empty"><source>Nothing picked yet. Choose a category on the left or type a page title above.</source><target>Noch nichts ausgewählt. Wähle links eine Kategorie oder gib oben einen Seitentitel ein.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied"><source>Not applied to the tree yet</source><target>Noch nicht auf den Baum angewendet</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied.suffix"><source>not applied to the tree yet</source><target>noch nicht auf den Baum angewendet</target></trans-unit>

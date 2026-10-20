@@ -84,7 +84,7 @@ Left to right:
 1. The scope chip `In: Whole tree`, a button with a chevron and a dashed border so it does not read as a removable criterion. It opens one list: `Whole tree`, `Below "<page title>" [<uid>]` when a page is open, then one entry per site when there is more than one site. Without an open page and with a single site the chip is not rendered.
 2. One chip per picked value, in the order the criteria appear in the navigation: `<Facet>: <value>` with a × button whose accessible name is `Remove <Facet>: <value>`. The freetext is a chip too: `Title: <text>`.
 3. `Clear all`, a text button. It replaces the former footer button Reset.
-4. The actions menu `⋯` (`aria-label="More actions: save as favorite, copy link"`) with `Save as favorite` and `Copy link to this filter`. The glyph is core's `actions-menu-alternative` (three dots, stacked), since the registry has no horizontal one. `Save as favorite` opens the name form inline under the row.
+4. The actions menu `⋯` (`aria-label="More actions"`, the `role="menu"` panel is labelled by it) with `Save as favorite` and `Copy link to this filter`. The glyph is core's `actions-menu-alternative` (three dots, stacked), since the registry has no horizontal one. `Save as favorite` opens the name form inline under the row.
 
 Rules for the row:
 
