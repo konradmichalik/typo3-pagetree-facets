@@ -66,8 +66,7 @@ function renderChoiceField(tab, field, state) {
   const optionsWrap = document.createElement('div');
   optionsWrap.className = 'pagetree-facets__options';
   if (isRadio) {
-    // The way back from a preset: its value is empty, so it is never a criterion
-    // and never a chip (the modal's collectors skip it).
+    // The way back from a preset. Its empty value keeps it out of every criterion.
     optionsWrap.append(renderChoiceOption(tab, field, { value: '', label: anyTimeLabel() }, state, isRadio));
   }
   for (const option of field.options ?? []) {
@@ -88,13 +87,8 @@ function isChosen(option, state) {
   return Array.isArray(state) ? state.includes(option.value) : state === option.value;
 }
 
-/**
- * Empties one checkbox or radio. A radio falls back to its group's neutral option
- * (checking it unchecks the rest), otherwise a cleared preset group would show no
- * radio selected at all. No event is dispatched: the callers refresh the modal.
- *
- * @param {HTMLInputElement} input
- */
+// A cleared radio falls back to its group's neutral option, else no radio shows as
+// selected. No event is dispatched, the callers refresh the modal.
 export function clearChoice(input) {
   if ('radio' === input.type) {
     const neutral = input.closest('fieldset')?.querySelector('input[type="radio"][value=""]');
@@ -108,9 +102,8 @@ export function clearChoice(input) {
 }
 
 function renderChoiceOption(tab, field, option, state, isRadio) {
-  // Plain checkboxes, not core's form-switch: a switch promises an immediate
-  // effect, and nothing here takes effect before Apply. gap-2 matches the
-  // cross-tab search rows.
+  // Plain checkboxes, not form-switch: a switch promises an immediate effect, and
+  // nothing here applies before Apply.
   const label = document.createElement('label');
   label.className = 'form-check d-flex align-items-center gap-2';
 
