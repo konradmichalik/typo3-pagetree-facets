@@ -101,6 +101,25 @@ export function clearChoice(input) {
   input.checked = false;
 }
 
+/**
+ * Empties any named control, whatever its type. No event is dispatched, the
+ * callers refresh the modal.
+ *
+ * @param {HTMLInputElement|HTMLSelectElement} input
+ */
+export function clearControl(input) {
+  if ('SELECT' === input.tagName) {
+    Array.from(input.options).forEach((option) => { option.selected = false; });
+  } else if ('checkbox' === input.type || 'radio' === input.type) {
+    clearChoice(input);
+  } else {
+    input.value = '';
+    // Picker controls keep the wire value out of band (see Filter/user-picker.js).
+    delete input.dataset.value;
+    delete input.dataset.label;
+  }
+}
+
 function renderChoiceOption(tab, field, option, state, isRadio) {
   // Plain checkboxes, not form-switch: a switch promises an immediate effect, and
   // nothing here applies before Apply.

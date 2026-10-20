@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearControl, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 
 const tab = (state) => ({ identifier: 'state', state });
 const deps = () => ({ getRoot: () => document.body, onLabelResolved: vi.fn() });
@@ -192,6 +192,41 @@ describe('text fields', () => {
 
     expect(group.querySelector('input').placeholder).toBe('e.g. news');
     expect(group.querySelector('legend').textContent).toBe('Query');
+  });
+});
+
+describe('clearControl', () => {
+  it('deselects every option of a select', () => {
+    const select = render({ name: 'table', type: 'select', options: [{ value: 'a', label: 'A' }] }, { table: ['a'] }).querySelector('select');
+
+    clearControl(select);
+
+    expect(select.selectedOptions).toHaveLength(0);
+  });
+
+  it('unchecks a radio that has no neutral option to fall back to', () => {
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.checked = true;
+
+    clearControl(input);
+
+    expect(input.checked).toBe(false);
+  });
+
+  it('drops the wire value of a picker along with its text', () => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = 'Editor';
+    input.dataset.picker = '';
+    input.dataset.value = '5';
+    input.dataset.label = 'Editor';
+
+    clearControl(input);
+
+    expect(input.value).toBe('');
+    expect(input.dataset.value).toBeUndefined();
+    expect(input.dataset.label).toBeUndefined();
   });
 });
 

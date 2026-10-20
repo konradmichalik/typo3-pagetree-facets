@@ -9,12 +9,13 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearChoice, clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
@@ -532,12 +533,8 @@ class FacetsModal {
   }
 
   #renderPanel(tab) {
-    const panel = document.createElement('div');
-    panel.className = 'pagetree-facets__panel';
-    panel.dataset.panel = tab.identifier;
-    panel.hidden = tab.identifier !== this.#activeTab;
-    for (const field of tab.configuration.fields ?? []) {
-      panel.append(renderField(tab, field, {
+    const panel = buildPanel(tab, {
+      fieldDeps: {
         // #root is read lazily: it is only assigned once #render() finished, which
         // is after every field has been built.
         getRoot: () => this.#root,
@@ -545,8 +542,12 @@ class FacetsModal {
         // re-renders a chip's text, not a value - the count is unaffected, so
         // its own immediate refresh must not flash a skeleton over it.
         onLabelResolved: () => this.#refreshActiveIndicators(false),
-      }));
-    }
+      },
+      // Select none changes controls without firing events, like a chip removal.
+      onChange: () => this.#refreshActiveIndicators(),
+    });
+    panel.hidden = tab.identifier !== this.#activeTab;
+
     return panel;
   }
 
@@ -588,17 +589,12 @@ class FacetsModal {
     panel.hidden = this.#favoritesTabId !== this.#activeTab;
     this.#favoritesList = document.createElement('div');
     this.#favoritesList.className = 'pagetree-facets__favorites-list';
-    // The same fieldset/legend shape every other panel gets from renderField(),
-    // so this one starts on the same line and in the same rhythm instead of
-    // opening straight into rows. The heading repeats the tab label exactly as
-    // the single-field tabs do (Page type, Page state, SEO).
-    const group = document.createElement('fieldset');
-    group.className = 'form-group';
-    const legend = document.createElement('legend');
-    legend.className = 'form-label';
-    legend.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
-    group.append(legend, this.#favoritesList);
-    panel.append(group);
+    // The same heading every facet panel gets, so this one starts on the same
+    // line and in the same rhythm. No Select none: favorites are not criteria.
+    panel.append(
+      buildPanelHeading({ label: TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites' }),
+      this.#favoritesList,
+    );
     this.#renderFavoriteChips();
     return panel;
   }
@@ -831,22 +827,14 @@ class FacetsModal {
       }
       this.#setNavCount(item, counts.get(item.dataset.tab) ?? 0);
     });
+    // The headings (Select none, the selection count) read the same controls.
+    this.#modal.querySelectorAll('.pagetree-facets__panel:not(.pagetree-facets__panel--favorites)').forEach(refreshPanel);
   }
 
   // Clear all: every criterion in place, freetext and scope included. Stays in
   // the modal, Apply still has to confirm.
   #resetAll() {
-    this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach((input) => {
-      if (input.tagName === 'SELECT') {
-        Array.from(input.options).forEach((option) => { option.selected = false; });
-      } else if (input.type === 'checkbox' || input.type === 'radio') {
-        clearChoice(input);
-      } else {
-        input.value = '';
-        delete input.dataset.value;
-        delete input.dataset.label;
-      }
-    });
+    this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach(clearControl);
     this.#searchField.setFreetext('');
     this.#scope?.reset();
     // Clear all clears everything, so the token field (the other editable view)

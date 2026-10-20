@@ -838,6 +838,54 @@
     overflow-y: auto;
 }
 
+/* The facet name, what it matches, and Select none at the end of the line. */
+.pagetree-facets__panel-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pagetree-facets__panel-heading-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pagetree-facets__panel-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__panel-description {
+    margin: 0.125rem 0 0;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
+}
+
+.pagetree-facets__panel-description[hidden],
+.pagetree-facets__panel-count[hidden] {
+    display: none;
+}
+
+.pagetree-facets__panel-count {
+    color: var(--typo3-text-color-base);
+    font-weight: 600;
+}
+
+/* A text button like Clear all; the auto margin keeps it at the end. */
+.pagetree-facets__select-none {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    padding: 0 0.25rem;
+    white-space: nowrap;
+}
+
+.pagetree-facets__select-none[hidden] {
+    display: none;
+}
+
 .pagetree-facets__panel fieldset {
     margin: 0;
     padding: 0;

@@ -134,7 +134,8 @@ describe('opening', () => {
     const { modal } = await openModal({ configuration });
 
     expect(navItem(modal, 'example').disabled).toBe(true);
-    expect(panel(modal, 'example').children).toHaveLength(0);
+    // The heading is always there, the fields are not.
+    expect(panel(modal, 'example').querySelector('.pagetree-facets__panel-fields').children).toHaveLength(0);
   });
 
   it('treats a choice field without an options list as optionless, not as a crash', async () => {
