@@ -11,8 +11,10 @@ import {
   openModal,
   openedModals,
   panel,
+  pickScope,
   resetButton,
   resetHarness,
+  scopeValue,
   type,
 } from './Support/modal-harness.js';
 
@@ -63,15 +65,31 @@ describe('the Apply button', () => {
     const { modal, onApply } = await openModal();
     dirty(modal);
     type(modal.querySelector('[data-role="freetext"]'), 'contact');
-    modal.querySelector('[data-role="site-scope"]').value = 'other';
-    modal.querySelector('[data-role="page-scope"]').checked = true;
+    pickScope(modal, 'other');
 
     applyButton(modal).click();
 
-    // pageScope is the page open right now (5), never whatever a hydrated
-    // under: token pointed at.
-    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden site:other under:5 contact']]);
+    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden site:other contact']]);
     expect(document.body.contains(modal)).toBe(false);
+  });
+
+  it('scopes to the page open right now, never to the page a hydrated under: token pointed at', async () => {
+    const { modal, onApply } = await openModal({ configuration: configurationFixture({ pageScope: 7 }) });
+    expect(applyButton(modal).disabled).toBe(true);
+
+    dirty(modal);
+    applyButton(modal).click();
+
+    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden under:5']]);
+  });
+
+  it('enables Apply when the scope alone changes', async () => {
+    const { modal } = await openModal();
+
+    pickScope(modal, 'Below "Home" [5]');
+
+    expect(applyButton(modal).disabled).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__pending').hidden).toBe(false);
   });
 });
 
@@ -268,8 +286,7 @@ describe('Reset', () => {
     expect(control(modal, 'state[is]', 'hidden').checked).toBe(false);
     expect(control(modal, 'activity[changed]').value).toBe('');
     expect(modal.querySelector('[data-role="freetext"]').value).toBe('');
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('');
-    expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(false);
+    expect(scopeValue(modal)).toBe('Whole tree');
     expect(modal.querySelector('.pagetree-facets__hint').hidden).toBe(false);
     expect(document.body.contains(modal)).toBe(true);
   });
@@ -287,9 +304,9 @@ describe('Reset', () => {
     expect(chipLabels(modal)).toEqual([]);
   });
 
-  it('tolerates having no site scope or page scope control to clear', async () => {
-    // Neither control is rendered without a page open and more than one site
-    // (see "the scope controls") - Reset must not assume they exist.
+  it('tolerates having no scope chip to clear', async () => {
+    // The chip is not rendered without a page open and more than one site (see
+    // "the scope chip") - Reset must not assume it exists.
     const { modal } = await openModal({
       pageId: null,
       configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),

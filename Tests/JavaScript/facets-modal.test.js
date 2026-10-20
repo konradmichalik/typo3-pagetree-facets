@@ -14,6 +14,9 @@ import {
   openedModals,
   panel,
   resetHarness,
+  scopeChip,
+  scopeOptions,
+  scopeValue,
   textSwitch,
   type,
 } from './Support/modal-harness.js';
@@ -166,7 +169,7 @@ describe('opening', () => {
   it('renders without a sites list at all, same as an empty one', async () => {
     const { modal } = await openModal({ configuration: configurationFixture({ sites: undefined }) });
 
-    expect(modal.querySelector('[data-role="site-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'Below "Home" [5]']);
   });
 
   it('starts the freetext field empty when the configuration carries none', async () => {
@@ -237,35 +240,50 @@ describe('opening', () => {
   });
 });
 
-describe('the scope controls', () => {
-  it('offers the site dropdown only when there is more than one site', async () => {
+describe('the scope chip', () => {
+  it('lists the sites only when there is more than one', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
     });
 
-    expect(modal.querySelector('[data-role="site-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'Below "Home" [5]']);
   });
 
-  it('preselects the site the phrase already scopes to', async () => {
+  it('reads the site the phrase already scopes to', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ activeSite: 'other' }),
     });
 
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('other');
+    expect(scopeValue(modal)).toBe('other');
   });
 
-  it('omits the page scope where there is no page to scope to', async () => {
+  it('offers no page entry where there is no page to scope to', async () => {
     const { modal } = await openModal({ pageId: null });
 
-    expect(modal.querySelector('[data-role="page-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'main', 'other']);
   });
 
-  it('checks the page scope when the phrase carries an under: token', async () => {
+  it('is not rendered at all without a page and with a single site', async () => {
+    const { modal } = await openModal({
+      pageId: null,
+      configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
+    });
+
+    expect(scopeChip(modal)).toBeNull();
+  });
+
+  it('reads the open page when the phrase carries an under: token', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ pageScope: 5 }),
     });
 
-    expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(true);
+    expect(scopeValue(modal)).toBe('Below "Home" [5]');
+  });
+
+  it('leads the criteria row, ahead of the chips', async () => {
+    const { modal } = await openModal();
+
+    expect(modal.querySelector('.pagetree-facets__active').firstElementChild.className).toBe('pagetree-facets__scope');
   });
 
   it('builds the Text switch into the search field, with the help toggle outside it', async () => {

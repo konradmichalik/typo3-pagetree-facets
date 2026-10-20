@@ -8,6 +8,7 @@ import {
   openModal,
   requests,
   resetHarness,
+  scopeValue,
   textSwitch,
   type,
 } from './Support/modal-harness.js';
@@ -52,7 +53,8 @@ describe('entering token view', () => {
     expect(field.value).toBe('is:hidden');
     expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('true');
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(true);
-    expect(modal.querySelector('.pagetree-facets__site').hidden).toBe(true);
+    // The phrase carries the scope itself, so the chip leaves with the freetext.
+    expect(modal.querySelector('.pagetree-facets__scope').hidden).toBe(true);
   });
 
   it('leaves Apply disabled while the phrase still matches the tree', async () => {
@@ -93,7 +95,7 @@ describe('typing a phrase', () => {
     expect(chipLabels(modal)).toEqual(['Page state: Empty']);
   });
 
-  it('tolerates having no site scope or page scope control to re-hydrate', async () => {
+  it('tolerates having no scope chip to re-hydrate', async () => {
     const singleSite = (phrase) => hydratingFixture(phrase, configurationFixture({ sites: [{ identifier: 'main' }] }));
     const { modal } = await openModal({ pageId: null, configuration: singleSite });
     const field = await enterTokenMode(modal);
@@ -103,7 +105,7 @@ describe('typing a phrase', () => {
     await expect.poll(() => control(modal, 'state[is]', 'empty').checked).toBe(true);
   });
 
-  it('clears the site dropdown when the re-hydrated configuration carries no activeSite at all', async () => {
+  it('resets the scope chip when the re-hydrated configuration carries no activeSite at all', async () => {
     const { modal } = await openModal({
       phrase: 'site:main',
       configuration: (phrase) => hydratingFixture(
@@ -112,11 +114,11 @@ describe('typing a phrase', () => {
       ),
     });
     const field = await enterTokenMode(modal);
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('main');
+    expect(scopeValue(modal)).toBe('main');
 
     type(field, 'is:hidden');
 
-    await expect.poll(() => modal.querySelector('[data-role="site-scope"]').value).toBe('');
+    await expect.poll(() => scopeValue(modal)).toBe('Whole tree');
   });
 
   it('clears freetext when the re-hydrated configuration carries none at all', async () => {
@@ -254,6 +256,7 @@ describe('leaving token view', () => {
 
     expect(field.hidden).toBe(true);
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__scope').hidden).toBe(false);
     expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('false');
     expect(applyButton(modal).disabled).toBe(true);
   });

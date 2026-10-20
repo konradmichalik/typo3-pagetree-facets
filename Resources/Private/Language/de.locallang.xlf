@@ -9,10 +9,14 @@
 			<trans-unit id="pagetreeFacets.modal.anyTime"><source>Any time</source><target>Beliebig</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.cancel"><source>Cancel</source><target>Abbrechen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source><target>Schließen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source><target>Alle Websites</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source><target>Seitentitel oder UID</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.textMode"><source>Text</source><target>Text</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeCriterion"><source>Remove %s</source><target>%s entfernen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.scope"><source>In</source><target>In</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.scope.description"><source>Where to look for pages</source><target>Wo nach Seiten gesucht wird</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.scope.wholeTree"><source>Whole tree</source><target>Ganzer Baum</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.scope.below"><source>Below "%s" [%d]</source><target>Unterhalb von „%s“ [%d]</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.scope.belowPage"><source>Below page [%d]</source><target>Unterhalb von Seite [%d]</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.favorites"><source>Favorites</source><target>Favoriten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeFavorite"><source>Remove favorite</source><target>Favorit entfernen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.saveFavorite"><source>Save current filter</source><target>Aktuellen Filter speichern</target></trans-unit>
@@ -63,8 +67,6 @@
 			<trans-unit id="pagetreeFacets.modal.linkCopied.message"><source>The filter link was copied to your clipboard.</source><target>Der Filter-Link wurde in deine Zwischenablage kopiert.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.linkCopyFailed.title"><source>Copy failed</source><target>Kopieren fehlgeschlagen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.linkCopyFailed.message"><source>Could not copy the link to your clipboard.</source><target>Der Link konnte nicht in deine Zwischenablage kopiert werden.</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pageScope"><source>Search from current page down</source><target>Ab aktueller Seite abwärts suchen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pageScope.description"><source>Only includes the page you currently have open and its subpages.</source><target>Schließt nur die aktuell geöffnete Seite und deren Unterseiten ein.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.copyLink.description"><source>Copies a link to this view with the current filter attached.</source><target>Kopiert einen Link zu dieser Ansicht mit dem aktuellen Filter im Anhang.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset.description"><source>Removes every criterion here. The page tree keeps its current filter until you apply.</source><target>Entfernt alle Kriterien an dieser Stelle. Der Seitenbaum behält seinen aktuellen Filter, bis du die Änderungen anwendest.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.saveFavorite.description"><source>Saves the current filter under a name so you can reuse it later.</source><target>Speichert den aktuellen Filter unter einem Namen, damit du ihn später wiederverwenden kannst.</target></trans-unit>

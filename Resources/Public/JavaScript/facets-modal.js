@@ -13,6 +13,7 @@ import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
@@ -54,7 +55,9 @@ class FacetsModal {
   // The search field handle (see Filter/criteria-row.js): the page-title input,
   // the token field and the Text switch that swaps the two.
   #searchField = null;
-  #searchControls = null;
+  // The scope chip (see Filter/scope-menu.js), null when there is nothing to
+  // choose: no page open and a single site.
+  #scope = null;
   #panels = null;
   #currentPhrase = '';
   #reflectSeq = 0;
@@ -62,7 +65,8 @@ class FacetsModal {
   #syncTimer = null;
   #resultsPanel = null;
   #root = null;
-  #currentPageId = null;
+  // The page open in the backend right now, null in a module without one.
+  #currentPage = null;
   #favoritesList = null;
   // Client-side pseudo-tab: favorites are not a filter criterion (no token
   // keys), so they never come from the server tab list - the modal owns this
@@ -92,23 +96,30 @@ class FacetsModal {
   // flight, and would build a second modal.
   #opened = false;
 
-  async open(currentPhrase, currentPageId, onApply) {
+  /**
+   * @param {string} currentPhrase - the phrase the tree is filtered by
+   * @param {number|null} currentPageId - the page open right now, if any
+   * @param {(phrase: string) => void} onApply
+   * @param {string} currentPageTitle - its title as the tree shows it; the scope
+   *   list names the page by it
+   */
+  async open(currentPhrase, currentPageId, onApply, currentPageTitle = '') {
     if (this.#opened) {
       return;
     }
     this.#opened = true;
 
     try {
-      await this.#build(currentPhrase, currentPageId, onApply);
+      await this.#build(currentPhrase, currentPageId, onApply, currentPageTitle);
     } catch (error) {
       this.#opened = false;
       throw error;
     }
   }
 
-  async #build(currentPhrase, currentPageId, onApply) {
+  async #build(currentPhrase, currentPageId, onApply, currentPageTitle) {
     this.#onApply = onApply;
-    this.#currentPageId = currentPageId;
+    this.#currentPage = currentPageId ? { uid: currentPageId, title: currentPageTitle ?? '' } : null;
     this.#currentPhrase = currentPhrase ?? '';
     // This class is exported as a singleton, so every field outlives the modal
     // it belonged to. The baseline is re-established on 'shown' below; until
@@ -278,6 +289,7 @@ class FacetsModal {
     clearTimeout(this.#countLoadingTimer);
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();
+    this.#scope?.close();
   }
 
   #render() {
@@ -328,35 +340,20 @@ class FacetsModal {
       this.#cancelTokenTimers();
       this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
     });
-    // The optional site scope leaves the screen with the freetext in text mode.
-    this.#searchControls = [];
     search.append(this.#searchField.element);
-    if ((this.#configuration.sites ?? []).length > 1) {
-      const siteRow = this.#renderSiteScope();
-      search.append(siteRow);
-      this.#searchControls.push(siteRow);
-    }
     // Help stays on its own: it explains the dialog rather than switching how
     // the filter is edited, so grouping it with the toggle would suggest a
     // kinship the two do not have.
-    const help = renderHelp({ hasPageScope: Boolean(this.#currentPageId) });
+    const help = renderHelp({ hasPageScope: null !== this.#currentPage });
     search.append(renderHelpToggle(help));
     header.append(search, help);
 
-    // Utility row: the page scope on the left, the live match count centered,
-    // the filter-wide actions on the right - a three-column grid (see the CSS)
-    // so the count stays centered regardless of whether the page-scope checkbox
-    // is present. They share a row so the active-filter area below spends its
-    // height on chips only, instead of a full row on two links.
+    // Utility row: the live match count centered, the filter-wide actions on
+    // the right - a three-column grid (see the CSS) so the count stays centered.
+    // They share a row so the active-filter area below spends its height on
+    // chips only, instead of a full row on two links.
     this.#utility = document.createElement('div');
     this.#utility.className = 'pagetree-facets__utility';
-
-    // No page open (e.g. a module without a page context) -> nothing to
-    // scope to, so the control would be permanently unusable; skip it
-    // entirely rather than show a checkbox that can never be checked.
-    if (this.#currentPageId) {
-      this.#utility.append(this.#renderPageScope());
-    }
 
     // Built here (not in the typo3-modal-shown listener, unlike before) since
     // it now lives in markup this class owns outright - no need to wait for
@@ -409,6 +406,18 @@ class FacetsModal {
 
     this.#hint = renderHint();
 
+    // The scope is picked, not a criterion, so a change here refreshes the
+    // indicators directly instead of going through a control's change event.
+    this.#scope = buildScopeMenu({
+      sites: this.#configuration.sites,
+      activeSite: this.#configuration.activeSite,
+      pageScope: this.#configuration.pageScope,
+      currentPage: this.#currentPage,
+      onChange: () => this.#refreshActiveIndicators(),
+    });
+    if (this.#scope) {
+      this.#active.append(this.#scope.element);
+    }
     this.#active.append(this.#hint, this.#chips);
 
     header.append(this.#active);
@@ -613,49 +622,6 @@ class FacetsModal {
   // the rebuilt field of a reopened modal is always the one in use.
   get #tokenField() {
     return this.#searchField.tokenField;
-  }
-
-  #renderSiteScope() {
-    const row = document.createElement('div');
-    row.className = 'form-group pagetree-facets__site';
-    const select = document.createElement('select');
-    select.className = 'form-select';
-    select.dataset.role = 'site-scope';
-    select.setAttribute('aria-label', TYPO3.lang?.['pagetreeFacets.modal.allSites'] ?? 'All sites');
-    select.append(new Option(TYPO3.lang?.['pagetreeFacets.modal.allSites'] ?? 'All sites', ''));
-    for (const site of this.#configuration.sites) {
-      const option = new Option(site.identifier, site.identifier, false, site.identifier === this.#configuration.activeSite);
-      select.append(option);
-    }
-    row.append(select);
-    return row;
-  }
-
-  // "under:<uid>" scope - a quick toggle, not a picker: there is only ever
-  // one meaningful value ("the page I have open right now"), unlike the site
-  // dropdown's several named options. Re-checking it always captures
-  // #currentPageId fresh at Apply time (see #computePhrase) rather than
-  // preserving whatever page a previously-hydrated token pointed at.
-  #renderPageScope() {
-    const wrap = document.createElement('div');
-    wrap.className = 'form-check pagetree-facets__page-scope';
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input';
-    checkbox.id = 'pagetree-facets__page-scope';
-    checkbox.dataset.role = 'page-scope';
-    checkbox.checked = null !== this.#configuration.pageScope;
-
-    const label = document.createElement('label');
-    label.className = 'form-check-label';
-    label.setAttribute('for', checkbox.id);
-    label.textContent = TYPO3.lang?.['pagetreeFacets.modal.pageScope'] ?? 'Search from current page down';
-    label.title = TYPO3.lang?.['pagetreeFacets.modal.pageScope.description']
-      ?? 'Only includes the page you currently have open and its subpages.';
-
-    wrap.append(checkbox, label);
-    return wrap;
   }
 
   #renderPanel(tab) {
@@ -1105,14 +1071,7 @@ class FacetsModal {
       }
     });
     this.#searchField.setFreetext('');
-    const site = this.#modal.querySelector('[data-role="site-scope"]');
-    if (site) {
-      site.value = '';
-    }
-    const pageScope = this.#modal.querySelector('[data-role="page-scope"]');
-    if (pageScope) {
-      pageScope.checked = false;
-    }
+    this.#scope?.reset();
     // Reset clears everything, so the token field (the other editable view) has
     // to go empty too - otherwise it would re-seed the just-cleared form.
     if (this.#tokenMode) {
@@ -1356,10 +1315,7 @@ class FacetsModal {
     const phrase = await this.#computePhrase();
     this.#tokenMode = true;
     this.#tokenField.value = phrase;
-    this.#searchField.setTextMode(true);
-    for (const control of this.#searchControls) {
-      control.hidden = true;
-    }
+    this.#setTextMode(true);
     this.#tokenField.focus();
     // A count refresh armed just before entering token mode (e.g. during the
     // #computePhrase() await above) must not land afterwards - #refreshCount()'s
@@ -1386,14 +1342,20 @@ class FacetsModal {
   #exitTokenMode() {
     this.#cancelTokenTimers();
     this.#tokenMode = false;
-    this.#searchField.setTextMode(false);
-    for (const control of this.#searchControls) {
-      control.hidden = false;
-    }
+    this.#setTextMode(false);
     // The form already mirrors the last reflected phrase, so there is nothing
     // to sync back - just restore the indicators/Apply state for form editing.
     this.#refreshActiveIndicators();
     this.#refreshApplyState();
+  }
+
+  // The phrase carries the scope itself, so the chip leaves with the freetext.
+  #setTextMode(on) {
+    this.#searchField.setTextMode(on);
+    if (this.#scope) {
+      this.#scope.close();
+      this.#scope.element.hidden = on;
+    }
   }
 
   // Token field -> form: re-hydrate the whole form from the typed phrase so
@@ -1460,19 +1422,12 @@ class FacetsModal {
     window.clearTimeout(this.#syncTimer);
   }
 
-  // Freetext, site scope and page scope live outside the panels, so
-  // #populatePanels leaves them untouched; keep them in step with a freshly
-  // hydrated config so exiting token view reveals a correct form.
+  // Freetext and the scope live outside the panels, so #populatePanels leaves
+  // them untouched; keep them in step with a freshly hydrated config so exiting
+  // token view reveals a correct form.
   #syncHeaderControlsFromConfig() {
     this.#searchField.setFreetext(this.#configuration.freetext ?? '');
-    const site = this.#modal.querySelector('[data-role="site-scope"]');
-    if (site) {
-      site.value = this.#configuration.activeSite ?? '';
-    }
-    const pageScope = this.#modal.querySelector('[data-role="page-scope"]');
-    if (pageScope) {
-      pageScope.checked = null !== this.#configuration.pageScope;
-    }
+    this.#scope?.hydrate(this.#configuration);
   }
 
   // The only path to the tree: everything else in the modal selects, this one
@@ -1538,13 +1493,10 @@ class FacetsModal {
         states[tab.identifier] = state;
       }
     }
-    const site = this.#modal.querySelector('[data-role="site-scope"]')?.value ?? '';
+    // The scope menu answers with the page open right now, not whatever page a
+    // previously-hydrated "under:" token pointed at: picking "below" means "here".
+    const { site, pageScope } = this.#scope?.value ?? { site: '', pageScope: 0 };
     const freetext = this.#searchField.freetext.value;
-    // Always the page open right now, not whatever page a previously-hydrated
-    // "under:" token pointed at - re-checking the box always means "here",
-    // same mental model as ticking it fresh.
-    const pageScopeCheckbox = this.#modal.querySelector('[data-role="page-scope"]');
-    const pageScope = pageScopeCheckbox?.checked ? this.#currentPageId : 0;
 
     return { states, site, pageScope, freetext };
   }

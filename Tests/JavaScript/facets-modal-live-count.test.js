@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  configurationFixture, control, openModal, requests, resetButton, resetHarness, textSwitch, urls,
+  configurationFixture, control, openModal, pickScope, requests, resetButton, resetHarness, textSwitch, urls,
 } from './Support/modal-harness.js';
 
 function enableLivePreviewCount() {
@@ -241,8 +241,7 @@ describe('when the setting is on', () => {
     });
     await expect.poll(() => seenPayloads.length).toBeGreaterThan(0);
 
-    modal.querySelector('[data-role="site-scope"]').value = 'main';
-    modal.querySelector('[data-role="site-scope"]').dispatchEvent(new Event('change', { bubbles: true }));
+    pickScope(modal, 'main');
 
     await expect.poll(() => seenPayloads.at(-1)?.site).toBe('main');
 

@@ -176,6 +176,7 @@ export function resetHarness() {
 export async function openModal({
   phrase = '',
   pageId = 5,
+  pageTitle = 'Home',
   configuration = configurationFixture(),
   favorites = [],
   count = null,
@@ -216,7 +217,7 @@ export async function openModal({
     }
   });
 
-  await FacetsModal.open(phrase, pageId, onApply);
+  await FacetsModal.open(phrase, pageId, onApply, pageTitle);
   const modal = lastModal()?.element ?? null;
   if (show) {
     modal?.show();
@@ -243,6 +244,26 @@ export function footerButton(modal, text) {
 /** The Text switch built into the search field (see Filter/criteria-row.js). */
 export function textSwitch(modal) {
   return modal.querySelector('.pagetree-facets__text-switch');
+}
+
+/** The scope chip `In: …` (see Filter/scope-menu.js), null when there is nothing to choose. */
+export function scopeChip(modal) {
+  return modal.querySelector('.pagetree-facets__scope-chip');
+}
+
+/** What the scope chip currently reads, e.g. `Whole tree`. */
+export function scopeValue(modal) {
+  return scopeChip(modal).querySelector('.pagetree-facets__scope-value').textContent;
+}
+
+export function scopeOptions(modal) {
+  return [...modal.querySelectorAll('.pagetree-facets__scope-option')].map((option) => option.textContent);
+}
+
+/** Opens the scope list and picks the entry with that label. */
+export function pickScope(modal, label) {
+  scopeChip(modal).click();
+  [...modal.querySelectorAll('.pagetree-facets__scope-option')].find((option) => option.textContent === label).click();
 }
 
 export function navItem(modal, identifier) {

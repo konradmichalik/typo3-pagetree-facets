@@ -281,40 +281,116 @@
     margin-top: 0.25rem;
 }
 
-.pagetree-facets__site {
-    flex: 0 0 auto;
-    min-width: 12rem;
-    margin: 0;
-}
-
 .pagetree-facets__filter-search {
     margin: 0 0.75rem 0.75rem;
 }
 
-.pagetree-facets__page-scope {
-    margin: 0;
-    display: flex;
+/* --- Scope chip -------------------------------------------------------- */
+
+.pagetree-facets__scope {
+    position: relative;
+    flex: 0 0 auto;
+    max-width: 300px;
+}
+
+.pagetree-facets__scope[hidden] {
+    display: none;
+}
+
+/* Dashed, so it does not read as a removable criterion. The dash takes the
+   secondary text colour rather than the component border: that one is a faint
+   mix of surface and text and does not reach the 3:1 the rules ask of this
+   border, the text colour does in both schemes. */
+.pagetree-facets__scope-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    /* Undo Bootstrap's .form-check float layout so the gap controls the spacing
-     * between the checkbox and its label instead of a fixed indent. */
-    padding-left: 0;
-    grid-column: 1;
-    justify-self: start;
+    gap: 0.25rem;
+    max-width: 100%;
+    min-height: 26px;
+    padding-inline: 0.6rem 0.4rem;
+    border: 1px dashed var(--typo3-text-color-variant);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    cursor: pointer;
 }
 
-.pagetree-facets__page-scope .form-check-input {
-    float: none;
+.pagetree-facets__scope-chip:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__scope-chip:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
+}
+
+.pagetree-facets__scope-chip typo3-backend-icon {
+    flex: 0 0 auto;
+}
+
+.pagetree-facets__scope-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pagetree-facets__scope-list {
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(100% + 4px);
+    z-index: 1000;
+    min-width: 100%;
+    width: max-content;
+    max-width: 320px;
     margin: 0;
+    padding: 0.25rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 6px;
+    background: var(--typo3-component-bg);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    /* The list holds focus, the active entry below shows the ring. */
+    outline: none;
 }
 
-/* Page scope, the live match count and the filter-wide actions share one row -
-   a 3-column grid, each placed by an explicit grid-column below rather than
-   DOM order, so the centered count does not shift into column 1 when the
-   scope checkbox is absent (no page open). Its min-height is the tallest
-   thing the row can hold - the favorite name form further down - so opening
-   that form swaps the row's contents instead of adding a row and shifting
-   everything under it. */
+.pagetree-facets__scope-list[hidden] {
+    display: none;
+}
+
+.pagetree-facets__scope-option {
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    color: var(--typo3-text-color-base);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.pagetree-facets__scope-option:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__scope-option[aria-selected="true"] {
+    background: var(--pf-tint);
+    font-weight: 500;
+}
+
+/* The keyboard position: a ring, since the hover tint alone is too weak a
+ * marker and vanishes in forced-colors mode. */
+.pagetree-facets__scope-option.is-active {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* The live match count and the filter-wide actions share one row - a 3-column
+   grid, each placed by an explicit grid-column below rather than DOM order, so
+   the centered count stays put. Its min-height is the tallest thing the row
+   can hold - the favorite name form further down - so opening that form swaps
+   the row's contents instead of adding a row and shifting everything under
+   it. */
 .pagetree-facets__utility {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -985,7 +1061,6 @@
     grid-column: 1 / -1;
 }
 
-.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__page-scope,
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__match-count,
 .pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__actions {
     display: none;
