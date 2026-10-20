@@ -71,8 +71,9 @@ final class ActivityTab extends AbstractPagesQueryTab
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:activity.';
-        $presetOptions = array_map(
-            static fn (string $preset): array => ['value' => $preset, 'label' => $lll.'preset.'.ltrim($preset, '<>').'.'.$preset[0]],
+        // Own units per field: "untouched" is wrong wording for a creation date.
+        $presetOptions = static fn (string $prefix): array => array_map(
+            static fn (string $preset): array => ['value' => $preset, 'label' => $prefix.ltrim($preset, '<>').'.'.$preset[0]],
             self::PRESETS,
         );
 
@@ -86,8 +87,8 @@ final class ActivityTab extends AbstractPagesQueryTab
 
         return [
             'fields' => [
-                ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions],
-                ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll.'created', 'options' => $presetOptions],
+                ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions($lll.'preset.')],
+                ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll.'created', 'options' => $presetOptions($lll.'created.preset.')],
                 [
                     'type' => 'user-picker',
                     'name' => 'by',

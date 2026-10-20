@@ -19,6 +19,7 @@ return [
         '.github',
         'bin',
         'build',
+        'docs',
         'public',
         'tailor-version-upload',
         'Tests',
