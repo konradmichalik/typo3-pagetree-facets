@@ -66,7 +66,7 @@ export class LiveCount {
     // The previous count is stale the instant a criterion changes; the skeleton
     // says so right away rather than after the debounce.
     if (showLoadingImmediately) {
-      this.#showLoading(this.#seq);
+      this.#showLoading();
     }
     clearTimeout(this.#debounce);
     this.#debounce = window.setTimeout(() => this.#refresh(), DEBOUNCE_MS);
@@ -90,7 +90,7 @@ export class LiveCount {
     // seq was just incremented, so whatever this clears belongs to an older
     // call. The clears further down come after an await and need the seq check.
     clearTimeout(this.#loadingTimer);
-    this.#loadingTimer = window.setTimeout(() => this.#showLoading(seq), LOADING_DELAY_MS);
+    this.#loadingTimer = window.setTimeout(() => this.#showLoading(), LOADING_DELAY_MS);
     let count;
     try {
       count = await this.#request();
@@ -110,14 +110,9 @@ export class LiveCount {
     this.#status.setCount(count);
   }
 
-  // Called synchronously from schedule(), where the seq check is a no-op by
-  // construction, and from the delayed-show timer, where a newer request or a
-  // switch to text mode may have overtaken it inside its own window.
-  #showLoading(seq) {
-    // Reproducing that overtaking deterministically needs fake timers, which
-    // the suite deliberately avoids, or racing real ones against a 10ms margin.
-    /* v8 ignore next 3 */
-    if (seq !== this.#seq || !this.#isActive()) {
+  // The delayed timer may fire after the count stopped applying.
+  #showLoading() {
+    if (!this.#isActive()) {
       return;
     }
     this.#status.showLoading();
