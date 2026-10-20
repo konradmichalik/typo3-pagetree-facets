@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 
-import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The cross-tab filter search: its input, and the flat result list that replaces
@@ -30,12 +30,21 @@ export function buildFilterSearchInput({ onQuery }) {
   input.type = 'search';
   // How the modal finds this field again to clear it when a tab is picked.
   input.dataset.role = 'filter-search';
-  const label = TYPO3.lang?.['pagetreeFacets.modal.search'] ?? 'Search filters';
+  const label = lang('pagetreeFacets.modal.search', 'Find a criterion');
   input.placeholder = label;
   input.setAttribute('aria-label', label);
   input.addEventListener('input', () => onQuery(input.value));
 
   wrap.append(clearable(input));
+  // Escape clears a search the way the × does; an empty field leaves the key to
+  // the modal, which closes on it.
+  input.addEventListener('keydown', (event) => {
+    if ('Escape' === event.key && '' !== input.value) {
+      event.preventDefault();
+      event.stopPropagation();
+      wrap.querySelector('.pagetree-facets__clear').click();
+    }
+  });
 
   return wrap;
 }

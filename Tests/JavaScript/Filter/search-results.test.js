@@ -82,7 +82,39 @@ describe('buildFilterSearchInput', () => {
   it('is labelled for screen readers, not by placeholder alone', () => {
     const wrap = buildFilterSearchInput({ clearable: (input) => input, onQuery: vi.fn() });
 
-    expect(wrap.querySelector('input').getAttribute('aria-label')).toBe('Search filters');
+    expect(wrap.querySelector('input').getAttribute('aria-label')).toBe('Find a criterion');
+    expect(wrap.querySelector('input').placeholder).toBe('Find a criterion');
+  });
+
+  it('clears the search on Escape and keeps the key from the modal', () => {
+    const onQuery = vi.fn();
+    const wrap = buildFilterSearchInput({ onQuery });
+    document.body.append(wrap);
+    const input = wrap.querySelector('input');
+    input.value = 'hid';
+    input.dispatchEvent(new Event('input'));
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const reachedDocument = vi.fn();
+    document.addEventListener('keydown', reachedDocument);
+
+    input.dispatchEvent(escape);
+
+    expect(input.value).toBe('');
+    expect(onQuery).toHaveBeenLastCalledWith('');
+    expect(wrap.querySelector('.pagetree-facets__clear').hidden).toBe(true);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(reachedDocument).not.toHaveBeenCalled();
+    document.removeEventListener('keydown', reachedDocument);
+  });
+
+  it('lets Escape through while the field is empty, so the modal still closes on it', () => {
+    const wrap = buildFilterSearchInput({ onQuery: vi.fn() });
+    document.body.append(wrap);
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+
+    wrap.querySelector('input').dispatchEvent(escape);
+
+    expect(escape.defaultPrevented).toBe(false);
   });
 });
 
