@@ -25,11 +25,12 @@ const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
  * scope alone already is.
  *
  * @param {{scope: HTMLElement|null, onClearAll: () => void, onSaveFavorite: (label: string) => void,
- *   onCopyLink: () => void}} options
+ *   onCopyLink: () => void, focusFallback: () => void}} options - `focusFallback` takes
+ *   the focus when the row has no chip left to hand it to
  * @returns {{element: HTMLElement, update: (state: {chips: HTMLElement[], savable: boolean}) => void,
  *   close: () => void}}
  */
-export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink }) {
+export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink, focusFallback }) {
   const criteria = document.createElement('div');
   criteria.className = 'pagetree-facets__criteria is-empty';
   if (scope) {
@@ -69,6 +70,9 @@ export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink
   return {
     element,
     update: ({ chips: nodes, savable }) => {
+      // Read before the rebuild destroys the focused × or hides Clear all.
+      const focusedChip = [...chips.children].findIndex((chip) => chip.contains(document.activeElement));
+      const focusedAction = actions.contains(document.activeElement);
       chips.replaceChildren(...nodes);
       criteria.classList.toggle('is-empty', 0 === nodes.length);
       empty.hidden = nodes.length > 0;
@@ -77,9 +81,24 @@ export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink
         menu.close();
         saveForm.close();
       }
+      if (focusedChip >= 0) {
+        focusChip(nodes, focusedChip, focusFallback);
+      } else if (focusedAction && !savable) {
+        focusFallback();
+      }
     },
     close: () => menu.close(),
   };
+}
+
+/** The × of the chip now at `index`, else of the last chip, else the fallback. */
+function focusChip(nodes, index, focusFallback) {
+  const chip = nodes[Math.min(index, nodes.length - 1)];
+  if (chip) {
+    chip.querySelector('.pagetree-facets__chip-remove').focus();
+  } else {
+    focusFallback();
+  }
 }
 
 /**

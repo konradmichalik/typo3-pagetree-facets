@@ -320,10 +320,20 @@ class FacetsModal {
       onClearAll: () => this.#resetAll(),
       onSaveFavorite: (label) => this.#saveFavorite(label),
       onCopyLink: () => this.#copyLink(),
+      focusFallback: () => this.#focusBeforeChips(),
     });
     header.append(this.#row.element);
 
     return header;
+  }
+
+  // The scope chip while it is on screen, else whichever search field is.
+  #focusBeforeChips() {
+    if (this.#scope && !this.#scope.element.hidden) {
+      this.#scope.focus();
+      return;
+    }
+    (this.#tokenMode ? this.#tokenField : this.#searchField.freetext).focus();
   }
 
   #renderBody() {

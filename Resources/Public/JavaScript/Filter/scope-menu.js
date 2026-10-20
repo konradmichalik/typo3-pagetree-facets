@@ -28,7 +28,7 @@ const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
  *   currentPage: {uid: number, title: string}|null, onChange: () => void}} options
  * @returns {{element: HTMLElement, value: {site: string, pageScope: number},
  *   hydrate: (configuration: {activeSite?: string|null, pageScope?: number|null}) => void,
- *   reset: () => void, close: () => void}|null} null when there is nothing to choose
+ *   reset: () => void, close: () => void, focus: () => void}|null} null when there is nothing to choose
  */
 export function buildScopeMenu({ sites = [], activeSite, pageScope, currentPage, onChange }) {
   if (!currentPage && sites.length < 2) {
@@ -90,6 +90,10 @@ class ScopeMenu {
 
   close() {
     this.#popover.close();
+  }
+
+  focus() {
+    this.#chip.focus();
   }
 
   #buildChip() {

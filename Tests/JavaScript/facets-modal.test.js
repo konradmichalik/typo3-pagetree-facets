@@ -367,6 +367,27 @@ describe('the active-filter chips', () => {
     expect(applyButton(modal).disabled).toBe(false);
   });
 
+  it('move focus to the scope chip once the last chip was removed from the keyboard', async () => {
+    const { modal } = await openModal();
+    const remove = modal.querySelector('.pagetree-facets__chip-remove');
+    remove.focus();
+
+    remove.click();
+
+    expect(document.activeElement).toBe(scopeChip(modal));
+  });
+
+  it('move focus to the page-title field instead when there is no scope chip', async () => {
+    const { modal } = await openModal({ pageId: null, configuration: configurationFixture({ sites: [{ identifier: 'main' }] }) });
+    const remove = modal.querySelector('.pagetree-facets__chip-remove');
+    remove.focus();
+
+    remove.click();
+
+    expect(scopeChip(modal)).toBeNull();
+    expect(document.activeElement).toBe(modal.querySelector('[data-role="freetext"]'));
+  });
+
   it('grow a title chip while typing, trimmed, and drop it for blank input', async () => {
     const { modal } = await openModal();
 

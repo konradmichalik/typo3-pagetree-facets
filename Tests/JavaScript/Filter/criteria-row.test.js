@@ -112,7 +112,7 @@ describe('renderChip', () => {
 
 describe('buildCriteriaRow', () => {
   const mount = (options = {}) => {
-    const handlers = { onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn() };
+    const handlers = { onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn() };
     const scope = document.createElement('div');
     scope.className = 'pagetree-facets__scope';
     const row = buildCriteriaRow({ scope, ...handlers, ...options });
@@ -146,9 +146,70 @@ describe('buildCriteriaRow', () => {
   });
 
   it('renders without a scope element', () => {
-    const row = buildCriteriaRow({ scope: null, onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn() });
+    const row = buildCriteriaRow({
+      scope: null, onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn(),
+    });
 
     expect(row.element.querySelector('.pagetree-facets__chips')).not.toBeNull();
+  });
+
+  describe('focus across a rebuild', () => {
+    const removeButtons = (row) => [...row.element.querySelectorAll('.pagetree-facets__chip-remove')];
+
+    it('lands on the chip that took the removed one\'s place', () => {
+      const { row, focusFallback } = mount();
+      row.update({ chips: [chip('Standard'), chip('Link'), chip('Shortcut')], savable: true });
+      removeButtons(row)[1].focus();
+
+      row.update({ chips: [chip('Standard'), chip('Shortcut')], savable: true });
+
+      expect(document.activeElement).toBe(removeButtons(row)[1]);
+      expect(document.activeElement.getAttribute('aria-label')).toBe('Remove Page type: Shortcut');
+      expect(focusFallback).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the previous chip when the last one was removed', () => {
+      const { row } = mount();
+      row.update({ chips: [chip('Standard'), chip('Link')], savable: true });
+      removeButtons(row)[1].focus();
+
+      row.update({ chips: [chip('Standard')], savable: true });
+
+      expect(document.activeElement).toBe(removeButtons(row)[0]);
+    });
+
+    it('hands focus on once no chip is left', () => {
+      const { row, focusFallback } = mount();
+      row.update({ chips: [chip('Standard')], savable: true });
+      removeButtons(row)[0].focus();
+
+      row.update({ chips: [], savable: false });
+
+      expect(focusFallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('hands focus on when Clear all hides itself under the focus', () => {
+      const { row, focusFallback } = mount();
+      row.update({ chips: [chip('Standard')], savable: true });
+      clearAll(row).focus();
+
+      row.update({ chips: [], savable: false });
+
+      expect(focusFallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves focus alone while it is elsewhere', () => {
+      const { row, focusFallback } = mount();
+      row.update({ chips: [chip('Standard')], savable: true });
+      const field = document.createElement('input');
+      document.body.append(field);
+      field.focus();
+
+      row.update({ chips: [chip('Link')], savable: true });
+
+      expect(document.activeElement).toBe(field);
+      expect(focusFallback).not.toHaveBeenCalled();
+    });
   });
 
   it('lists the chips in place of the empty text and reveals the actions once something is savable', () => {

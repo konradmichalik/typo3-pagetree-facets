@@ -79,6 +79,14 @@ describe('rendering', () => {
     expect(menu.value).toEqual({ site: '', pageScope: 0 });
     expect(options(menu)[0].getAttribute('aria-selected')).toBe('true');
   });
+
+  it('takes focus on its chip, for the criteria row to hand focus back to', () => {
+    const { menu } = mount();
+
+    menu.focus();
+
+    expect(document.activeElement).toBe(chip(menu));
+  });
 });
 
 describe('hydration', () => {

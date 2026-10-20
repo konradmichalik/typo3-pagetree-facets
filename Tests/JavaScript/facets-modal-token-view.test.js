@@ -239,6 +239,17 @@ describe('removing a chip in token view', () => {
     await expect.poll(() => field.value).toBe('');
     expect(applyButton(modal).disabled).toBe(false);
   });
+
+  it('moves focus to the phrase field once the last chip is gone, the scope chip being hidden', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+    const remove = removeButton(modal, 'Page state: Hidden');
+    remove.focus();
+
+    remove.click();
+
+    expect(document.activeElement).toBe(field);
+  });
 });
 
 describe('loading a favorite while in token view', () => {
