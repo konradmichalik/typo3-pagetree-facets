@@ -356,6 +356,30 @@ describe('the active-filter chips', () => {
     expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
   });
 
+  it('lead with the page title as a chip of its own, which empties the field when removed', async () => {
+    const { modal } = await openModal({ configuration: configurationFixture({ freetext: 'home' }) });
+    expect(chipLabels(modal)).toEqual(['Title: home', 'Page state: Hidden']);
+    // Not a facet, so no navigation item counts it.
+    expect(modal.querySelectorAll('.pagetree-facets__nav-count')).toHaveLength(1);
+
+    modal.querySelector('.pagetree-facets__chip-remove').click();
+
+    expect(modal.querySelector('[data-role="freetext"]').value).toBe('');
+    expect(modal.querySelector('.pagetree-facets__clear').hidden).toBe(true);
+    expect(chipLabels(modal)).toEqual(['Page state: Hidden']);
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('grow a title chip while typing, trimmed, and drop it for blank input', async () => {
+    const { modal } = await openModal();
+
+    type(modal.querySelector('[data-role="freetext"]'), '  contact ');
+    await expect.poll(() => chipLabels(modal)).toEqual(['Title: contact', 'Page state: Hidden']);
+
+    type(modal.querySelector('[data-role="freetext"]'), '   ');
+    await expect.poll(() => chipLabels(modal)).toEqual(['Page state: Hidden']);
+  });
+
   it('appear for a newly ticked option, with the tab label as prefix', async () => {
     const { modal } = await openModal();
 

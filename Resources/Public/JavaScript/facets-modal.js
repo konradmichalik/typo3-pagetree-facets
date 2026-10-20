@@ -1011,7 +1011,7 @@ class FacetsModal {
     if (!this.#chips) {
       return;
     }
-    const criteria = this.#collectActiveCriteria();
+    const criteria = [...this.#titleCriterion(), ...this.#collectActiveCriteria()];
     this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
     // The active row is always present; it shows either the chips or, with no
     // criteria, the usage hint - swapping the two keeps the height constant.
@@ -1045,7 +1045,9 @@ class FacetsModal {
 
     const counts = new Map();
     for (const criterion of criteria) {
-      counts.set(criterion.tab, (counts.get(criterion.tab) ?? 0) + 1);
+      if (null !== criterion.tab) {
+        counts.set(criterion.tab, (counts.get(criterion.tab) ?? 0) + 1);
+      }
     }
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((item) => {
       // The favorites tab is not a filter criterion, so it never carries a count.
@@ -1093,6 +1095,18 @@ class FacetsModal {
     } else {
       badge?.remove();
     }
+  }
+
+  // The page title is a criterion like any other, so it gets a chip too. It
+  // belongs to no facet, which is why its tab is null and no nav item counts it.
+  #titleCriterion() {
+    const value = this.#searchField.freetext.value.trim();
+    if ('' === value) {
+      return [];
+    }
+    const prefix = TYPO3.lang?.['pagetreeFacets.modal.criterion.title'] ?? 'Title';
+
+    return [{ tab: null, prefix, value, label: `${prefix}: ${value}`, remove: () => this.#searchField.setFreetext('') }];
   }
 
   // One entry per selected value across all tabs. Each carries a human label and

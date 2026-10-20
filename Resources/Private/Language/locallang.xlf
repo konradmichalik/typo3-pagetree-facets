@@ -12,6 +12,7 @@
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.textMode"><source>Text</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.removeCriterion"><source>Remove %s</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.criterion.title"><source>Title</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.scope"><source>In</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.scope.description"><source>Where to look for pages</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.scope.wholeTree"><source>Whole tree</source></trans-unit>
