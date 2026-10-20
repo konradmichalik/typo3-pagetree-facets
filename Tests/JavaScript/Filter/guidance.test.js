@@ -19,13 +19,18 @@ describe('renderHelp', () => {
 
     expect(withScope.querySelectorAll('li')).toHaveLength(5);
     expect(without.querySelectorAll('li')).toHaveLength(4);
-    expect(withScope.textContent).toContain('Search from current page down');
-    expect(without.textContent).not.toContain('Search from current page down');
+    expect(withScope.textContent).toContain('"Below" in the scope chip');
+    expect(without.textContent).not.toContain('"Below" in the scope chip');
   });
 
-  it('says that a selection only takes effect on Apply', () => {
+  it('says that a selection only takes effect on Apply, and names Clear all, not Reset', () => {
     // The chips look like applied filters; this is where that is spelled out.
-    expect(renderHelp({ hasPageScope: false }).textContent).toContain('"Apply"');
+    const text = renderHelp({ hasPageScope: false }).textContent;
+
+    expect(text).toContain('"Apply"');
+    expect(text).toContain('"Clear all"');
+    expect(text).not.toContain('Reset');
+    expect(text).toContain('"Copy link to this filter"');
   });
 
   it('covers the two things the panel used to be silent about', () => {
@@ -34,7 +39,7 @@ describe('renderHelp', () => {
     const panel = renderHelp({ hasPageScope: false });
 
     expect(panel.textContent).toContain('Save a filter you use often');
-    expect(panel.textContent).toContain('code button');
+    expect(panel.textContent).toContain('Text switch');
   });
 
   it('spells out that loading a favorite is still only a selection', () => {

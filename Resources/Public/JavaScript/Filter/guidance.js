@@ -15,10 +15,10 @@ import { decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter
 
 const HELP_POINTS = {
   combine: 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.',
-  chips: 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Reset". Your selection only takes effect once you choose "Apply".',
-  scope: '"Search from current page down" limits the result to the page you currently have open and its subpages.',
+  chips: 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Clear all". Your selection only takes effect once you choose "Apply".',
+  scope: '"Below" in the scope chip limits the result to the page you currently have open and its subpages.',
   favorites: 'Save a filter you use often under a name of your choice. Clicking a saved filter loads it back in here — like anything else you pick, it takes effect once you choose "Apply".',
-  share: '"Copy link" copies a link to your current selection, so you can hand it to a colleague.',
+  share: '"Copy link to this filter" in the actions menu copies a link to your current selection, so you can hand it to a colleague.',
 };
 
 /**
@@ -52,7 +52,7 @@ export function renderHelp({ hasPageScope }) {
   const advanced = document.createElement('p');
   advanced.className = 'mb-0';
   advanced.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.advanced']
-    ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly, or switch this dialog to its editable filter text with the code button above.';
+    ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly, or switch this dialog to its editable filter text with the Text switch in the search field.';
   panel.append(advanced);
 
   return panel;
