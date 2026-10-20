@@ -1090,6 +1090,9 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    /* Keeps a focused option out from under the stuck legend: its padding plus
+       the 32px row of its checkbox, the tallest legend a dense panel renders. */
+    scroll-padding-block-start: calc(1.25rem + 32px);
 }
 
 .pagetree-facets__panel.is-dense .pagetree-facets__options {

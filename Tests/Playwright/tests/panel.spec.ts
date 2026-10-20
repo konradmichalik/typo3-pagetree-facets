@@ -98,6 +98,36 @@ test('a group heading selects or clears its whole group', async ({ page }) => {
   await expect(modal.chips()).toHaveCount(0);
 });
 
+test('a sticky group heading never covers the option that receives focus', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await modal.navItem('ce').click();
+
+  const panel = modal.panel('ce');
+  const fields = panel.locator('.pagetree-facets__panel-fields');
+  // The group with the most options has at least two rows of three.
+  const index = await panel.locator('fieldset').evaluateAll((groups) => groups
+    .map((group) => group.querySelectorAll('input[name]').length)
+    .reduce((best, size, position, sizes) => (size > sizes[best] ? position : best), 0));
+  const group = panel.locator('fieldset').nth(index);
+  const options = group.locator('input[name]');
+  // Scroll the group's first row under its stuck heading, then Shift+Tab onto it
+  // from the row below: focus alone does not scroll an option that is in the
+  // scrollport, even when the heading is painted over it.
+  await options.nth(0).evaluate((option, list) => {
+    const row = option.closest('.form-check')!.getBoundingClientRect();
+    list!.scrollTop += row.top - list!.getBoundingClientRect().top - 2;
+  }, await fields.elementHandle());
+  await options.nth(3).focus();
+  await page.keyboard.press('Shift+Tab');
+
+  await expect(options.nth(2)).toBeFocused();
+  const legend = await group.locator('legend').boundingBox();
+  const focused = await options.nth(2).boundingBox();
+  expect(focused!.y).toBeGreaterThanOrEqual(legend!.y + legend!.height);
+});
+
 test('the heading and the group headings stay in view while a large list scrolls', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
