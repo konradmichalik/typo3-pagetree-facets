@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { DEMO_PAGES } from '../support/demo-pages.js';
@@ -17,9 +17,21 @@ test.beforeEach(async ({ page }) => {
   await waitForPageTreeReady(page);
 });
 
+/**
+ * Opens "Home" in the module. The toolbar reads the open page from the `id`
+ * parameter of the outer URL, which the module router sets once a node is
+ * selected; without it there is no page to scope to and (on this single-site
+ * instance) no scope chip at all.
+ */
+async function openHome(page: Page): Promise<void> {
+  await new PageTreePage(page).node(DEMO_PAGES.home).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('id')).toBe('1');
+}
+
 test('the empty criteria row names what to do, with the scope chip ahead of it', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
+  await openHome(page);
   await modal.open();
 
   await expect(modal.criteriaRow()).toHaveClass(/is-empty/);
@@ -34,6 +46,7 @@ test('the scope chip offers the open page by its title and the choice lands in t
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
+  await openHome(page);
   await modal.open();
   await modal.scopeChip().click();
 
@@ -56,6 +69,7 @@ test('the scope chip offers the open page by its title and the choice lands in t
 test('the scope list is keyboard operable and Escape closes it without a change', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
+  await openHome(page);
   await modal.open();
   await modal.scopeChip().focus();
   await page.keyboard.press('ArrowDown');
@@ -76,9 +90,13 @@ test('the page title becomes a chip, and the Text switch shows the whole phrase'
   const tree = new PageTreePage(page);
   const modal = new FacetsModalPage(page);
 
+  await openHome(page);
   await searchTree(page, tree, 'doktype:3 partner');
   await modal.open();
 
+  // The chips are derived once the modal reports itself shown, after the root
+  // is visible - so wait for them rather than reading the labels right away.
+  await expect(modal.chips()).toHaveCount(2);
   expect(await modal.chipLabels()).toContain('Title: partner');
   await expect(modal.textSwitch()).toHaveText('Text');
   await expect(modal.textSwitch()).toHaveAttribute('aria-pressed', 'false');
