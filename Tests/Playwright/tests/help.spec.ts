@@ -21,10 +21,12 @@ test('the help link is pinned to the bottom of the navigation, under the scrolli
   await modal.open();
 
   const nav = page.locator('typo3-backend-modal .pagetree-facets__nav');
-  const navBox = await nav.boundingBox();
-  const linkBox = await modal.helpLink().boundingBox();
+  // Both edges in one frame: the modal may still be sliding in.
+  const gap = await nav.evaluate((element, link) => Math.abs(
+    link!.getBoundingClientRect().bottom - element.getBoundingClientRect().bottom,
+  ), await modal.helpLink().elementHandle());
   // Within the nav's own bottom padding, nothing scrolls between the two.
-  expect(Math.abs((linkBox!.y + linkBox!.height) - (navBox!.y + navBox!.height))).toBeLessThan(8);
+  expect(gap).toBeLessThan(8);
   // The list scrolls on its own, so the link stays however long the list gets.
   await expect(nav.locator('.pagetree-facets__nav-list')).toHaveCSS('overflow-y', 'auto');
   await expect(modal.page.locator('typo3-backend-modal .pagetree-facets__help-toggle')).toHaveCount(0);
@@ -60,8 +62,6 @@ test('the popover opens next to the navigation as a dialog, takes focus and give
   await expect(modal.helpLink()).toBeFocused();
 });
 
-test('every example token in the help hydrates into a criterion', async ({ page }) => {
-  const modal = new FacetsModalPage(page);
 test('forced colours give the example chips and the open link a border', async ({ page }) => {
   const modal = new FacetsModalPage(page);
   // The tints are dropped here, so the chips and the open state need a border.
@@ -89,6 +89,8 @@ test('forced colours give the example chips and the open link a border', async (
   expect(await width(modal.helpPopover().locator('.pagetree-facets__help-chip').first(), 'border-top-width')).toBeGreaterThan(0);
 });
 
+test('every example token in the help hydrates into a criterion', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
 
   await modal.open();
   await modal.helpLink().click();
