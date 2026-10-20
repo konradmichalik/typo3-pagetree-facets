@@ -15,10 +15,7 @@ import { CHOICE_FIELD_TYPES } from '@konradmichalik/pagetree-facets/Filter/tab-f
  */
 
 /**
- * A tab is "empty" when every field is a choice type (checkbox-group / select
- * / radio-presets) with zero options - e.g. Translations on a single-language
- * site. Freeform fields (text, user-picker) are always usable regardless of
- * options, so their presence means the tab is never considered empty.
+ * Every field is a choice type with no option to pick. A freeform field is always usable.
  *
  * @param {{configuration: {fields?: Array<object>}}} tab
  * @returns {boolean}
@@ -71,9 +68,8 @@ export function buildNavigation({ tabs, activeTab, leading, trailing, onQuery, o
   return nav;
 }
 
-// Tabs arrive priority-ordered, so their groups interleave (content, state,
-// content, ...). Bucket them by group first, keeping first-seen order, so each
-// group heading is rendered exactly once.
+// Tabs arrive priority-ordered, so their groups interleave: bucketing them
+// first, in first-seen order, renders each group heading once.
 function groupTabs(tabs) {
   const groups = new Map();
   for (const tab of tabs) {
@@ -100,14 +96,12 @@ function renderNavItem(tab, activeTab, onActivate) {
     button.setAttribute('aria-current', 'true');
   }
   button.tabIndex = active ? 0 : -1;
-  // Label text kept in its own node so the active-criteria count can be toggled
-  // live without clobbering the label.
+  // Its own node, so the count badge can come and go without touching the label.
   const text = document.createElement('span');
   text.textContent = tab.label;
   button.append(text);
   if (empty) {
-    // Why there is nothing to pick, as a second line in the item itself: a
-    // disabled button has no hover a tooltip could rely on.
+    // In the item itself: a disabled button has no hover a tooltip could rely on.
     const reason = document.createElement('span');
     reason.className = 'pagetree-facets__nav-reason';
     reason.textContent = tab.configuration.emptyReason || lang('pagetreeFacets.modal.tabEmpty', 'No options available');
@@ -120,21 +114,14 @@ function renderNavItem(tab, activeTab, onActivate) {
   return item;
 }
 
-// Roving tabindex: only the active item is a tab stop, so a single Tab out of
-// the navigation reaches the panel instead of walking past every remaining tab
-// first. Arrows then move within the navigation.
-//
-// Deliberately NOT role="tablist": that role admits only tabs as children, and
-// this navigation interleaves group headings, so claiming it would promise a
-// structure we cannot honour. A list of buttons with a roving tab stop is the
-// honest description, and arrow support is what makes it usable.
+// Roving tab stop, so one Tab leaves the navigation. Not a tablist: that role
+// admits only tabs as children, and group headings sit between the items.
 function moveWithArrows(event, nav, onActivate) {
   const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
   if (undefined === step && !['Home', 'End'].includes(event.key)) {
     return;
   }
-  // Empty tabs are disabled and the favorites item hides itself while there is
-  // nothing saved - neither may swallow an arrow press.
+  // A disabled item or the hidden favorites item must not swallow an arrow press.
   const items = [...nav.querySelectorAll('.pagetree-facets__nav-item')]
     .filter((item) => !item.disabled && true !== item.closest('li')?.hidden);
   if (0 === items.length) {
@@ -146,7 +133,6 @@ function moveWithArrows(event, nav, onActivate) {
     ? 0
     : ('End' === event.key ? items.length - 1 : (current + step + items.length) % items.length);
   items[next].focus();
-  // Automatic activation: the panels are already in the DOM, so switching as
-  // the user arrows costs nothing and makes browsing them immediate.
+  // Automatic activation: the panels are already in the DOM, so switching costs nothing.
   onActivate(items[next].dataset.tab, false);
 }

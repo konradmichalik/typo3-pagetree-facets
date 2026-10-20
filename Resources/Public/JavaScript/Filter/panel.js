@@ -139,6 +139,7 @@ function countChoices(controls) {
   return { total, selected };
 }
 
+// Fields that share a name are one criterion split by group, so their options count together.
 function isDense(tab) {
   const perName = new Map();
   for (const field of tab.configuration.fields ?? []) {
