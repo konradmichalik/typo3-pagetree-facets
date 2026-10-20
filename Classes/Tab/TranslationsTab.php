@@ -101,7 +101,7 @@ final class TranslationsTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -115,6 +115,8 @@ final class TranslationsTab extends AbstractPagesQueryTab
         // independent criteria the engine ANDs - "missing Danish but has German"
         // is a legitimate query.
         return [
+            'description' => $lll.'description',
+            'emptyReason' => $lll.'emptyReason',
             'fields' => [
                 [
                     'type' => 'checkbox-group',

@@ -40,9 +40,9 @@ trait SupportsFilterOptions
      * named $tokenKey. Resolution stays the tab's job (resolveViaOptions), so
      * the option's UID logic and its checkbox never drift apart.
      *
-     * @param array{fields: list<array<string, mixed>>} $config
+     * @param array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>} $config
      *
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     protected function appendOptions(array $config, string $tokenKey, FilterContext $context): array
     {

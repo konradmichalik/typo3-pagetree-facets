@@ -135,6 +135,9 @@ final class ExampleTab extends AbstractPagesQueryTab
         $lll = 'LLL:EXT:example_tab/Resources/Private/Language/locallang.xlf:example.';
 
         return [
+            // Optional: the sentence under the panel heading. Leave it out and
+            // the panel shows the heading only.
+            'description' => $lll.'description',
             'fields' => [
                 [
                     'type' => 'checkbox-group',

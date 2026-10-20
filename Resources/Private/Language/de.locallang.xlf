@@ -77,22 +77,38 @@
 			<trans-unit id="pagetreeFacets.modal.summary.site"><source>Site</source><target>Website</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.summary.under"><source>Below</source><target>Unterhalb</target></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source><target>Datensätze</target></trans-unit>
+			<trans-unit id="records.description"><source>Show pages that records of the selected tables point to, or whose content contains a text.</source><target>Zeigt Seiten, auf die Datensätze der gewählten Tabellen verweisen oder deren Inhalt einen Text enthält.</target></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source><target>Inhaltselemente</target></trans-unit>
+			<trans-unit id="ce.description"><source>Show pages containing at least one element of the selected types.</source><target>Zeigt Seiten, die mindestens ein Element der gewählten Typen enthalten.</target></trans-unit>
+			<trans-unit id="ce.emptyReason"><source>No content element types available to you</source><target>Keine Inhaltselementtypen für dich verfügbar</target></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source><target>Aktivität</target></trans-unit>
+			<trans-unit id="activity.description"><source>When the page was changed or created, and by whom.</source><target>Wann die Seite geändert oder erstellt wurde, und von wem.</target></trans-unit>
 			<trans-unit id="tab.doktype"><source>Page type</source><target>Seitentyp</target></trans-unit>
+			<trans-unit id="doktype.description"><source>Show pages of the selected types. Several choices mean any of them.</source><target>Zeigt Seiten der gewählten Typen. Bei mehreren Typen reicht einer davon.</target></trans-unit>
+			<trans-unit id="doktype.emptyReason"><source>No page types available to you</source><target>Keine Seitentypen für dich verfügbar</target></trans-unit>
 			<trans-unit id="tab.layout"><source>Layouts</source><target>Layouts</target></trans-unit>
+			<trans-unit id="layout.description"><source>Show pages using one of the selected backend or frontend layouts.</source><target>Zeigt Seiten, die eines der gewählten Backend- oder Frontend-Layouts verwenden.</target></trans-unit>
+			<trans-unit id="layout.emptyReason"><source>No page layouts configured</source><target>Keine Seitenlayouts konfiguriert</target></trans-unit>
 			<trans-unit id="layout.backend"><source>Backend layout</source><target>Backend-Layout</target></trans-unit>
 			<trans-unit id="layout.frontend"><source>Frontend layout</source><target>Frontend-Layout</target></trans-unit>
 			<trans-unit id="tab.state"><source>Page state</source><target>Seitenzustand</target></trans-unit>
+			<trans-unit id="state.description"><source>Show pages in one of the selected states, such as hidden or without content.</source><target>Zeigt Seiten in einem der gewählten Zustände, etwa verborgen oder ohne Inhalt.</target></trans-unit>
+			<trans-unit id="state.emptyReason"><source>All options are disabled by configuration</source><target>Alle Optionen sind per Konfiguration deaktiviert</target></trans-unit>
 			<trans-unit id="tab.translations"><source>Missing translations</source><target>Fehlende Übersetzungen</target></trans-unit>
+			<trans-unit id="translations.description"><source>Show pages whose translation is missing or present in the selected languages.</source><target>Zeigt Seiten, deren Übersetzung in den gewählten Sprachen fehlt oder vorhanden ist.</target></trans-unit>
+			<trans-unit id="translations.emptyReason"><source>Site has only one language</source><target>Die Website hat nur eine Sprache</target></trans-unit>
 			<trans-unit id="translations.untranslated"><source>Translation missing in</source><target>Übersetzung fehlt in</target></trans-unit>
 			<trans-unit id="translations.translated"><source>Translation exists in</source><target>Übersetzung existiert in</target></trans-unit>
 			<trans-unit id="tab.seo"><source>SEO</source><target>SEO</target></trans-unit>
+			<trans-unit id="seo.description"><source>Show pages with one of the selected SEO issues.</source><target>Zeigt Seiten mit einem der gewählten SEO-Probleme.</target></trans-unit>
+			<trans-unit id="seo.emptyReason"><source>All options are disabled by configuration</source><target>Alle Optionen sind per Konfiguration deaktiviert</target></trans-unit>
 			<trans-unit id="group.content"><source>Content</source><target>Inhalt</target></trans-unit>
 			<trans-unit id="group.state"><source>State</source><target>Zustand</target></trans-unit>
 			<trans-unit id="group.quality"><source>Quality</source><target>Qualität</target></trans-unit>
 			<trans-unit id="group.forms"><source>Forms</source><target>Formulare</target></trans-unit>
 			<trans-unit id="tab.form"><source>Form</source><target>Formular</target></trans-unit>
+			<trans-unit id="form.description"><source>Show pages that embed one of the selected forms.</source><target>Zeigt Seiten, die eines der gewählten Formulare einbinden.</target></trans-unit>
+			<trans-unit id="form.emptyReason"><source>No forms on this installation</source><target>Keine Formulare in dieser Installation</target></trans-unit>
 			<trans-unit id="records.group.core"><source>TYPO3 Core</source><target>TYPO3 Core</target></trans-unit>
 			<trans-unit id="records.group.other"><source>Other</source><target>Andere</target></trans-unit>
 			<trans-unit id="records.text"><source>Pages with content containing text</source><target>Seiten mit Textinhalt</target></trans-unit>
@@ -129,6 +145,7 @@
 			<trans-unit id="seo.missingDescription"><source>Missing meta description</source><target>Fehlende Meta-Beschreibung</target></trans-unit>
 			<trans-unit id="group.advanced"><source>Advanced</source><target>Erweitert</target></trans-unit>
 			<trans-unit id="tab.raw"><source>Raw query (Pro)</source><target>Roh-Abfrage (Pro)</target></trans-unit>
+			<trans-unit id="raw.description"><source>Show pages matching field conditions on any table. For administrators who know the schema.</source><target>Zeigt Seiten, die Feldbedingungen auf beliebigen Tabellen erfüllen. Für Administratoren, die das Schema kennen.</target></trans-unit>
 			<trans-unit id="raw.expression"><source>Table and field=value conditions</source><target>Tabellen- und Feld=Wert-Bedingungen</target></trans-unit>
 			<trans-unit id="raw.expression.placeholder"><source>table|field=value|field2=value2</source><target>tabelle|feld=wert|feld2=wert2</target></trans-unit>
 		</body>

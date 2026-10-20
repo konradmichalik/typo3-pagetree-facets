@@ -89,6 +89,25 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function configurationTranslatesTheDescriptionAndTheEmptyReason(): void
+    {
+        $payload = $this->decode($this->subject->configuration(new ServerRequest()));
+        $byIdentifier = array_column($payload['tabs'], 'configuration', 'identifier');
+
+        self::assertSame(
+            'Show pages of the selected types. Several choices mean any of them.',
+            $byIdentifier['doktype']['description'],
+        );
+        self::assertSame('Site has only one language', $byIdentifier['translations']['emptyReason']);
+        // Optional keys: a facet that sets neither is passed on without them.
+        self::assertArrayNotHasKey('emptyReason', $byIdentifier['activity']);
+        foreach ($byIdentifier as $identifier => $configuration) {
+            self::assertStringNotContainsString('LLL:', $configuration['description'] ?? '', $identifier);
+            self::assertStringNotContainsString('LLL:', $configuration['emptyReason'] ?? '', $identifier);
+        }
+    }
+
+    #[Test]
     public function configurationHydratesTheCurrentPhraseIntoTabStates(): void
     {
         $request = (new ServerRequest())->withQueryParams(['phrase' => 'doktype:1,4 is:empty solar park']);

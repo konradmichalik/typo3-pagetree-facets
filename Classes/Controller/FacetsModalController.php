@@ -266,13 +266,18 @@ final readonly class FacetsModalController
     }
 
     /**
-     * @param array{fields: list<array<string, mixed>>} $configuration
+     * @param array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>} $configuration
      *
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     private function translateConfiguration(array $configuration): array
     {
         $languageService = $this->getLanguageService();
+        foreach (['description', 'emptyReason'] as $key) {
+            if (isset($configuration[$key]) && '' !== $configuration[$key]) {
+                $configuration[$key] = $this->translate($languageService, $configuration[$key]);
+            }
+        }
         foreach ($configuration['fields'] as $fieldIndex => $field) {
             $configuration['fields'][$fieldIndex] = $this->translateField($languageService, $field);
         }

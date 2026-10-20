@@ -104,7 +104,7 @@ final class FormTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -117,8 +117,11 @@ final class FormTab extends AbstractPagesQueryTab
             ];
         }
         usort($options, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:form.';
 
         return [
+            'description' => $lll.'description',
+            'emptyReason' => $lll.'emptyReason',
             'fields' => [
                 [
                     'type' => 'checkbox-group',

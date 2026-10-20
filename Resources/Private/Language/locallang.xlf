@@ -77,22 +77,38 @@
 			<trans-unit id="pagetreeFacets.modal.summary.site"><source>Site</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.summary.under"><source>Below</source></trans-unit>
 			<trans-unit id="tab.records"><source>Records</source></trans-unit>
+			<trans-unit id="records.description"><source>Show pages that records of the selected tables point to, or whose content contains a text.</source></trans-unit>
 			<trans-unit id="tab.ce"><source>Content elements</source></trans-unit>
+			<trans-unit id="ce.description"><source>Show pages containing at least one element of the selected types.</source></trans-unit>
+			<trans-unit id="ce.emptyReason"><source>No content element types available to you</source></trans-unit>
 			<trans-unit id="tab.activity"><source>Activity</source></trans-unit>
+			<trans-unit id="activity.description"><source>When the page was changed or created, and by whom.</source></trans-unit>
 			<trans-unit id="tab.doktype"><source>Page type</source></trans-unit>
+			<trans-unit id="doktype.description"><source>Show pages of the selected types. Several choices mean any of them.</source></trans-unit>
+			<trans-unit id="doktype.emptyReason"><source>No page types available to you</source></trans-unit>
 			<trans-unit id="tab.layout"><source>Layouts</source></trans-unit>
+			<trans-unit id="layout.description"><source>Show pages using one of the selected backend or frontend layouts.</source></trans-unit>
+			<trans-unit id="layout.emptyReason"><source>No page layouts configured</source></trans-unit>
 			<trans-unit id="layout.backend"><source>Backend layout</source></trans-unit>
 			<trans-unit id="layout.frontend"><source>Frontend layout</source></trans-unit>
 			<trans-unit id="tab.state"><source>Page state</source></trans-unit>
+			<trans-unit id="state.description"><source>Show pages in one of the selected states, such as hidden or without content.</source></trans-unit>
+			<trans-unit id="state.emptyReason"><source>All options are disabled by configuration</source></trans-unit>
 			<trans-unit id="tab.translations"><source>Missing translations</source></trans-unit>
+			<trans-unit id="translations.description"><source>Show pages whose translation is missing or present in the selected languages.</source></trans-unit>
+			<trans-unit id="translations.emptyReason"><source>Site has only one language</source></trans-unit>
 			<trans-unit id="translations.untranslated"><source>Translation missing in</source></trans-unit>
 			<trans-unit id="translations.translated"><source>Translation exists in</source></trans-unit>
 			<trans-unit id="tab.seo"><source>SEO</source></trans-unit>
+			<trans-unit id="seo.description"><source>Show pages with one of the selected SEO issues.</source></trans-unit>
+			<trans-unit id="seo.emptyReason"><source>All options are disabled by configuration</source></trans-unit>
 			<trans-unit id="group.content"><source>Content</source></trans-unit>
 			<trans-unit id="group.state"><source>State</source></trans-unit>
 			<trans-unit id="group.quality"><source>Quality</source></trans-unit>
 			<trans-unit id="group.forms"><source>Forms</source></trans-unit>
 			<trans-unit id="tab.form"><source>Form</source></trans-unit>
+			<trans-unit id="form.description"><source>Show pages that embed one of the selected forms.</source></trans-unit>
+			<trans-unit id="form.emptyReason"><source>No forms on this installation</source></trans-unit>
 			<trans-unit id="records.group.core"><source>TYPO3 Core</source></trans-unit>
 			<trans-unit id="records.group.other"><source>Other</source></trans-unit>
 			<trans-unit id="records.text"><source>Pages with content containing text</source></trans-unit>
@@ -129,6 +145,7 @@
 			<trans-unit id="seo.missingDescription"><source>Missing meta description</source></trans-unit>
 			<trans-unit id="group.advanced"><source>Advanced</source></trans-unit>
 			<trans-unit id="tab.raw"><source>Raw query (Pro)</source></trans-unit>
+			<trans-unit id="raw.description"><source>Show pages matching field conditions on any table. For administrators who know the schema.</source></trans-unit>
 			<trans-unit id="raw.expression"><source>Table and field=value conditions</source></trans-unit>
 			<trans-unit id="raw.expression.placeholder"><source>table|field=value|field2=value2</source></trans-unit>
 		</body>

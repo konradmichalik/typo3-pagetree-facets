@@ -60,7 +60,7 @@ final class DoktypeTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -87,7 +87,12 @@ final class DoktypeTab extends AbstractPagesQueryTab
             ];
         }
 
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:doktype.';
+
         return [
+            'description' => $lll.'description',
+            // Every type can be withheld by the pagetypes_select permission above.
+            'emptyReason' => $lll.'emptyReason',
             'fields' => [
                 [
                     'type' => 'checkbox-group',
