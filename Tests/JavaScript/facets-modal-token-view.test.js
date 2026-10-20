@@ -213,6 +213,34 @@ describe('editing the form in token view', () => {
   });
 });
 
+describe('removing a chip in token view', () => {
+  const removeButton = (modal, label) => [...modal.querySelectorAll('.pagetree-facets__chip')]
+    .find((chip) => chip.title === label)
+    .querySelector('.pagetree-facets__chip-remove');
+
+  it('drops the title from the phrase, so Apply enables', async () => {
+    const withTitle = hydratingFixture('home', configurationFixture({ freetext: 'home' }));
+    const { modal } = await openModal({ phrase: 'home', configuration: withTitle });
+    const field = await enterTokenMode(modal);
+    expect(field.value).toBe('home');
+
+    removeButton(modal, 'Title: home').click();
+
+    await expect.poll(() => field.value).toBe('');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('drops a picked option from the phrase as well', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+
+    removeButton(modal, 'Page state: Hidden').click();
+
+    await expect.poll(() => field.value).toBe('');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+});
+
 describe('loading a favorite while in token view', () => {
   it('writes the favorite straight into the typed field, not just the form', async () => {
     // The typed field is authoritative in token view - Apply reads it, not the
@@ -289,5 +317,6 @@ describe('leaving token view', () => {
 
     expect(field.value).toBe('');
     expect(control(modal, 'state[is]', 'hidden').checked).toBe(false);
+    expect(applyButton(modal).disabled).toBe(false);
   });
 });

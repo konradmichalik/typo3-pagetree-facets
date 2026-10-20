@@ -1020,6 +1020,8 @@ class FacetsModal {
     return renderChip(criterion, () => {
       criterion.remove();
       this.#refreshActiveIndicators();
+      // Unsetting a control fires no change event, so the phrase is told here.
+      this.#scheduleTokenFieldSync();
     });
   }
 
