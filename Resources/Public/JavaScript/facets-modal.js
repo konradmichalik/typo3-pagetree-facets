@@ -15,9 +15,10 @@ import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-stat
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
-import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
+import { renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
@@ -138,7 +139,7 @@ class FacetsModal {
       this.#opened = false;
       return;
     }
-    this.#activeTab = (this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
+    this.#activeTab = (this.#configuration.tabs.find((tab) => !isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
 
     this.#modal = Modal.advanced({
       title: TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree',
@@ -353,129 +354,16 @@ class FacetsModal {
   }
 
   #renderNavigation() {
-    const nav = document.createElement('div');
-    nav.className = 'col-3 pagetree-facets__nav';
-    nav.append(buildFilterSearchInput({
+    return buildNavigation({
+      tabs: this.#configuration.tabs,
+      activeTab: this.#activeTab,
+      // Favorites lead the navigation, above every filter group - quick access
+      // to saved filters is the first thing an editor reaches for.
+      leading: this.#renderFavoritesNavItem(),
+      trailing: this.#help.link,
       onQuery: (query) => this.#applyFilterSearch(query),
-    }));
-    // The list is what scrolls, so the help link below it stays in view
-    // however many facets third parties register.
-    const list = document.createElement('ul');
-    list.className = 'list-unstyled pagetree-facets__nav-list';
-
-    // Favorites lead the navigation, above every filter group - quick access to
-    // saved filters is the first thing an editor reaches for.
-    list.append(this.#renderFavoritesNavItem());
-
-    // Tabs arrive priority-ordered, so their groups interleave (content, state,
-    // content, ...). Bucket them by group first, keeping first-seen order, so
-    // each group heading is rendered exactly once.
-    const groups = new Map();
-    for (const tab of this.#configuration.tabs) {
-      const key = tab.group ?? '';
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key).push(tab);
-    }
-
-    for (const [group, tabs] of groups) {
-      if (group !== '') {
-        const heading = document.createElement('li');
-        heading.className = 'pagetree-facets__nav-group text-muted text-uppercase';
-        heading.textContent = group;
-        list.append(heading);
-      }
-      for (const tab of tabs) {
-        list.append(this.#renderNavItem(tab));
-      }
-    }
-
-    // Roving tabindex (see #switchTab): only the active item is a tab stop, so a
-    // single Tab out of the navigation reaches the panel instead of walking past
-    // every remaining tab first. Arrows then move within the navigation.
-    //
-    // Deliberately NOT role="tablist": that role admits only tabs as children,
-    // and this navigation interleaves group headings, so claiming it would
-    // promise a structure we cannot honour. A list of buttons with a roving tab
-    // stop is the honest description, and arrow support is what makes it usable.
-    list.addEventListener('keydown', (event) => {
-      const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-      if (undefined === step && !['Home', 'End'].includes(event.key)) {
-        return;
-      }
-      // Empty tabs are disabled and the favorites item hides itself while there
-      // is nothing saved - neither may swallow an arrow press.
-      const items = [...this.#modal.querySelectorAll('.pagetree-facets__nav-item')]
-        .filter((item) => !item.disabled && true !== item.closest('li')?.hidden);
-      if (0 === items.length) {
-        return;
-      }
-      event.preventDefault();
-      const current = items.indexOf(event.target.closest('.pagetree-facets__nav-item'));
-      const next = 'Home' === event.key
-        ? 0
-        : ('End' === event.key ? items.length - 1 : (current + step + items.length) % items.length);
-      items[next].focus();
-      // Automatic activation: the panels are already in the DOM, so switching as
-      // the user arrows costs nothing and makes browsing them immediate.
-      this.#switchTab(items[next].dataset.tab);
+      onActivate: (identifier, activated) => this.#switchTab(identifier, activated),
     });
-
-    // The last item, pinned to the bottom edge with a separator. Not part of
-    // the roving walk: it is not a facet, Tab reaches it from the active one.
-    const help = document.createElement('div');
-    help.className = 'pagetree-facets__nav-help';
-    help.append(this.#help.link);
-    nav.append(list, help);
-    return nav;
-  }
-
-  #renderNavItem(tab) {
-    const empty = this.#isTabEmpty(tab);
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pagetree-facets__nav-item'
-      + (tab.identifier === this.#activeTab ? ' active' : '')
-      + (empty ? ' is-empty' : '');
-    button.dataset.tab = tab.identifier;
-    button.disabled = empty;
-    if (tab.identifier === this.#activeTab) {
-      button.setAttribute('aria-current', 'true');
-    }
-    button.tabIndex = tab.identifier === this.#activeTab ? 0 : -1;
-    // Label text kept in its own node so the active-criteria dot can be toggled
-    // live (see #setNavDot) without clobbering the label.
-    const text = document.createElement('span');
-    text.textContent = tab.label;
-    button.append(text);
-    if (empty) {
-      // Why there is nothing to pick, as a second line in the item itself: a
-      // disabled button has no hover a tooltip could rely on.
-      const reason = document.createElement('span');
-      reason.className = 'pagetree-facets__nav-reason';
-      reason.textContent = tab.configuration.emptyReason
-        || (TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available');
-      button.append(reason);
-    } else {
-      button.addEventListener('click', () => this.#switchTab(tab.identifier, true));
-    }
-    item.append(button);
-    return item;
-  }
-
-  // A tab is "empty" when every field is a choice type (checkbox-group / select
-  // / radio-presets) with zero options - e.g. Translations on a single-language
-  // site. Freeform fields (text, user-picker) are always usable regardless of
-  // options, so their presence means the tab is never considered empty.
-  #isTabEmpty(tab) {
-    const fields = tab.configuration.fields ?? [];
-    if (!fields.length) {
-      return true;
-    }
-    const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
-    return fields.every((field) => choiceTypes.includes(field.type) && (field.options ?? []).length === 0);
   }
 
   #renderPanels() {
@@ -649,7 +537,7 @@ class FacetsModal {
       this.#favoritesNavItem.hidden = !hasFavorites;
     }
     if (!hasFavorites && this.#favoritesTabId === this.#activeTab) {
-      const fallback = this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0];
+      const fallback = this.#configuration.tabs.find((tab) => !isTabEmpty(tab)) ?? this.#configuration.tabs[0];
       // Only undefined if this.#configuration.tabs is itself empty - which
       // #build() already refuses to open a modal for. Reachable only via a
       // token-view reflect/loadFavorite response that legitimately empties
