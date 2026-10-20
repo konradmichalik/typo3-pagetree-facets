@@ -7,6 +7,7 @@
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source><target>Anwenden</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source><target>Zurücksetzen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.anyTime"><source>Any time</source><target>Beliebig</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.cancel"><source>Cancel</source><target>Abbrechen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source><target>Schließen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source><target>Alle Websites</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source><target>Seitentitel oder UID</target></trans-unit>
@@ -26,9 +27,9 @@
 			<trans-unit id="pagetreeFacets.modal.matchCount.other"><source>%d matching pages</source><target>%d übereinstimmende Seiten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.title"><source>Selection not applied</source><target>Auswahl nicht angewendet</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.message"><source>You picked filter criteria but never applied them, so the page tree is unchanged.</source><target>Du hast Filterkriterien ausgewählt, diese aber nicht angewendet, sodass der Seitenbaum unverändert bleibt.</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply &amp; close</source><target>Anwenden &amp; schließen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard</source><target>Verwerfen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Back</source><target>Zurück</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply and close</source><target>Anwenden und schließen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard selection</source><target>Auswahl verwerfen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Keep editing</source><target>Weiter bearbeiten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.text"><source>No pages match the current filter.</source><target>Keine Seiten entsprechen dem aktuellen Filter.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.reset"><source>Reset filter</source><target>Filter zurücksetzen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.adjust"><source>Adjust filter</source><target>Filter anpassen</target></trans-unit>

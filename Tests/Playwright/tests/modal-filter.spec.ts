@@ -122,14 +122,14 @@ test('the match count renders its icon as a real, resolved icon', async ({ page 
   await expect(icon.locator('svg')).toHaveCount(1);
 });
 
-test('the footer Close and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
+test('the footer Cancel and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
   await modal.open();
 
-  const closeIcon = page.getByRole('button', { name: 'Close', exact: true }).locator('typo3-backend-icon');
-  await expect(closeIcon).toHaveAttribute('identifier', 'actions-close');
-  await expect(closeIcon.locator('svg')).toHaveCount(1);
+  const cancelIcon = page.getByRole('button', { name: 'Cancel', exact: true }).locator('typo3-backend-icon');
+  await expect(cancelIcon).toHaveAttribute('identifier', 'actions-close');
+  await expect(cancelIcon.locator('svg')).toHaveCount(1);
 
   const applyIcon = modal.applyButton().locator('typo3-backend-icon');
   await expect(applyIcon).toHaveAttribute('identifier', 'actions-check');

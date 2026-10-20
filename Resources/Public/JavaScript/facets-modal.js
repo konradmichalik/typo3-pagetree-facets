@@ -147,7 +147,7 @@ class FacetsModal {
       additionalCssClasses: ['pagetree-facets-modal'],
       buttons: [
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close',
+          text: TYPO3.lang?.['pagetreeFacets.modal.cancel'] ?? 'Cancel',
           btnClass: 'btn-default',
           icon: 'actions-close',
           trigger: () => { this.#modal?.hideModal(); },
@@ -1353,13 +1353,14 @@ class FacetsModal {
         {
           // ESC and the backdrop close only the confirmation, which lands on this
           // same branch - the safe one - and leaves the filter modal open.
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.back'] ?? 'Back',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.back'] ?? 'Keep editing',
           btnClass: 'btn-default',
           trigger: () => { confirmation.hideModal(); },
         },
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.discard'] ?? 'Discard',
-          btnClass: 'btn-warning',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.discard'] ?? 'Discard selection',
+          // Neutral: discarding loses nothing that cannot be picked again.
+          btnClass: 'btn-default',
           trigger: () => {
             confirmation.hideModal();
             // Without this the guard would intercept the second attempt as well.
@@ -1368,7 +1369,7 @@ class FacetsModal {
           },
         },
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply & close',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply and close',
           btnClass: 'btn-primary',
           // #serializeAndApply() closes the modal and bypasses the guard itself.
           trigger: () => {
