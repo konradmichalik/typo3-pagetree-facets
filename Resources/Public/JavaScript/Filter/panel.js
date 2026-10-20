@@ -4,19 +4,13 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import { clearControl, renderField, syncGroupToggle } from '@konradmichalik/pagetree-facets/Filter/fields.js';
-import { fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { CHOICE_FIELD_TYPES, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
 /**
- * One facet's panel: a heading with the facet name, the sentence saying what it
- * matches and `Select none` once something here is picked, then the fields.
- *
- * A panel with more than 15 options in one criterion is dense: 32px rows in
- * three columns, sticky headings, and the heading counts the selection. Fields
- * that share a name are one criterion split by group (content element types),
- * so their options count together.
+ * One facet's panel: the heading with the facet name, its description and
+ * `Select none`, then the fields. Above 15 options in one criterion it is dense.
  */
-
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 const DENSE_ABOVE = 15;
 
@@ -44,10 +38,7 @@ export function buildPanel(tab, { fieldDeps, onChange }) {
   fields.className = 'pagetree-facets__panel-fields';
   const nameCounts = fieldNameCounts(tab);
   for (const field of tab.configuration.fields ?? []) {
-    // Built from the same list, so every name is a key; `?? 0` guards the type only.
-    /* v8 ignore next */
-    const bucketed = (nameCounts.get(field.name) ?? 0) > 1;
-    fields.append(renderField(tab, field, { ...fieldDeps, groupToggle: bucketed }));
+    fields.append(renderField(tab, field, { ...fieldDeps, groupToggle: nameCounts.get(field.name) > 1 }));
   }
   // A single field named like the facet would repeat the heading right under it.
   // The legend stays the fieldset's accessible name, it only leaves the screen.
@@ -151,7 +142,7 @@ function countChoices(controls) {
 function isDense(tab) {
   const perName = new Map();
   for (const field of tab.configuration.fields ?? []) {
-    if (['checkbox-group', 'radio-presets', 'select'].includes(field.type)) {
+    if (CHOICE_FIELD_TYPES.includes(field.type)) {
       perName.set(field.name, (perName.get(field.name) ?? 0) + (field.options ?? []).length);
     }
   }

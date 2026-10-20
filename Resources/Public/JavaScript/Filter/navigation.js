@@ -3,19 +3,16 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
+import { lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildFilterSearchInput } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
+import { CHOICE_FIELD_TYPES } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
 /**
  * The vertical navigation: the criterion search, the facet items under their
- * group headings in a list that scrolls on its own, and whatever the modal pins
- * under that list (the help link).
- *
- * A facet without options is disabled and says why on a second line of its
- * item. The modal keeps the active state (see its #switchTab); this module only
- * renders it and moves the roving tab stop with the arrows.
+ * group headings in a list that scrolls on its own, and the help link pinned
+ * under it. The modal keeps the active state, this renders it and moves the
+ * roving tab stop with the arrows.
  */
-
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 /**
  * A tab is "empty" when every field is a choice type (checkbox-group / select
@@ -31,8 +28,7 @@ export function isTabEmpty(tab) {
   if (!fields.length) {
     return true;
   }
-  const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
-  return fields.every((field) => choiceTypes.includes(field.type) && (field.options ?? []).length === 0);
+  return fields.every((field) => CHOICE_FIELD_TYPES.includes(field.type) && (field.options ?? []).length === 0);
 }
 
 /**

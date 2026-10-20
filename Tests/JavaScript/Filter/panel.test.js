@@ -217,6 +217,24 @@ describe('a large panel', () => {
     expect(count(panel).textContent).toBe(' 2 of 16 selected.');
   });
 
+  it('counts neither the neutral radio nor a text field as an option', () => {
+    const configuration = tab({
+      state: { ce: ['3'], updated: '<7d', note: 'typed' },
+      configuration: {
+        description: 'Many.',
+        fields: [
+          { type: 'checkbox-group', name: 'ce', label: 'A', options: options(16) },
+          { type: 'radio-presets', name: 'updated', label: 'Updated', options: [{ value: '<7d', label: 'Last week' }, { value: '<30d', label: 'Last month' }] },
+          { type: 'text', name: 'note', label: 'Note' },
+        ],
+      },
+    });
+    const { panel } = mount(configuration);
+    refreshPanel(panel);
+
+    expect(count(panel).textContent).toBe(' 2 of 18 selected.');
+  });
+
   it('shows the count alone when the facet has no description', () => {
     const configuration = tab({ configuration: { fields: [{ type: 'checkbox-group', name: 'ce', label: 'A', options: options(20) }] } });
     const { panel } = mount(configuration);

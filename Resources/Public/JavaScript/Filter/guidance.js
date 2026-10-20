@@ -4,23 +4,16 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import Hotkeys from '@typo3/backend/hotkeys.js';
-import { appendRichText, decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
- * The help popover, opened from `How filtering works`, the link pinned under
- * the navigation. It is placed next to the navigation over the content and never
- * pushes anything down. Reference material rather than a step in the flow.
- *
- * Every string carries an English fallback so the UI stays usable when the
- * language files have not been loaded.
+ * The help popover, opened from `How filtering works` under the navigation and
+ * placed next to it over the content, so it never pushes anything down.
  */
 
-const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
-
-// Each token exists in the code: DoktypeTab with the parser's comma, the
-// Option/State "empty" option, core's "uploads" CType, ActivityTab::PRESETS and
-// its "me" value. The language key holds what the token does.
+// Each token exists in the code (DoktypeTab, Option/State, core's CType,
+// ActivityTab::PRESETS); the language key holds what it does.
 const EXAMPLE_TOKENS = [
   ['doktype:1,3', 'doktype', 'page type, comma means or'],
   ['is:empty', 'is', 'page state'],

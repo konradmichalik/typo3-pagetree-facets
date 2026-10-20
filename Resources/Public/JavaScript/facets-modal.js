@@ -13,7 +13,7 @@ import { clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
-import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
@@ -494,7 +494,7 @@ class FacetsModal {
     // The same heading every facet panel gets, so this one starts on the same
     // line and in the same rhythm. No Select none: favorites are not criteria.
     panel.append(
-      buildPanelHeading({ label: TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites' }),
+      buildPanelHeading({ label: lang('pagetreeFacets.modal.favorites', 'Favorites') }),
       this.#favoritesList,
     );
     this.#renderFavoriteChips();
