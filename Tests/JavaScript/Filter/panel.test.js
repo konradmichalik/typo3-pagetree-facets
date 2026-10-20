@@ -126,6 +126,32 @@ describe('Select none', () => {
     expect(selectNone(panel).hidden).toBe(true);
   });
 
+  it('moves focus to the first control before it hides itself', () => {
+    const { panel } = mount(tab());
+    panel.querySelector('input[value="2"]').checked = true;
+    refreshPanel(panel);
+    selectNone(panel).focus();
+
+    selectNone(panel).click();
+
+    expect(selectNone(panel).hidden).toBe(true);
+    expect(document.activeElement).toBe(panel.querySelector('input[value="1"]'));
+  });
+
+  it('leaves focus alone when it hides without having it', () => {
+    const { panel } = mount(tab());
+    panel.querySelector('input[value="2"]').checked = true;
+    refreshPanel(panel);
+    const other = document.createElement('button');
+    other.type = 'button';
+    document.body.append(other);
+    other.focus();
+
+    selectNone(panel).click();
+
+    expect(document.activeElement).toBe(other);
+  });
+
   it('counts neither the neutral radio nor an untouched picker as something picked', () => {
     const configuration = tab({
       configuration: {
@@ -177,6 +203,18 @@ describe('a large panel', () => {
     expect(count(panel).hidden).toBe(false);
     expect(count(panel).textContent).toBe(' 2 of 20 selected.');
     expect(panel.querySelector('.pagetree-facets__panel-description').textContent).toBe('Many. 2 of 20 selected.');
+  });
+
+  it('counts the options of a select field, as a third-party facet may use one', () => {
+    const configuration = tab({
+      state: { ce: ['3', '7'] },
+      configuration: { description: 'Many.', fields: [{ type: 'select', name: 'ce', label: 'A', options: options(16) }] },
+    });
+    const { panel } = mount(configuration);
+    refreshPanel(panel);
+
+    expect(panel.classList.contains('is-dense')).toBe(true);
+    expect(count(panel).textContent).toBe(' 2 of 16 selected.');
   });
 
   it('shows the count alone when the facet has no description', () => {

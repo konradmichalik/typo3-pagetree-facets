@@ -106,7 +106,13 @@ export function buildPanelHeading({ label, description, onSelectNone }) {
  */
 export function refreshPanel(panel) {
   const controls = [...panel.querySelectorAll('[name]')];
-  panel.querySelector('.pagetree-facets__select-none').hidden = !controls.some(hasValue);
+  const selectNone = panel.querySelector('.pagetree-facets__select-none');
+  const picked = controls.some(hasValue);
+  // Hiding the focused button would drop focus to the body (WCAG 2.4.3).
+  if (!picked && selectNone === document.activeElement) {
+    controls[0].focus();
+  }
+  selectNone.hidden = !picked;
   // Programmatic changes (Select none, Clear all, a chip's ×) fire no change
   // event the group boxes could follow on their own.
   panel.querySelectorAll('.pagetree-facets__group-toggle').forEach((toggle) => syncGroupToggle(toggle.closest('fieldset')));
@@ -115,15 +121,31 @@ export function refreshPanel(panel) {
   const dense = panel.classList.contains('is-dense');
   count.hidden = !dense;
   if (dense) {
-    const choices = controls.filter((control) => isChoice(control) && '' !== control.value);
-    const selected = choices.filter((control) => control.checked).length;
+    const { total, selected } = countChoices(controls);
     const sentence = count.closest('.pagetree-facets__panel-description');
     // One space between the description and the count, none without a description.
     count.textContent = ('' === sentence.firstChild.textContent ? '' : ' ') + lang('pagetreeFacets.modal.panel.selected', '%d of %d selected.')
       .replace('%d', String(selected))
-      .replace('%d', String(choices.length));
+      .replace('%d', String(total));
     sentence.hidden = false;
   }
+}
+
+// Every option of every choice control, a select's options included.
+function countChoices(controls) {
+  let total = 0;
+  let selected = 0;
+  for (const control of controls) {
+    if ('SELECT' === control.tagName) {
+      total += control.options.length;
+      selected += control.selectedOptions.length;
+    } else if (isChoice(control) && '' !== control.value) {
+      total += 1;
+      selected += control.checked ? 1 : 0;
+    }
+  }
+
+  return { total, selected };
 }
 
 function isDense(tab) {
