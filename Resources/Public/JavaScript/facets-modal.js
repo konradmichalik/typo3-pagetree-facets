@@ -18,7 +18,7 @@ import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
-import { renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
+import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
@@ -65,7 +65,8 @@ class FacetsModal {
   #reflectSeq = 0;
   #reflectTimer = null;
   #syncTimer = null;
-  #resultsPanel = null;
+  // The criterion search's result view (see Filter/search-results.js).
+  #results = null;
   #root = null;
   // The page open in the backend right now, null in a module without one.
   #currentPage = null;
@@ -381,16 +382,14 @@ class FacetsModal {
     for (const tab of this.#configuration.tabs) {
       this.#panels.append(this.#renderPanel(tab));
     }
-    this.#resultsPanel = document.createElement('div');
-    this.#resultsPanel.className = 'pagetree-facets__search-results';
-    this.#resultsPanel.hidden = true;
-    this.#panels.append(this.#resultsPanel);
+    this.#results = buildSearchResults({ onShowAll: (identifier) => this.#switchTab(identifier, true) });
+    this.#panels.append(this.#results.element);
   }
 
   #applyFilterSearch(query) {
-    const trimmed = query.trim().toLowerCase();
+    const trimmed = query.trim();
     if ('' === trimmed) {
-      this.#resultsPanel.hidden = true;
+      this.#results.hide();
       this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => {
         panel.hidden = panel.dataset.panel !== this.#activeTab;
       });
@@ -411,17 +410,13 @@ class FacetsModal {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
     });
-    this.#resultsPanel.replaceChildren(renderSearchResults(
-      findFilterMatches(this.#configuration.tabs, trimmed),
-      {
-        // The criterion a result stands for lives in a now-hidden panel; the proxy
-        // row mirrors that control and writes back to it.
-        findControl: (tab, field, option) => this.#modal.querySelector(
-          `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
-        ),
-      },
-    ));
-    this.#resultsPanel.hidden = false;
+    this.#results.show(findFilterMatches(this.#configuration.tabs, trimmed), trimmed, {
+      // The criterion a result stands for lives in a now-hidden panel; the proxy
+      // row mirrors that control and writes back to it.
+      findControl: (tab, field, option) => this.#modal.querySelector(
+        `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
+      ),
+    });
   }
 
   // The phrase editor, authoritative in token view. Read through the handle so
@@ -624,7 +619,7 @@ class FacetsModal {
     if (filterSearch) {
       filterSearch.value = '';
     }
-    this.#resultsPanel.hidden = true;
+    this.#results.hide();
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
       const isActive = el.dataset.tab === identifier;
       el.classList.toggle('active', isActive);

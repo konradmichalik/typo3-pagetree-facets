@@ -7,12 +7,13 @@
 import { clearable, decorativeIcon, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
- * The cross-tab filter search: its input, and the flat result list that replaces
- * the tab panels while it has text.
+ * The criterion search: its input, and the result view that replaces the facet
+ * panels while it has text. Matches are grouped by facet and field, the matched
+ * part of each label is marked, and the heading announces the count.
  *
  * Each result is a *proxy* control, not the real one: the criterion it stands for
  * lives in a hidden panel, so the row mirrors that control's checked state and
- * writes back to it on change. Deciding when the list is shown at all stays with
+ * writes back to it on change. Deciding when the view is shown at all stays with
  * the modal - that means hiding panels and clearing the navigation's active state,
  * which is a statement about its tab model rather than about searching.
  */
@@ -50,30 +51,114 @@ export function buildFilterSearchInput({ onQuery }) {
 }
 
 /**
- * @param {Array<{tab: object, field: object, option: object}>} matches
- * @param {{findControl: (tab: object, field: object, option: object) => HTMLInputElement|null}} deps
- * @returns {HTMLElement} the list, or a "nothing found" note - ready to replace
- *   whatever the results panel currently holds
+ * The result view. The heading is a live region that stays in the DOM, so each
+ * new count is announced; only the groups under it are rebuilt per query.
+ *
+ * @param {{onShowAll: (identifier: string) => void}} deps - `Show all in <Facet>`
+ * @returns {{element: HTMLElement, show: (matches: Array<{tab: object, field: object, option: object}>,
+ *   query: string, deps: {findControl: Function}) => void, hide: () => void}}
  */
-export function renderSearchResults(matches, deps) {
-  if (0 === matches.length) {
-    const empty = document.createElement('p');
-    empty.className = 'pagetree-facets__search-empty text-muted';
-    empty.textContent = TYPO3.lang?.['pagetreeFacets.modal.noSearchResults'] ?? 'No matching filters';
+export function buildSearchResults({ onShowAll }) {
+  const element = document.createElement('div');
+  element.className = 'pagetree-facets__search-results';
+  element.hidden = true;
 
-    return empty;
+  const headingRow = document.createElement('div');
+  headingRow.className = 'pagetree-facets__search-heading-row';
+  const heading = document.createElement('h2');
+  heading.className = 'pagetree-facets__search-heading';
+  heading.setAttribute('aria-live', 'polite');
+  const escHint = document.createElement('span');
+  escHint.className = 'pagetree-facets__search-esc';
+  escHint.textContent = lang('pagetreeFacets.modal.search.escHint', 'Esc clears the search');
+  headingRow.append(heading, escHint);
+
+  const body = document.createElement('div');
+  body.className = 'pagetree-facets__search-body';
+
+  const scope = document.createElement('p');
+  scope.className = 'pagetree-facets__search-scope';
+  scope.textContent = lang(
+    'pagetreeFacets.modal.search.scope',
+    'Only the criteria are searched here. To find a page by its title, use the field at the top.',
+  );
+  element.append(headingRow, body, scope);
+
+  return {
+    element,
+    show: (matches, query, deps) => {
+      heading.textContent = headingLabel(matches.length, query);
+      body.replaceChildren(...(matches.length ? renderGroups(matches, query, { ...deps, onShowAll }) : [renderEmpty()]));
+      element.hidden = false;
+    },
+    hide: () => { element.hidden = true; },
+  };
+}
+
+function headingLabel(count, query) {
+  const key = { 0: 'zero', 1: 'one' }[count] ?? 'other';
+  const fallback = {
+    zero: 'No criteria match “%s”',
+    one: '1 criterion matches “%s”',
+    other: '%d criteria match “%s”',
+  }[key];
+
+  // Function replacers: the query is user text, so `$&` in it must stay literal.
+  return lang(`pagetreeFacets.modal.search.matches.${key}`, fallback)
+    .replace('%d', () => String(count))
+    .replace('%s', () => query);
+}
+
+function renderEmpty() {
+  const empty = document.createElement('p');
+  empty.className = 'pagetree-facets__search-empty';
+  empty.textContent = lang('pagetreeFacets.modal.noSearchResults', 'Try a shorter word, or choose a category on the left.');
+
+  return empty;
+}
+
+// One group per field the matches come from, in the order they were found. The
+// field object is the key: a bucketed field (content elements per wizard group)
+// shares its name with its siblings but is its own group.
+function renderGroups(matches, query, deps) {
+  const groups = new Map();
+  for (const match of matches) {
+    if (!groups.has(match.field)) {
+      groups.set(match.field, { tab: match.tab, field: match.field, matches: [] });
+    }
+    groups.get(match.field).matches.push(match);
   }
+
+  return [...groups.values()].map((group) => renderGroup(group, query, deps));
+}
+
+function renderGroup({ tab, field, matches }, query, deps) {
+  const section = document.createElement('section');
+  section.className = 'pagetree-facets__search-group';
+
+  const head = document.createElement('div');
+  head.className = 'pagetree-facets__search-group-head';
+  const title = document.createElement('h3');
+  title.className = 'pagetree-facets__search-group-title';
+  title.append(...originParts(tab, field));
+  const showAll = document.createElement('button');
+  showAll.type = 'button';
+  showAll.className = 'btn btn-link btn-sm pagetree-facets__search-show-all';
+  showAll.textContent = lang('pagetreeFacets.modal.search.showAll', 'Show all in %s').replace('%s', () => tab.label);
+  showAll.addEventListener('click', () => deps.onShowAll(tab.identifier));
+  head.append(title, showAll);
 
   const list = document.createElement('ul');
   list.className = 'pagetree-facets__search-list list-unstyled';
   for (const match of matches) {
-    list.append(renderResultItem(match, deps));
+    list.append(renderResultItem(match, query, deps));
   }
+  section.append(head, list);
 
-  return list;
+  return section;
 }
 
-function renderResultItem({ tab, field, option }, { findControl }) {
+function renderResultItem({ tab, field, option }, query, { findControl }) {
   const isRadio = 'radio-presets' === field.type;
   const control = findControl(tab, field, option);
 
@@ -90,10 +175,8 @@ function renderResultItem({ tab, field, option }, { findControl }) {
 
   const text = document.createElement('span');
   text.className = 'pagetree-facets__search-result-label';
-  text.textContent = option.label;
+  text.append(markMatches(option.label, query));
   label.append(text);
-
-  label.append(originBadge(tab, field));
 
   if (option.description) {
     label.title = option.description;
@@ -106,25 +189,47 @@ function renderResultItem({ tab, field, option }, { findControl }) {
 }
 
 /**
- * Where the criterion lives - the whole point of a flat cross-tab list. The tab
- * alone is not always enough: the Activity tab offers the same presets under
- * "Last updated" and under "Created", so without the field heading those matches
- * are two identical rows writing to different controls. The heading is therefore
- * appended wherever a tab spreads its criteria over more than one field - which
- * includes the bucketed ones (records by source, content elements by wizard
- * group), where the panel's section heading is the only context a flat list has
- * left. A single-field tab, or a field named after its own tab, would only say
- * the same thing twice.
+ * The label with every occurrence of the query wrapped in a <mark>. Matching
+ * is case-insensitive on the text as it is; whatever the regex does not hit
+ * stays plain text, so a label the search matched by a different case folding
+ * simply renders unmarked.
+ *
+ * @param {string} label
+ * @param {string} query
+ * @returns {DocumentFragment}
  */
-function originBadge(tab, field) {
-  const badge = document.createElement('span');
-  badge.className = 'pagetree-facets__search-result-tab';
-  badge.append(document.createTextNode(tab.label));
+export function markMatches(label, query) {
+  const fragment = document.createDocumentFragment();
+  const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  let lastIndex = 0;
+  for (const found of label.matchAll(pattern)) {
+    fragment.append(label.slice(lastIndex, found.index));
+    const mark = document.createElement('mark');
+    mark.className = 'pagetree-facets__search-mark';
+    mark.textContent = found[0];
+    fragment.append(mark);
+    lastIndex = found.index + found[0].length;
+  }
+  fragment.append(label.slice(lastIndex));
 
-  // No `?? []` guard: a tab without fields produces no matches, so a row for it
+  return fragment;
+}
+
+/**
+ * Where the criteria of a group live: `<Facet> › <Field>`. The facet alone is
+ * not always enough: the Activity facet offers the same presets under "Last
+ * updated" and under "Created", and a bucketed field (content elements by
+ * wizard group) has the panel's section heading as its only context. A
+ * single-field facet, or a field named after its own facet, would only say the
+ * same thing twice.
+ */
+function originParts(tab, field) {
+  const parts = [document.createTextNode(tab.label)];
+
+  // No `?? []` guard: a tab without fields produces no matches, so a group for it
   // never reaches this function.
   if (tab.configuration.fields.length < 2 || field.label === tab.label) {
-    return badge;
+    return parts;
   }
 
   // "›" is decoration - a screen reader would announce it as "greater than" - so
@@ -138,9 +243,7 @@ function originBadge(tab, field) {
   chevron.setAttribute('aria-hidden', 'true');
   chevron.textContent = '›';
 
-  badge.append(spoken, chevron, document.createTextNode(field.label));
-
-  return badge;
+  return [...parts, spoken, chevron, document.createTextNode(field.label)];
 }
 
 function buildProxy(tab, field, option, isRadio, control) {

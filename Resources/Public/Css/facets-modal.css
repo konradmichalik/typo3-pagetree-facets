@@ -1170,25 +1170,98 @@
     flex: 0 0 auto;
 }
 
-/* --- Cross-tab filter search --------------------------------------------
- * Replaces .pagetree-facets__panels while the search field has text; a flat,
- * clickable list of matches aggregated across every tab. */
+/* --- Criterion search ---------------------------------------------------
+ * Replaces the facet panels while the search field has text: the matches
+ * grouped by facet and field, each group with its own Show all in. */
 
 .pagetree-facets__search-results {
     height: 100%;
     overflow-y: auto;
 }
 
-.pagetree-facets__search-list {
-    margin: 0;
+/* The count on the same line as the panel titles, the Escape hint at the end. */
+.pagetree-facets__search-heading-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pagetree-facets__search-heading {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__search-esc {
+    flex: 0 0 auto;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
+}
+
+.pagetree-facets__search-group + .pagetree-facets__search-group {
+    margin-top: 1.25rem;
+}
+
+/* Facet and field, a rule filling the line, Show all in at the end. */
+.pagetree-facets__search-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.pagetree-facets__search-group-head::after {
+    content: "";
+    flex: 1 1 auto;
+    order: 1;
+    border-top: 1px solid var(--typo3-component-border-color);
+}
+
+.pagetree-facets__search-group-title {
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__search-show-all {
+    flex: 0 0 auto;
+    order: 2;
+    min-height: 24px;
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.pagetree-facets__search-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 0.15rem 1rem;
+    margin: 0;
 }
 
 .pagetree-facets__search-result {
     width: 100%;
     color: var(--typo3-text-color-base);
+}
+
+/* The matched part: the stronger tint under the base text colour, no colour of
+   its own. Forced colours get the system mark colours below. */
+.pagetree-facets__search-mark {
+    padding: 0;
+    border-radius: 2px;
+    background: var(--pf-tint-strong);
+    color: var(--typo3-text-color-base);
+}
+
+.pagetree-facets__search-scope {
+    margin: 1.25rem 0 0;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
 }
 
 .pagetree-facets__search-result:has(.form-check-input:focus-visible) {
@@ -1206,23 +1279,14 @@
     flex: 1 1 auto;
 }
 
-.pagetree-facets__search-result-tab {
-    flex: 0 0 auto;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-    background: var(--typo3-component-hover-bg);
+.pagetree-facets__search-result-origin {
+    margin: 0 0.25em;
     color: var(--typo3-text-color-variant);
-    font-size: 0.75rem;
     font-weight: 400;
 }
 
-.pagetree-facets__search-result-origin {
-    margin: 0 0.25em;
-    opacity: 0.7;
-}
-
 .pagetree-facets__search-empty {
-    padding: 0.4rem 0.6rem;
+    margin: 0;
     color: var(--typo3-text-color-variant);
 }
 
@@ -1548,5 +1612,11 @@
     .pagetree-facets__nav-item.active {
         padding-inline-start: calc(0.75rem - 3px);
         border-inline-start: 3px solid CanvasText;
+    }
+
+    /* The tint under a match is dropped, the system mark colours are kept. */
+    .pagetree-facets__search-mark {
+        background: Mark;
+        color: MarkText;
     }
 }

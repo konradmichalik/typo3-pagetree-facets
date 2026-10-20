@@ -73,7 +73,13 @@
 			<trans-unit id="pagetreeFacets.modal.panel.selected"><source>%d of %d selected.</source><target>%d von %d ausgewählt.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.selectAllGroup"><source>Select all %s</source><target>Alle auswählen: %s</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.search"><source>Find a criterion</source><target>Kriterium suchen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source><target>Keine übereinstimmenden Filter</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>Try a shorter word, or choose a category on the left.</source><target>Versuche ein kürzeres Wort oder wähle links eine Kategorie.</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.zero"><source>No criteria match “%s”</source><target>Keine Kriterien passen zu „%s“</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.one"><source>1 criterion matches “%s”</source><target>1 Kriterium passt zu „%s“</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.other"><source>%d criteria match “%s”</source><target>%d Kriterien passen zu „%s“</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.showAll"><source>Show all in %s</source><target>Alle in %s anzeigen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.escHint"><source>Esc clears the search</source><target>Esc leert die Suche</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.scope"><source>Only the criteria are searched here. To find a page by its title, use the field at the top.</source><target>Hier werden nur die Kriterien durchsucht. Eine Seite findest du über ihren Titel im Feld oben.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source><target>Ich</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source><target>Backend-Benutzer suchen…</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source><target>Aus der Liste auswählen…</target></trans-unit>

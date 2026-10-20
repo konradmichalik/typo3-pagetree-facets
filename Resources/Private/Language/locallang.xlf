@@ -73,7 +73,13 @@
 			<trans-unit id="pagetreeFacets.modal.panel.selected"><source>%d of %d selected.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.selectAllGroup"><source>Select all %s</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.search"><source>Find a criterion</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>No matching filters</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noSearchResults"><source>Try a shorter word, or choose a category on the left.</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.zero"><source>No criteria match “%s”</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.one"><source>1 criterion matches “%s”</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.matches.other"><source>%d criteria match “%s”</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.showAll"><source>Show all in %s</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.escHint"><source>Esc clears the search</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.search.scope"><source>Only the criteria are searched here. To find a page by its title, use the field at the top.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source></trans-unit>
