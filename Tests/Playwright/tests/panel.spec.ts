@@ -43,7 +43,10 @@ test('Select none clears the panel it sits in and nothing else', async ({ page }
   await expect(modal.selectNoneButton('state')).toBeVisible();
   await modal.selectNoneButton('state').click();
 
-  await expect(modal.chipLabels()).resolves.toEqual(['Page type: Standard Page']);
+  // "Standard Page" on v14, "Standard" on v13: core's own label for doktype 1.
+  const labels = await modal.chipLabels();
+  expect(labels).toHaveLength(1);
+  expect(labels[0]).toMatch(/^Page type: Standard/);
   await expect(modal.navCount('state')).toHaveCount(0);
   await expect(modal.navCount('doktype')).toHaveText('1');
   await expect(modal.selectNoneButton('state')).toBeHidden();

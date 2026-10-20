@@ -303,10 +303,11 @@
     margin: 0;
 }
 
+/* The colour stays core's own code colour (--typo3-text-color-code): that is
+   how the backend marks a token everywhere else. */
 .pagetree-facets__help-tokens code {
     padding: 0;
     background: transparent;
-    color: var(--typo3-text-color-base);
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
     font-size: 0.8125rem;
 }
