@@ -113,7 +113,7 @@ class FacetsModal {
 
   async #build(currentPhrase, currentPageId, onApply, currentPageTitle) {
     this.#onApply = onApply;
-    this.#currentPage = currentPageId ? { uid: currentPageId, title: currentPageTitle ?? '' } : null;
+    this.#currentPage = currentPageId ? { uid: currentPageId, title: currentPageTitle } : null;
     this.#currentPhrase = currentPhrase ?? '';
     // This class is exported as a singleton, so every field outlives the modal
     // it belonged to. The baseline is re-established on 'shown' below; until

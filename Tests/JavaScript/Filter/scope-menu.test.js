@@ -113,6 +113,16 @@ describe('hydration', () => {
     expect(chip(menu).textContent).toContain('Below "Home" [5]');
   });
 
+  it('names a hydrated site that is not in the list, selecting no entry', () => {
+    // A phrase may scope to a site outside the user's mounts; the chip still
+    // says so rather than claiming the whole tree.
+    const { menu } = mount({ activeSite: 'elsewhere' });
+
+    expect(chip(menu).textContent).toContain('elsewhere');
+    expect(menu.value).toEqual({ site: 'elsewhere', pageScope: 0 });
+    expect(options(menu).every((option) => 'false' === option.getAttribute('aria-selected'))).toBe(true);
+  });
+
   it('re-hydrates from a new configuration without reporting a change', () => {
     const { menu, onChange } = mount();
 
@@ -211,8 +221,11 @@ describe('picking with the keyboard', () => {
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 
-  it('opens the list from the chip with ArrowDown', () => {
+  it('opens the list from the chip with ArrowDown, and with that key only', () => {
     const { menu } = mount();
+
+    expect(key(chip(menu), 'ArrowUp').defaultPrevented).toBe(false);
+    expect(list(menu).hidden).toBe(true);
 
     const event = key(chip(menu), 'ArrowDown');
 

@@ -116,6 +116,17 @@ describe('attachPopover', () => {
     expect(panel.hidden).toBe(false);
   });
 
+  it('ignores a second show while already open, so onOpen runs once', () => {
+    // The scope chip's ArrowDown calls show() whether or not the list is open.
+    const { popover, onOpen } = mount();
+
+    popover.show();
+    popover.show();
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(popover.isOpen()).toBe(true);
+  });
+
   it('is a no-op to close while already closed', () => {
     const { popover, trigger } = mount();
 
