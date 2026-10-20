@@ -444,8 +444,9 @@
     display: none;
 }
 
-/* A text button; zero padding keeps it within the row's chip height. */
+/* A text button as tall as the chips, so it stays a 24px target. */
 .pagetree-facets__clear-all {
+    min-height: 26px;
     padding: 0 0.25rem;
     font-size: 0.8125rem;
     white-space: nowrap;

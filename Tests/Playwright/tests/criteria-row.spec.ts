@@ -45,6 +45,17 @@ test('the search icon is centred in the field and Clear all matches the chips in
   await expect(modal.clearAllButton()).toHaveCSS('font-size', chipSize);
 });
 
+test('Clear all is a target of at least 24px, like the chips beside it', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await modal.navItem('doktype').click();
+  await modal.option('doktype', 'doktype', '1').check();
+
+  const clearAll = await modal.clearAllButton().boundingBox();
+  expect(clearAll!.height).toBeGreaterThanOrEqual(24);
+});
+
 test('forced colours keep the chips, the pressed switch and the selected scope entry told apart', async ({ page }) => {
   const modal = new FacetsModalPage(page);
   // The tints are dropped here, so each state needs a border or an outline.
