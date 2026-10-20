@@ -197,10 +197,12 @@ class ScopeMenu {
 function buildEntries(sites, currentPage) {
   const entries = [{ label: lang('pagetreeFacets.modal.scope.wholeTree', 'Whole tree'), site: '', below: false }];
   if (currentPage) {
-    const label = '' === currentPage.title
-      ? lang('pagetreeFacets.modal.scope.belowPage', 'Below page [%d]').replace('%d', currentPage.uid)
-      : lang('pagetreeFacets.modal.scope.below', 'Below "%s" [%d]').replace('%s', currentPage.title).replace('%d', currentPage.uid);
-    entries.push({ label, site: '', below: true });
+    const template = '' === currentPage.title
+      ? lang('pagetreeFacets.modal.scope.belowPage', 'Below page [%d]')
+      : lang('pagetreeFacets.modal.scope.below', 'Below "%s" [%d]');
+    const values = { '%s': currentPage.title, '%d': String(currentPage.uid) };
+    // One pass with a function replacer: a title holding `%d` or `$&` stays as typed.
+    entries.push({ label: template.replace(/%[sd]/g, (match) => values[match]), site: '', below: true });
   }
   if (sites.length > 1) {
     entries.push(...sites.map((site) => ({ label: site.identifier, site: site.identifier, below: false })));

@@ -101,6 +101,14 @@ describe('renderChip', () => {
     expect(remove.type).toBe('button');
   });
 
+  it('keeps a value with replacement patterns in the name as typed', () => {
+    const odd = { prefix: 'Title', value: "Q&A $& $'", label: "Title: Q&A $& $'" };
+
+    const remove = renderChip(odd, vi.fn()).querySelector('.pagetree-facets__chip-remove');
+
+    expect(remove.getAttribute('aria-label')).toBe("Remove Title: Q&A $& $'");
+  });
+
   it('reports the removal', () => {
     const onRemove = vi.fn();
 

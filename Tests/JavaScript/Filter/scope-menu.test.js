@@ -61,6 +61,11 @@ describe('rendering', () => {
     expect(labels(menu)[1]).toBe('Below page [5]');
   });
 
+  it('shows a title as typed, whatever it holds', () => {
+    expect(labels(mount({ currentPage: { uid: 5, title: '100%d' } }).menu)[1]).toBe('Below "100%d" [5]');
+    expect(labels(mount({ currentPage: { uid: 5, title: "Q&A $& $'" } }).menu)[1]).toBe('Below "Q&A $& $\'" [5]');
+  });
+
   it('reads as a button opening a listbox, with a dashed look that is not a removable chip', () => {
     const { menu } = mount();
 

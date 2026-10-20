@@ -277,7 +277,8 @@ export function renderChip(criterion, onRemove) {
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'pagetree-facets__chip-remove';
-  const removeLabel = lang('pagetreeFacets.modal.removeCriterion', 'Remove %s').replace('%s', criterion.label);
+  // A function replacer, so `$&` in a page title is not expanded.
+  const removeLabel = lang('pagetreeFacets.modal.removeCriterion', 'Remove %s').replace('%s', () => criterion.label);
   remove.setAttribute('aria-label', removeLabel);
   remove.title = removeLabel;
   remove.textContent = '×';
