@@ -225,6 +225,12 @@ describe('a group heading checkbox', () => {
     expect(legend.querySelector('.pagetree-facets__group-count').textContent).toBe('(3)');
   });
 
+  it('keeps a replacement pattern in the group name literal', () => {
+    const group = renderField(tab(), { ...field, label: 'Forms $& more' }, { ...deps(), groupToggle: true });
+
+    expect(group.querySelector('.pagetree-facets__group-toggle').getAttribute('aria-label')).toBe('Select all Forms $& more');
+  });
+
   it('selects the whole group, then clears it, and lets the modal know', () => {
     const { group, toggle, options } = mount();
     const changes = vi.fn();

@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -74,7 +74,8 @@ function renderGroupHeading(field) {
   const toggle = document.createElement('input');
   toggle.type = 'checkbox';
   toggle.className = 'form-check-input pagetree-facets__group-toggle';
-  const name = (TYPO3.lang?.['pagetreeFacets.modal.selectAllGroup'] ?? 'Select all %s').replace('%s', field.label);
+  // A function replacer keeps `$&` and friends in a label literal.
+  const name = lang('pagetreeFacets.modal.selectAllGroup', 'Select all %s').replace('%s', () => field.label);
   toggle.setAttribute('aria-label', name);
   toggle.title = name;
   toggle.addEventListener('change', () => {
