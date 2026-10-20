@@ -28,6 +28,23 @@ async function openHome(page: Page): Promise<void> {
   await expect.poll(() => new URL(page.url()).searchParams.get('id')).toBe('1');
 }
 
+test('the search icon is centred in the field and Clear all matches the chips in size', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+  await modal.navItem('doktype').click();
+  await modal.option('doktype', 'doktype', '1').check();
+
+  // The icon element stretches to the field, so the glyph inside is what has to
+  // sit on the field's centre line. Measured, since jsdom has no layout.
+  const field = await page.locator('typo3-backend-modal .pagetree-facets__search-field').boundingBox();
+  const glyph = await page.locator('typo3-backend-modal .pagetree-facets__search-icon svg').boundingBox();
+  expect(Math.abs((glyph!.y + glyph!.height / 2) - (field!.y + field!.height / 2))).toBeLessThan(2);
+
+  const chipSize = await modal.chips().first().evaluate((chip) => getComputedStyle(chip).fontSize);
+  await expect(modal.clearAllButton()).toHaveCSS('font-size', chipSize);
+});
+
 test('the empty criteria row names what to do, with the scope chip ahead of it', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 

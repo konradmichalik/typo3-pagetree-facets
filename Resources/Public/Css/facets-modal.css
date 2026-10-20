@@ -99,8 +99,10 @@
     display: flex;
     flex: 0 0 auto;
     align-items: center;
+    align-self: center;
     padding-inline-start: 0.75rem;
     color: var(--typo3-text-color-variant);
+    line-height: 1;
 }
 
 .pagetree-facets__freetext {
@@ -445,6 +447,7 @@
 /* A text button; zero padding keeps it within the row's chip height. */
 .pagetree-facets__clear-all {
     padding: 0 0.25rem;
+    font-size: 0.8125rem;
     white-space: nowrap;
 }
 
