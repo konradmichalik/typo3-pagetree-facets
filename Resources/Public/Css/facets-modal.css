@@ -585,8 +585,12 @@
     justify-content: space-between;
     gap: 0.5rem;
     width: 100%;
+    /* The start border is the active marker below, reserved here so the label
+     * does not shift when a facet becomes active. */
     padding: 0.4rem 0.75rem;
+    padding-inline-start: calc(0.75rem - 3px);
     border: 0;
+    border-inline-start: 3px solid transparent;
     border-radius: 6px;
     background: transparent;
     color: inherit;
@@ -601,8 +605,11 @@
     background: var(--typo3-component-hover-bg);
 }
 
+/* Tint plus a border: the tint alone is a weak cue and is dropped in
+ * forced-colors mode, where a border survives. */
 .pagetree-facets__nav-item.active {
     background: var(--pf-tint);
+    border-inline-start-color: var(--typo3-text-color-base);
     color: var(--typo3-text-color-base);
     font-weight: 500;
 }

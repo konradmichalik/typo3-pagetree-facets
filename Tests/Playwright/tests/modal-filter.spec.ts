@@ -136,6 +136,18 @@ test('the footer Cancel and Apply buttons render their icons as real, resolved i
   await expect(applyIcon.locator('svg')).toHaveCount(1);
 });
 
+test('the active facet is marked by more than a tint', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // A tint alone is a weak cue and disappears in forced-colors mode. A border
+  // stays, so the current facet is told apart without relying on colour.
+  const active = page.locator('typo3-backend-modal .pagetree-facets__nav-item.active');
+  await expect(active).toHaveCSS('border-inline-start-width', '3px');
+  await expect(active).toHaveCSS('border-inline-start-style', 'solid');
+});
+
 test('a facet without options keeps readable text instead of being dimmed further', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
