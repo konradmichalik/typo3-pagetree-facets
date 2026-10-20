@@ -779,7 +779,8 @@
 }
 
 /* Tint plus a border: the tint alone is a weak cue and is dropped in
- * forced-colors mode, where a border survives. */
+ * forced-colors mode. The reserved transparent border is painted there too, so
+ * the forced-colours block takes it off the inactive items. */
 .pagetree-facets__nav-item.active {
     background: var(--pf-tint);
     border-inline-start-color: var(--typo3-text-color-base);
@@ -1226,4 +1227,37 @@
 .pagetree-facets-empty__actions .btn:focus {
     background: var(--typo3-component-hover-bg);
     color: var(--typo3-text-color-base);
+}
+
+/* --- Forced colours ---------------------------------------------------- */
+
+/* The tints are dropped here, so each state gets a border in a system colour.
+   The padding gives way to it, so nothing moves. */
+@media (forced-colors: active) {
+    .pagetree-facets__chip {
+        padding-inline: calc(0.6rem - 1px) calc(0.15rem - 1px);
+        border: 1px solid CanvasText;
+    }
+
+    .pagetree-facets__text-switch[aria-pressed="true"] {
+        padding-inline: calc(0.75rem - 1px) calc(0.75rem - 2px);
+        border: 2px solid ButtonText;
+    }
+
+    .pagetree-facets__scope-option[aria-selected="true"] {
+        padding-inline-start: calc(0.6rem - 3px);
+        border-inline-start: 3px solid CanvasText;
+    }
+
+    /* A transparent border is painted in a system colour here, so only the
+       active item keeps its marker. */
+    .pagetree-facets__nav-item {
+        padding-inline-start: 0.75rem;
+        border-inline-start-style: none;
+    }
+
+    .pagetree-facets__nav-item.active {
+        padding-inline-start: calc(0.75rem - 3px);
+        border-inline-start: 3px solid CanvasText;
+    }
 }

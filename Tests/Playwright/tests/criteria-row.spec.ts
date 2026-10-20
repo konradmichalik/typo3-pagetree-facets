@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { BackendPage, PageTreePage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { DEMO_PAGES } from '../support/demo-pages.js';
@@ -43,6 +43,35 @@ test('the search icon is centred in the field and Clear all matches the chips in
 
   const chipSize = await modal.chips().first().evaluate((chip) => getComputedStyle(chip).fontSize);
   await expect(modal.clearAllButton()).toHaveCSS('font-size', chipSize);
+});
+
+test('forced colours keep the chips, the pressed switch and the selected scope entry told apart', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  // The tints are dropped here, so each state needs a border or an outline.
+  await page.emulateMedia({ forcedColors: 'active' });
+
+  await openHome(page);
+  await modal.open();
+  await modal.navItem('doktype').click();
+  await modal.option('doktype', 'doktype', '1').check();
+
+  const width = (locator: Locator, property: string) => locator.evaluate(
+    (element, name) => parseFloat(getComputedStyle(element).getPropertyValue(name)),
+    property,
+  );
+  expect(await width(modal.chips().first(), 'border-top-width')).toBeGreaterThan(0);
+  expect(await width(modal.navItem('doktype'), 'border-left-width')).toBeGreaterThan(0);
+  // A transparent border is painted here too, so the inactive items must have none.
+  expect(await width(modal.navItem('state'), 'border-left-width')).toBe(0);
+
+  await modal.scopeChip().click();
+  const selected = page.locator('typo3-backend-modal .pagetree-facets__scope-option[aria-selected="true"]');
+  expect(await width(selected, 'border-left-width')).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+
+  await modal.textSwitch().click();
+  await expect(modal.textSwitch()).toHaveAttribute('aria-pressed', 'true');
+  expect(await width(modal.textSwitch(), 'border-top-width')).toBeGreaterThan(0);
 });
 
 test('the empty criteria row names what to do, with the scope chip ahead of it', async ({ page }) => {
