@@ -21,9 +21,16 @@ export class FooterStatus {
   #skeleton;
   #suffix;
   #tip;
+  #onRender;
   #state = { picked: false, dirty: false, countable: false, count: null, loading: false };
 
-  constructor() {
+  /**
+   * @param {{onRender?: (state: {none: boolean}) => void}} options - told after every
+   *   render whether a settled count of 0 is on screen, for the callout that
+   *   follows the same state
+   */
+  constructor({ onRender = () => {} } = {}) {
+    this.#onRender = onRender;
     this.element = document.createElement('p');
     this.element.className = 'pagetree-facets__status';
     const live = document.createElement('span');
@@ -100,6 +107,7 @@ export class FooterStatus {
     this.#dot.hidden = !dirty && !none;
     this.#dot.classList.toggle('is-none', none);
     this.#dot.classList.toggle('is-pending', !none && dirty);
+    this.#onRender({ none });
   }
 }
 

@@ -35,6 +35,9 @@
 			<trans-unit id="pagetreeFacets.modal.overflow.more"><source>+%d more</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.overflow.show"><source>Show %d more criteria</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.overflow.title"><source>All %d criteria</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.one"><source>No page matches this criterion</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.other"><source>No page matches all %d criteria</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.text"><source>Every criterion has to match at once. Remove one with its × above, or widen it in its category. The count below updates right away.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied"><source>Not applied to the tree yet</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied.suffix"><source>not applied to the tree yet</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.tip.ctrl"><source>Tip: open this dialog from anywhere with [[Ctrl]] [[Shift]] [[L]]</source></trans-unit>

@@ -582,6 +582,36 @@
     outline-offset: -2px;
 }
 
+/* --- No matching pages ------------------------------------------------- */
+
+/* Core's warning alert carries the colours; the header spaces its rows, so
+   the alert's own margin goes. */
+.pagetree-facets__no-match {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.pagetree-facets__no-match[hidden] {
+    display: none;
+}
+
+.pagetree-facets__no-match-icon {
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.pagetree-facets__no-match-title {
+    margin: 0;
+    font-weight: 600;
+}
+
+.pagetree-facets__no-match-text {
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+}
+
 /* --- +N more ----------------------------------------------------------- */
 
 .pagetree-facets__overflow {

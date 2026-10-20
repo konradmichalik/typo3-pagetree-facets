@@ -16,6 +16,7 @@ import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js'
 import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildNavigation, isTabEmpty, showMatchCounts } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
+import { NoMatchCallout } from '@konradmichalik/pagetree-facets/Filter/no-match-callout.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
@@ -44,6 +45,9 @@ class FacetsModal {
   // The footer's status line (see Filter/footer-status.js), injected into the
   // modal's own footer; #build() says why that is safe.
   #status = null;
+  // The warning under the criteria row while the count is 0 (see Filter/no-match-callout.js).
+  #callout = null;
+  #chipCount = 0;
   // One-shot escape hatch for the close guard: the apply paths close the modal
   // themselves while the state still counts as dirty (see #apply).
   #skipCloseGuard = false;
@@ -65,7 +69,6 @@ class FacetsModal {
   #reflectSeq = 0;
   #reflectTimer = null;
   #syncTimer = null;
-  // The criterion search's result view (see Filter/search-results.js).
   #results = null;
   #root = null;
   // The page open in the backend right now, null in a module without one.
@@ -122,7 +125,8 @@ class FacetsModal {
     this.#baselineState = null;
     this.#skipCloseGuard = false;
     // Fresh per modal: the previous one's status sits in a detached footer.
-    this.#status = new FooterStatus();
+    this.#callout = new NoMatchCallout();
+    this.#status = new FooterStatus({ onRender: ({ none }) => this.#callout.update({ none, criteria: this.#chipCount }) });
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
     this.#liveCount = new LiveCount({
       status: this.#status,
@@ -319,7 +323,7 @@ class FacetsModal {
       onCopyLink: () => this.#copyLink(),
       focusFallback: () => this.#focusBeforeChips(),
     });
-    header.append(this.#row.element);
+    header.append(this.#row.element, this.#callout.element);
 
     return header;
   }
@@ -705,6 +709,7 @@ class FacetsModal {
       return;
     }
     const criteria = [...this.#titleCriterion(), ...this.#collectActiveCriteria()];
+    this.#chipCount = criteria.length;
     // Clear all and the actions act on the whole phrase, so they follow whether
     // anything is picked - a scope alone counts, not just chips.
     this.#row.update({ criteria, savable: this.#isPicked() });

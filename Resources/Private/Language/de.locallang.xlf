@@ -35,6 +35,9 @@
 			<trans-unit id="pagetreeFacets.modal.overflow.more"><source>+%d more</source><target>+%d weitere</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.overflow.show"><source>Show %d more criteria</source><target>%d weitere Kriterien anzeigen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.overflow.title"><source>All %d criteria</source><target>Alle %d Kriterien</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.one"><source>No page matches this criterion</source><target>Keine Seite passt zu diesem Kriterium</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.other"><source>No page matches all %d criteria</source><target>Keine Seite passt zu allen %d Kriterien</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.noMatch.text"><source>Every criterion has to match at once. Remove one with its × above, or widen it in its category. The count below updates right away.</source><target>Alle Kriterien müssen zugleich zutreffen. Entferne eines über sein × oben oder fasse es in seiner Kategorie weiter. Die Zahl unten aktualisiert sich sofort.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied"><source>Not applied to the tree yet</source><target>Noch nicht auf den Baum angewendet</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.notApplied.suffix"><source>not applied to the tree yet</source><target>noch nicht auf den Baum angewendet</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.status.tip.ctrl"><source>Tip: open this dialog from anywhere with [[Ctrl]] [[Shift]] [[L]]</source><target>Tipp: Öffne diesen Dialog von überall mit [[Strg]] [[Umschalt]] [[L]]</target></trans-unit>
