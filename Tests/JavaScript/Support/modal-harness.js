@@ -168,7 +168,7 @@ export function resetHarness() {
  *   favorites?: Array, onApply?: Function, show?: boolean}} options - `configuration`
  *   may be a function of the requested phrase, which is what the token view needs.
  *   `show: false` skips the 'typo3-modal-shown' dispatch, for the handful of tests
- *   about the narrow window before it - baseline/#resetButton/#pendingNotice are
+ *   about the narrow window before it - baseline and the Apply button are
  *   all still null there, which core's own async "shown" timing makes reachable.
  * @returns {Promise<{modal: HTMLElement|null, onApply: Function}>} `modal` is null
  *   when the configuration offered no tabs and nothing was opened.
@@ -233,12 +233,40 @@ export function applyButton(modal) {
   return modal.querySelector('button[name="pagetree-facets-apply"]');
 }
 
-export function resetButton(modal) {
-  return modal.querySelector('button[name="pagetree-facets-reset"]');
+/** `Clear all` in the criteria row, replacing the former footer Reset button. */
+export function clearAllButton(modal) {
+  return modal.querySelector('.pagetree-facets__clear-all');
+}
+
+/** The `⋯` button opening the actions menu in the criteria row. */
+export function moreButton(modal) {
+  return modal.querySelector('.pagetree-facets__more');
+}
+
+/** Opens the actions menu and returns the item with that text. */
+export function menuItem(modal, text) {
+  moreButton(modal).click();
+
+  return [...modal.querySelectorAll('.pagetree-facets__menu-item')].find((item) => item.textContent.trim() === text);
 }
 
 export function footerButton(modal, text) {
   return [...modal.querySelectorAll('.t3js-modal-footer button')].find((button) => button.textContent === text);
+}
+
+/** The footer's status line (see Filter/footer-status.js). */
+export function status(modal) {
+  return modal.querySelector('.pagetree-facets__status');
+}
+
+/** What the status line shows: its children are toggled with `hidden`, never removed. */
+export function statusText(modal) {
+  return [...status(modal).children]
+    .filter((child) => !child.hidden)
+    .map((child) => child.textContent)
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** The Text switch built into the search field (see Filter/criteria-row.js). */

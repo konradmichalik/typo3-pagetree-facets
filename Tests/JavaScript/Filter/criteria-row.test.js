@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
+import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 
 beforeEach(() => {
   globalThis.TYPO3 = { lang: {} };
@@ -107,5 +107,175 @@ describe('renderChip', () => {
     renderChip(criterion, onRemove).querySelector('.pagetree-facets__chip-remove').click();
 
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('buildCriteriaRow', () => {
+  const mount = (options = {}) => {
+    const handlers = { onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn() };
+    const scope = document.createElement('div');
+    scope.className = 'pagetree-facets__scope';
+    const row = buildCriteriaRow({ scope, ...handlers, ...options });
+    document.body.replaceChildren(row.element);
+
+    return { row, scope, ...handlers };
+  };
+  const chip = (label) => renderChip({ prefix: 'Page type', value: label, label: `Page type: ${label}` }, vi.fn());
+  const criteria = (row) => row.element.querySelector('.pagetree-facets__criteria');
+  const more = (row) => row.element.querySelector('.pagetree-facets__more');
+  const menu = (row) => row.element.querySelector('[role="menu"]');
+  const items = (row) => [...menu(row).querySelectorAll('[role="menuitem"]')];
+  const clearAll = (row) => row.element.querySelector('.pagetree-facets__clear-all');
+  const key = (target, name) => {
+    const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+
+    return event;
+  };
+
+  it('starts empty: dashed row with the fixed text, no Clear all, no menu', () => {
+    const { row, scope } = mount();
+
+    expect(criteria(row).classList.contains('is-empty')).toBe(true);
+    expect(row.element.querySelector('.pagetree-facets__criteria-empty').textContent)
+      .toBe('Nothing picked yet. Choose a category on the left or type a page title above.');
+    expect(row.element.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(false);
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
+    // The scope stays in that state, ahead of everything else.
+    expect(criteria(row).firstElementChild).toBe(scope);
+  });
+
+  it('renders without a scope element', () => {
+    const row = buildCriteriaRow({ scope: null, onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn() });
+
+    expect(row.element.querySelector('.pagetree-facets__chips')).not.toBeNull();
+  });
+
+  it('lists the chips in place of the empty text and reveals the actions once something is savable', () => {
+    const { row } = mount();
+
+    row.update({ chips: [chip('Standard'), chip('Link')], savable: true });
+
+    expect(criteria(row).classList.contains('is-empty')).toBe(false);
+    expect(row.element.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(true);
+    expect([...row.element.querySelectorAll('.pagetree-facets__chip-value')].map((value) => value.textContent))
+      .toEqual(['Standard', 'Link']);
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
+  });
+
+  it('keeps the actions for a savable selection without chips, such as a scope alone', () => {
+    const { row } = mount();
+
+    row.update({ chips: [], savable: true });
+
+    expect(criteria(row).classList.contains('is-empty')).toBe(true);
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
+  });
+
+  it('offers Clear all as a text button', () => {
+    const { row, onClearAll } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
+
+    expect(clearAll(row).textContent).toBe('Clear all');
+    expect(clearAll(row).type).toBe('button');
+    clearAll(row).click();
+
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the actions menu after what it holds, being icon-only', () => {
+    const { row } = mount();
+
+    expect(more(row).getAttribute('aria-label')).toBe('More actions: save as favorite, copy link');
+    expect(more(row).getAttribute('aria-haspopup')).toBe('menu');
+    expect(more(row).getAttribute('aria-expanded')).toBe('false');
+    expect(more(row).getAttribute('aria-controls')).toBe(menu(row).id);
+    expect(more(row).querySelector('typo3-backend-icon').getAttribute('identifier')).toBe('actions-menu-alternative');
+    expect(items(row).map((item) => item.textContent.trim())).toEqual(['Save as favorite', 'Copy link to this filter']);
+    expect(items(row).map((item) => item.querySelector('typo3-backend-icon').getAttribute('identifier')))
+      .toEqual(['actions-star', 'actions-clipboard']);
+  });
+
+  it('opens the menu with its first item focused, and the arrows walk the items', () => {
+    const { row } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
+
+    more(row).click();
+
+    expect(menu(row).hidden).toBe(false);
+    expect(document.activeElement).toBe(items(row)[0]);
+    expect(key(items(row)[0], 'ArrowDown').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(items(row)[1]);
+    key(items(row)[1], 'ArrowDown');
+    expect(document.activeElement).toBe(items(row)[0]);
+    key(items(row)[0], 'ArrowUp');
+    expect(document.activeElement).toBe(items(row)[1]);
+    key(items(row)[1], 'Home');
+    expect(document.activeElement).toBe(items(row)[0]);
+    key(items(row)[0], 'End');
+    expect(document.activeElement).toBe(items(row)[1]);
+    expect(key(items(row)[1], 'Tab').defaultPrevented).toBe(false);
+  });
+
+  it('closes on Escape, handing focus back to the button', () => {
+    const { row } = mount();
+    more(row).click();
+
+    key(items(row)[0], 'Escape');
+
+    expect(menu(row).hidden).toBe(true);
+    expect(document.activeElement).toBe(more(row));
+  });
+
+  it('copies the link from the menu and closes it', () => {
+    const { row, onCopyLink } = mount();
+    more(row).click();
+
+    items(row)[1].click();
+
+    expect(onCopyLink).toHaveBeenCalledTimes(1);
+    expect(menu(row).hidden).toBe(true);
+    expect(document.activeElement).toBe(more(row));
+  });
+
+  it('opens the name form under the row from the menu and saves through it', () => {
+    const { row, onSaveFavorite } = mount();
+    more(row).click();
+
+    items(row)[0].click();
+
+    const form = row.element.querySelector('.pagetree-facets__favorite-form');
+    expect(menu(row).hidden).toBe(true);
+    expect(form.hidden).toBe(false);
+    expect(criteria(row).nextElementSibling).toBe(form);
+    expect(document.activeElement).toBe(form.querySelector('input'));
+
+    form.querySelector('input').value = 'Hidden pages';
+    form.querySelector('.btn-primary').click();
+
+    expect(onSaveFavorite).toHaveBeenCalledWith('Hidden pages');
+    expect(form.hidden).toBe(true);
+    expect(document.activeElement).toBe(more(row));
+  });
+
+  it('closes the menu and the name form once nothing is savable any more', () => {
+    const { row } = mount();
+    row.update({ chips: [chip('Standard')], savable: true });
+    more(row).click();
+    items(row)[0].click();
+
+    row.update({ chips: [], savable: false });
+
+    expect(row.element.querySelector('.pagetree-facets__favorite-form').hidden).toBe(true);
+    expect(menu(row).hidden).toBe(true);
+  });
+
+  it('can be closed by the modal on teardown', () => {
+    const { row } = mount();
+    more(row).click();
+
+    row.close();
+
+    expect(menu(row).hidden).toBe(true);
   });
 });

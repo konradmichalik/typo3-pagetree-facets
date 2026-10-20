@@ -3,7 +3,9 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { buildSaveFavoriteForm } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
+import { clearable, decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
  * The toolbar between the modal header and the body: the search field with its
@@ -15,6 +17,137 @@ import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filte
  */
 
 const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
+
+/**
+ * The row under the search field: the scope chip first, one chip per picked
+ * value, then `Clear all` and the actions menu. With no chip it shows a fixed
+ * empty state instead; the actions follow whether anything is savable, which a
+ * scope alone already is.
+ *
+ * @param {{scope: HTMLElement|null, onClearAll: () => void, onSaveFavorite: (label: string) => void,
+ *   onCopyLink: () => void}} options
+ * @returns {{element: HTMLElement, update: (state: {chips: HTMLElement[], savable: boolean}) => void,
+ *   close: () => void}}
+ */
+export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink }) {
+  const criteria = document.createElement('div');
+  criteria.className = 'pagetree-facets__criteria is-empty';
+  if (scope) {
+    criteria.append(scope);
+  }
+
+  const chips = document.createElement('div');
+  chips.className = 'pagetree-facets__chips';
+
+  const empty = document.createElement('p');
+  empty.className = 'pagetree-facets__criteria-empty';
+  empty.textContent = lang(
+    'pagetreeFacets.modal.criteria.empty',
+    'Nothing picked yet. Choose a category on the left or type a page title above.',
+  );
+
+  const saveForm = buildSaveFavoriteForm({ onSave: onSaveFavorite });
+  const actions = document.createElement('div');
+  actions.className = 'pagetree-facets__criteria-actions';
+  actions.hidden = true;
+  const clearAll = document.createElement('button');
+  clearAll.type = 'button';
+  clearAll.className = 'btn btn-sm btn-link pagetree-facets__clear-all';
+  clearAll.textContent = lang('pagetreeFacets.modal.clearAll', 'Clear all');
+  clearAll.addEventListener('click', onClearAll);
+  const menu = buildActionsMenu({
+    onSaveFavorite: (opener) => saveForm.open(opener),
+    onCopyLink,
+  });
+  actions.append(clearAll, menu.element);
+
+  criteria.append(chips, empty, actions);
+  const element = document.createElement('div');
+  element.className = 'pagetree-facets__criteria-row';
+  element.append(criteria, saveForm.form);
+
+  return {
+    element,
+    update: ({ chips: nodes, savable }) => {
+      chips.replaceChildren(...nodes);
+      criteria.classList.toggle('is-empty', 0 === nodes.length);
+      empty.hidden = nodes.length > 0;
+      actions.hidden = !savable;
+      if (!savable) {
+        menu.close();
+        saveForm.close();
+      }
+    },
+    close: () => menu.close(),
+  };
+}
+
+/**
+ * Menu button pattern (WAI-ARIA APG): the items take focus one at a time, the
+ * arrows move between them, Escape and a press outside close the menu.
+ */
+function buildActionsMenu({ onSaveFavorite, onCopyLink }) {
+  const element = document.createElement('div');
+  element.className = 'pagetree-facets__more-wrap';
+
+  const panel = document.createElement('div');
+  panel.id = uniqueId('pagetree-facets__menu');
+  panel.className = 'pagetree-facets__menu';
+  panel.setAttribute('role', 'menu');
+  panel.hidden = true;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__more';
+  button.setAttribute('aria-label', lang('pagetreeFacets.modal.moreActions', 'More actions: save as favorite, copy link'));
+  button.setAttribute('aria-haspopup', 'menu');
+  button.setAttribute('aria-controls', panel.id);
+  button.append(decorativeIcon('actions-menu-alternative'));
+
+  const items = [
+    menuItem('actions-star', lang('pagetreeFacets.modal.saveFavorite', 'Save as favorite'), () => {
+      popover.close();
+      onSaveFavorite(button);
+    }),
+    menuItem('actions-clipboard', lang('pagetreeFacets.modal.copyLink', 'Copy link to this filter'), () => {
+      popover.close(true);
+      onCopyLink();
+    }),
+  ];
+  panel.append(...items);
+  panel.addEventListener('keydown', (event) => {
+    const current = items.indexOf(document.activeElement);
+    const last = items.length - 1;
+    const moves = {
+      ArrowDown: current + 1 > last ? 0 : current + 1,
+      ArrowUp: current - 1 < 0 ? last : current - 1,
+      Home: 0,
+      End: last,
+    };
+    if (event.key in moves) {
+      event.preventDefault();
+      items[moves[event.key]].focus();
+    }
+  });
+
+  const popover = attachPopover({ trigger: button, panel, onOpen: () => items[0].focus() });
+  element.append(button, panel);
+
+  return { element, close: () => popover.close() };
+}
+
+function menuItem(icon, label, onActivate) {
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'pagetree-facets__menu-item';
+  item.setAttribute('role', 'menuitem');
+  // Reached with the arrows, not with Tab.
+  item.tabIndex = -1;
+  item.append(decorativeIcon(icon), document.createTextNode(label));
+  item.addEventListener('click', onActivate);
+
+  return item;
+}
 
 /**
  * One field for page titles with the Text switch built into its trailing edge.

@@ -7,12 +7,13 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
-import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
+import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
+import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
+import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
-import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { renderHelp, renderHelpToggle } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
@@ -32,18 +33,16 @@ class FacetsModal {
   #configuration = null;
   #activeTab = null;
   #onApply = null;
-  #chips = null;
-  #hint = null;
-  #active = null;
-  #utility = null;
-  #actions = null;
+  // The criteria row handle (see Filter/criteria-row.js): the chips, the empty
+  // state, Clear all and the actions menu.
+  #row = null;
   #applyButton = null;
-  #resetButton = null;
   #baselineState = null;
-  // Shown while the selection differs from what the tree is actually filtered
-  // by. Injected into the modal's own footer, so it lives outside our content
-  // DOM - see the call site in open() for why that is safe.
-  #pendingNotice = null;
+  // The footer's status line (see Filter/footer-status.js): the live count and
+  // whether the selection is applied. Injected into the modal's own footer, so
+  // it lives outside our content DOM - see the call site in #build() for why
+  // that is safe.
+  #status = null;
   // One-shot escape hatch for the close guard: the apply paths close the modal
   // themselves while the state still counts as dirty (see #apply).
   #skipCloseGuard = false;
@@ -80,11 +79,6 @@ class FacetsModal {
   // token view too, but re-querying on every keystroke there would count
   // against a form the token field has not finished reflecting into yet.
   #countEnabled = false;
-  #countNotice = null;
-  // The resolved-count text and the skeleton placeholder - exactly one of the
-  // two is ever visible; see #showCountLoading()/#hideCountLoading().
-  #countTextSpan = null;
-  #countSkeletonSpan = null;
   #countDebounce = null;
   // Delayed-show timer for the skeleton - separate from #countDebounce
   // (which gates whether a request is sent at all): see #refreshCount().
@@ -127,12 +121,8 @@ class FacetsModal {
     // right away cannot be misread as a pending selection.
     this.#baselineState = null;
     this.#skipCloseGuard = false;
-    // Points into the previous modal's (now detached) footer until re-created.
-    this.#pendingNotice = null;
-    this.#resetButton = null;
-    this.#countNotice = null;
-    this.#countTextSpan = null;
-    this.#countSkeletonSpan = null;
+    // Fresh per modal: the previous one's status sits in a detached footer.
+    this.#status = new FooterStatus();
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
     // #countSeq, #countDebounce and #countLoadingTimer need no reset here: the
     // counter is monotonic and both timers were already cleared by
@@ -162,21 +152,7 @@ class FacetsModal {
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.cancel'] ?? 'Cancel',
           btnClass: 'btn-default',
-          icon: 'actions-close',
           trigger: () => { this.#modal?.hideModal(); },
-        },
-        {
-          text: TYPO3.lang?.['pagetreeFacets.modal.reset'] ?? 'Reset',
-          btnClass: 'btn-default',
-          icon: 'actions-refresh',
-          // Rendered as the button's name attribute, which is how we find it
-          // again to inject its class/title and to enable/disable it (see
-          // #refreshActiveIndicators()) - same technique #applyButton uses. The
-          // icon itself is declared above instead: Modal.advanced()'s own button
-          // renderer already supports an `icon` field, so only the class and
-          // title genuinely need post-render injection.
-          name: 'pagetree-facets-reset',
-          trigger: () => { this.#resetAll(); },
         },
         {
           text: TYPO3.lang?.['pagetreeFacets.modal.apply'] ?? 'Apply',
@@ -212,34 +188,16 @@ class FacetsModal {
       brandIcon.className = 'pagetree-facets__brand';
       this.#modal.querySelector('.t3js-modal-title')?.prepend(brandIcon);
 
-      // Same one-shot-injection technique as the brand icon above, but only for
-      // the extra class and title: those are not part of Modal.advanced()'s
-      // button config API, so they are added directly to the rendered <button>
-      // once, right after the footer exists - mirroring how #applyButton is
-      // looked up here too. The icon itself is declared in the buttons array
-      // above and rendered by core's own button template.
-      this.#resetButton = this.#modal.querySelector('button[name="pagetree-facets-reset"]');
-      // The button config just above always names it, so this is only ever
-      // false if core's own button template stopped honouring `name` -
-      // untestable without breaking that assumption on purpose (see this
-      // method's own docblock on why the optional chaining stays anyway).
-      /* v8 ignore next 4 */
-      if (this.#resetButton) {
-        this.#resetButton.classList.add('pagetree-facets__reset');
-        this.#resetButton.title = TYPO3.lang?.['pagetreeFacets.modal.reset.description']
-          ?? 'Removes every criterion here. The page tree keeps its current filter until you apply.';
-      }
-
-      // The notice talks about the Apply button, so it belongs beside it, in the
+      // The status talks about the Apply button, so it belongs beside it, in the
       // modal's own footer rather than in our content. That footer is Lit-
       // rendered, but its children are a single array part for the buttons,
       // bounded by marker comments - prepending lands outside that range, so a
       // button re-render cannot displace the node. `t3js-` is core's own
       // convention for "JavaScript may target this". Should the markup ever
-      // change, the optional chaining leaves #pendingNotice null and the notice
-      // simply stays absent; the close guard, which is the actual safety net,
-      // does not depend on it.
-      this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#renderPendingNotice());
+      // change, the optional chaining leaves the status detached and it simply
+      // stays absent; the close guard, which is the actual safety net, does not
+      // depend on it.
+      this.#modal.querySelector('.t3js-modal-footer')?.prepend(this.#status.element);
 
       // Populate the active-filter chips from the hydrated state once the modal
       // is in the DOM (the chip list is derived from the live form controls).
@@ -287,9 +245,12 @@ class FacetsModal {
     clearTimeout(this.#refreshDebounce);
     clearTimeout(this.#countDebounce);
     clearTimeout(this.#countLoadingTimer);
+    // A count still in flight must not land in the next modal's status.
+    ++this.#countSeq;
     this.#cancelTokenTimers();
     closeOpenUserDropdowns();
     this.#scope?.close();
+    this.#row?.close();
   }
 
   #render() {
@@ -348,64 +309,6 @@ class FacetsModal {
     search.append(renderHelpToggle(help));
     header.append(search, help);
 
-    // Utility row: the live match count centered, the filter-wide actions on
-    // the right - a three-column grid (see the CSS) so the count stays centered.
-    // They share a row so the active-filter area below spends its height on
-    // chips only, instead of a full row on two links.
-    this.#utility = document.createElement('div');
-    this.#utility.className = 'pagetree-facets__utility';
-
-    // Built here (not in the typo3-modal-shown listener, unlike before) since
-    // it now lives in markup this class owns outright - no need to wait for
-    // core's own footer chrome to exist first. The "populate immediately
-    // after baseline capture" call in #build()'s shown listener is unchanged.
-    if (this.#countEnabled) {
-      this.#utility.append(this.#renderCountNotice());
-    }
-
-    const copyLink = document.createElement('button');
-    copyLink.type = 'button';
-    copyLink.className = 'pagetree-facets__copy-link btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-    copyLink.append(decorativeIcon('actions-clipboard'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.copyLink'] ?? 'Copy link'));
-    // The title says what the action does, not what it is called - a label
-    // reads "Copy link", but what ends up on the clipboard is a whole view.
-    copyLink.title = TYPO3.lang?.['pagetreeFacets.modal.copyLink.description']
-      ?? 'Copies a link to this view with the current filter attached.';
-    copyLink.addEventListener('click', () => this.#copyLink());
-
-    // "Save current filter" sits alongside "Copy link" - both export the phrase
-    // currently configured.
-    const { toggle: saveToggle, form: saveForm } = buildSaveFavoriteForm({
-      onSave: (label) => this.#saveFavorite(label),
-    });
-
-    // Sharing or saving an empty filter is meaningless, so the actions only
-    // appear once something is active (see #refreshActiveIndicators, whose
-    // `savable` flag also disables the footer's Reset button).
-    this.#actions = document.createElement('div');
-    this.#actions.className = 'pagetree-facets__actions';
-    this.#actions.hidden = true;
-    this.#actions.append(copyLink, saveToggle);
-    // The name form joins this row instead of opening one below it: as its own
-    // row it pushed the chips and the whole body down by ~50px on every save.
-    // While it is open the row's other occupants step aside (see the CSS), and
-    // the row reserves its height, so neither state moves anything.
-    this.#utility.append(this.#actions, saveForm);
-    header.append(this.#utility);
-
-    // Selection row: the removable chips mirroring the currently *selected* tab
-    // criteria - selected, not necessarily applied, which is what the pending
-    // notice in the footer spells out. It stays present at all times - with no
-    // criteria it holds a random usage hint instead of chips, so the header keeps
-    // its height and nothing below jumps as the first filter activates.
-    this.#active = document.createElement('div');
-    this.#active.className = 'pagetree-facets__active';
-
-    this.#chips = document.createElement('div');
-    this.#chips.className = 'pagetree-facets__chips';
-
-    this.#hint = renderHint();
-
     // The scope is picked, not a criterion, so a change here refreshes the
     // indicators directly instead of going through a control's change event.
     this.#scope = buildScopeMenu({
@@ -415,12 +318,16 @@ class FacetsModal {
       currentPage: this.#currentPage,
       onChange: () => this.#refreshActiveIndicators(),
     });
-    if (this.#scope) {
-      this.#active.append(this.#scope.element);
-    }
-    this.#active.append(this.#hint, this.#chips);
+    // The criteria row mirrors the currently *selected* criteria - selected,
+    // not necessarily applied, which is what the footer status spells out.
+    this.#row = buildCriteriaRow({
+      scope: this.#scope?.element ?? null,
+      onClearAll: () => this.#resetAll(),
+      onSaveFavorite: (label) => this.#saveFavorite(label),
+      onCopyLink: () => this.#copyLink(),
+    });
+    header.append(this.#row.element);
 
-    header.append(this.#active);
     return header;
   }
 
@@ -774,6 +681,14 @@ class FacetsModal {
     this.#updateFavoritesVisibility();
   }
 
+  // Is anything picked at all? In token view the phrase can hold tokens the
+  // form cannot mirror, so the typed field decides there.
+  #isPicked() {
+    return this.#tokenMode
+      ? '' !== this.#tokenField.value.trim()
+      : this.#hasSavableFilter();
+  }
+
   // Is there anything worth saving as a favorite? Mirrors what #collectFormState
   // feeds the serialize endpoint, so freetext and the two scopes count too, not
   // just tab criteria.
@@ -882,13 +797,7 @@ class FacetsModal {
       clearTimeout(this.#countDebounce);
       clearTimeout(this.#countLoadingTimer);
       ++this.#countSeq;
-      // #countNotice is built synchronously in #render(), before #build()
-      // returns - by the time #countEnabled can be true here (checked above),
-      // it always already exists.
-      /* v8 ignore next 3 */
-      if (this.#countNotice) {
-        this.#countNotice.hidden = true;
-      }
+      this.#status.setCount(null);
       return;
     }
     // The previous count is stale the instant a criterion changes - showing it
@@ -935,21 +844,17 @@ class FacetsModal {
       // leaving it shown forever.
       if (seq === this.#countSeq) {
         clearTimeout(this.#countLoadingTimer);
-        this.#hideCountLoading();
+        this.#status.hideLoading();
       }
       return;
     }
-    if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
-      return; // superseded by a newer request, the modal has moved on, or token view took over in the meantime
+    if (seq !== this.#countSeq || this.#tokenMode) {
+      return; // superseded by a newer request, or token view took over in the meantime
     }
     clearTimeout(this.#countLoadingTimer);
-    this.#hideCountLoading(); // no-op if the skeleton was never shown (the common, fast-response case)
-    if (null === count) {
-      this.#countNotice.hidden = true;
-      return;
-    }
-    this.#countNotice.hidden = false;
-    this.#countTextSpan.textContent = this.#matchCountLabel(count);
+    // Also reverts the skeleton, a no-op if it was never shown (the common,
+    // fast-response case).
+    this.#status.setCount(count);
   }
 
   // Two call sites: #scheduleCountRefresh() calls it immediately, synchronously
@@ -968,32 +873,10 @@ class FacetsModal {
     // a 10ms margin, which would make the suite flaky rather than prove
     // anything more than the comment above already states.
     /* v8 ignore next 3 */
-    if (seq !== this.#countSeq || !this.#countNotice || this.#tokenMode) {
+    if (seq !== this.#countSeq || this.#tokenMode) {
       return;
     }
-    this.#countNotice.hidden = false;
-    this.#countTextSpan.hidden = true;
-    this.#countSkeletonSpan.hidden = false;
-  }
-
-  // Reverts to the text span - whatever it last held, never cleared by the
-  // skeleton toggle itself. A no-op when the skeleton was never shown.
-  #hideCountLoading() {
-    if (!this.#countNotice) {
-      return;
-    }
-    this.#countSkeletonSpan.hidden = true;
-    this.#countTextSpan.hidden = false;
-  }
-
-  #matchCountLabel(count) {
-    if (0 === count) {
-      return TYPO3.lang?.['pagetreeFacets.modal.matchCount.zero'] ?? 'No matching pages';
-    }
-    if (1 === count) {
-      return TYPO3.lang?.['pagetreeFacets.modal.matchCount.one'] ?? '1 matching page';
-    }
-    return (TYPO3.lang?.['pagetreeFacets.modal.matchCount.other'] ?? '%d matching pages').replace('%d', count);
+    this.#status.showLoading();
   }
 
   // Rebuild the active-filter chips and nav dots from the current control state.
@@ -1005,41 +888,21 @@ class FacetsModal {
   //   skeleton there would flash it on screen for no reason before the
   //   caller's own real refresh (or nothing at all) replaces it.
   #refreshActiveIndicators(showLoadingImmediately = true) {
-    // #chips is built synchronously in #render(), before #build() returns and
+    // #row is built synchronously in #render(), before #build() returns and
     // before any control/change listener that could call this exists.
     /* v8 ignore next 3 */
-    if (!this.#chips) {
+    if (!this.#row) {
       return;
     }
     const criteria = [...this.#titleCriterion(), ...this.#collectActiveCriteria()];
-    this.#chips.replaceChildren(...criteria.map((criterion) => this.#renderChip(criterion)));
-    // The active row is always present; it shows either the chips or, with no
-    // criteria, the usage hint - swapping the two keeps the height constant.
-    const hasCriteria = criteria.length > 0;
-    this.#chips.hidden = !hasCriteria;
-    this.#hint.hidden = hasCriteria;
-    // The actions (Copy link / Save current filter) and the Reset button
-    // (now in the footer, see #build()) both act on the whole phrase, so they
-    // follow whether anything is savable - freetext or a scope alone counts,
-    // not just tab-criteria chips. In token view the phrase can hold tokens
-    // the form cannot mirror, so the typed field decides instead. Computed
-    // once here so the actions row's hidden state and Reset's disabled state
-    // can never disagree.
-    const savable = this.#tokenMode
-      ? '' !== this.#tokenField.value.trim()
-      : this.#hasSavableFilter();
-    this.#actions.hidden = !savable;
-    if (this.#resetButton) {
-      this.#resetButton.disabled = !savable;
-    }
-    // The utility row always stays present, reserving its min-height. At the
-    // root node there is no page-scope checkbox, so collapsing it here left the
-    // header shorter than on a normal page - the whole modal sat higher and
-    // then jumped down as soon as a filter activated and the actions appeared.
-    // Keeping the empty row costs one row gap but keeps the layout stable.
-    this.#utility.hidden = false;
-    // Covers the programmatic paths (reset, chip removal, search-result proxies)
-    // that change controls without firing events on the wrapper.
+    // Clear all and the actions act on the whole phrase, so they follow whether
+    // anything is picked - a scope alone counts, not just chips.
+    this.#row.update({
+      chips: criteria.map((criterion) => this.#renderChip(criterion)),
+      savable: this.#isPicked(),
+    });
+    // Covers the programmatic paths (clear all, chip removal, search-result
+    // proxies) that change controls without firing events on the wrapper.
     this.#refreshApplyState();
     this.#scheduleCountRefresh(showLoadingImmediately);
 
@@ -1058,8 +921,9 @@ class FacetsModal {
     });
   }
 
-  // Clear every criterion in place (all tab controls plus freetext and site)
-  // and refresh the header. Stays in the modal - Apply still has to confirm.
+  // Clear all: every criterion in place (all tab controls plus freetext and
+  // scope) and refresh the header. Stays in the modal - Apply still has to
+  // confirm.
   #resetAll() {
     this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach((input) => {
       if (input.tagName === 'SELECT') {
@@ -1074,8 +938,8 @@ class FacetsModal {
     });
     this.#searchField.setFreetext('');
     this.#scope?.reset();
-    // Reset clears everything, so the token field (the other editable view) has
-    // to go empty too - otherwise it would re-seed the just-cleared form.
+    // Clear all clears everything, so the token field (the other editable view)
+    // has to go empty too - otherwise it would re-seed the just-cleared form.
     if (this.#tokenMode) {
       this.#cancelTokenTimers();
       this.#tokenField.value = '';
@@ -1163,60 +1027,6 @@ class FacetsModal {
     return criteria;
   }
 
-  // Lives in the modal footer, left of the buttons (see the call site for why
-  // that injection is safe). role=status announces it politely - it reacts to the
-  // user's own action and must not interrupt - and it carries icon and text, so
-  // the state is never conveyed by colour alone.
-  #renderPendingNotice() {
-    this.#pendingNotice = document.createElement('p');
-    this.#pendingNotice.className = 'pagetree-facets__pending';
-    this.#pendingNotice.setAttribute('role', 'status');
-    this.#pendingNotice.hidden = true;
-    this.#pendingNotice.append(
-      decorativeIcon('actions-info-circle'),
-      document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.pending']
-        ?? 'Not applied yet — choose "Apply" to filter the page tree.'),
-    );
-
-    return this.#pendingNotice;
-  }
-
-  // Lives in the header's utility row, centered. Deliberately not a
-  // role=status live region: unlike the pending notice (a rare state flip),
-  // this text updates on every debounced keystroke/click, and re-announcing it
-  // that often would be noise for screen reader users rather than useful
-  // feedback - it stays reachable through normal navigation instead.
-  //
-  // Three children: a static decorative icon, the resolved count text, and a
-  // skeleton placeholder shown only once a request has been in flight past
-  // the delay in #refreshCount() - see #showCountLoading()/#hideCountLoading().
-  // The icon and skeleton are both aria-hidden and carry no text, so neither
-  // changes what a screen reader announces. The text span's own content is
-  // never cleared by the skeleton toggle, only hidden - so reverting from
-  // skeleton back to text (a stale/superseded response, a failed request)
-  // always restores the last known good count rather than an empty string.
-  #renderCountNotice() {
-    this.#countNotice = document.createElement('p');
-    this.#countNotice.className = 'pagetree-facets__match-count';
-    this.#countNotice.hidden = true;
-    // The notice is the live region, not the span inside it: the span is hidden
-    // while counting, and a region that is shown and hidden is announced unreliably.
-    this.#countNotice.setAttribute('role', 'status');
-    this.#countNotice.setAttribute('aria-live', 'polite');
-    // Static, not state-dependent (unlike the text/skeleton toggle below) -
-    // the magnifying glass reads as "search result count" regardless of
-    // whether the resolved text or the loading skeleton is showing next to it.
-    this.#countNotice.append(decorativeIcon('actions-search'));
-    this.#countTextSpan = document.createElement('span');
-    this.#countTextSpan.className = 'pagetree-facets__match-count-text';
-    this.#countSkeletonSpan = document.createElement('span');
-    this.#countSkeletonSpan.className = 'pagetree-facets__match-count-skeleton';
-    this.#countSkeletonSpan.hidden = true;
-    this.#countSkeletonSpan.setAttribute('aria-hidden', 'true');
-    this.#countNotice.append(this.#countTextSpan, this.#countSkeletonSpan);
-    return this.#countNotice;
-  }
-
   // Does the current selection differ from the phrase the tree is actually
   // filtered by? Three things depend on the answer - the Apply button, the
   // pending notice and the close guard - so this stays the only place that
@@ -1242,17 +1052,11 @@ class FacetsModal {
     // until something actually differs - which also makes it obvious that
     // picking a criterion is not applying it.
     this.#applyButton.disabled = !dirty;
-    // Driven by the dirty state, not by whether anything is selected: removing
-    // the last chip empties the selection while the tree is still filtered, and
-    // that case needs the notice most of all.
-    //
-    // #pendingNotice is always set together with #applyButton and
-    // #baselineState, in that order, in the same 'typo3-modal-shown' handler -
-    // the guard above already guarantees it exists by the time this line runs.
-    /* v8 ignore next 3 */
-    if (this.#pendingNotice) {
-      this.#pendingNotice.hidden = !dirty;
-    }
+    // The pending notice follows the dirty state, not whether anything is
+    // selected: removing the last chip empties the selection while the tree is
+    // still filtered, and that case needs the notice most of all.
+    const picked = this.#isPicked();
+    this.#status.update({ picked, dirty, countable: this.#countEnabled && !this.#tokenMode && picked });
   }
 
   // Closing with a selection that was never applied. Three options rather than a
@@ -1338,17 +1142,11 @@ class FacetsModal {
     // taken over, even though #showCountLoading()'s own guard would no-op it.
     clearTimeout(this.#countDebounce);
     clearTimeout(this.#countLoadingTimer);
-    // #scheduleCountRefresh() shows the skeleton the instant a criterion
-    // changes (see there), so a request already in flight when token mode
-    // takes over can leave it mid-loading - #refreshCount()'s own #tokenMode
-    // guard then skips its usual #hideCountLoading() call on return. Resetting
-    // it here keeps the notice's internal text/skeleton split consistent
-    // (not just its own outer hidden flag) for whenever it becomes visible
-    // again, even though neither is visible while the notice itself is hidden.
-    this.#hideCountLoading();
-    if (this.#countNotice) {
-      this.#countNotice.hidden = true; // token mode has its own authoritative source - see #scheduleCountRefresh's guard
-    }
+    // A request already in flight when token mode takes over is dropped by
+    // #refreshCount()'s own guard, so it can leave the status mid-loading;
+    // withdrawing the count also resets that. Token mode has its own
+    // authoritative source - see #scheduleCountRefresh's guard.
+    this.#status.setCount(null);
     this.#refreshActiveIndicators();
     this.#refreshApplyState();
   }

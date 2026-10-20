@@ -3,6 +3,7 @@ import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import {
   applyButton,
   chipLabels,
+  clearAllButton,
   configurationFixture,
   control,
   openModal,
@@ -75,11 +76,11 @@ describe('entering token view', () => {
   it('drives the filter-wide actions off the typed field', async () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
 
     type(field, '   ');
 
-    await expect.poll(() => modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    await expect.poll(() => modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
   });
 });
 
@@ -280,11 +281,11 @@ describe('leaving token view', () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
-  it('empties the phrase field on Reset, so it cannot re-seed the cleared form', async () => {
+  it('empties the phrase field on Clear all, so it cannot re-seed the cleared form', async () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
 
-    modal.querySelector('.pagetree-facets__reset').click();
+    clearAllButton(modal).click();
 
     expect(field.value).toBe('');
     expect(control(modal, 'state[is]', 'hidden').checked).toBe(false);

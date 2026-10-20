@@ -283,7 +283,7 @@ describe('the scope chip', () => {
   it('leads the criteria row, ahead of the chips', async () => {
     const { modal } = await openModal();
 
-    expect(modal.querySelector('.pagetree-facets__active').firstElementChild.className).toBe('pagetree-facets__scope');
+    expect(modal.querySelector('.pagetree-facets__criteria').firstElementChild.className).toBe('pagetree-facets__scope');
   });
 
   it('builds the Text switch into the search field, with the help toggle outside it', async () => {
@@ -307,11 +307,6 @@ describe('the scope chip', () => {
     const { modal } = await openModal();
     const titleOf = (selector) => modal.querySelector(selector).title;
 
-    expect(titleOf('.pagetree-facets__copy-link')).toBe('Copies a link to this view with the current filter attached.');
-    expect(titleOf('.pagetree-facets__reset'))
-      .toBe('Removes every criterion here. The page tree keeps its current filter until you apply.');
-    expect(titleOf('.pagetree-facets__favorite-add'))
-      .toBe('Saves the current filter under a name so you can reuse it later.');
     expect(titleOf('.pagetree-facets__text-switch')).toBe('Shows the whole filter as editable text.');
     expect(titleOf('.pagetree-facets__help-toggle')).toBe('Explains how criteria combine and what each action does.');
     // Not icon-only: the word is the name, so no aria-label has to repeat it.
@@ -345,15 +340,17 @@ describe('the active-filter chips', () => {
     expect(navItem(modal, 'doktype').querySelector('.pagetree-facets__nav-count')).toBeNull();
   });
 
-  it('show the usage hint instead while nothing is selected', async () => {
+  it('give way to the fixed empty state while nothing is selected', async () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
 
     const { modal } = await openModal({ configuration });
 
-    expect(modal.querySelector('.pagetree-facets__chips').hidden).toBe(true);
-    expect(modal.querySelector('.pagetree-facets__hint').hidden).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria').classList.contains('is-empty')).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
+    // The scope chip stays in that state.
+    expect(scopeChip(modal)).not.toBeNull();
   });
 
   it('lead with the page title as a chip of its own, which empties the field when removed', async () => {
@@ -487,12 +484,12 @@ describe('the active-filter chips', () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
     const { modal } = await openModal({ configuration });
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
 
     // Freetext alone counts - the actions act on the whole phrase, not on chips.
     type(modal.querySelector('[data-role="freetext"]'), 'contact');
 
-    await expect.poll(() => modal.querySelector('.pagetree-facets__actions').hidden).toBe(false);
+    await expect.poll(() => modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
   });
 });
 
