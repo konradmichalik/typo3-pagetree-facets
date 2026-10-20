@@ -1280,6 +1280,12 @@ class FacetsModal {
     this.#countNotice = document.createElement('p');
     this.#countNotice.className = 'pagetree-facets__match-count';
     this.#countNotice.hidden = true;
+    // The notice is the live region, not the text span inside it: the span is
+    // hidden while counting, and a region that is itself shown and hidden is not
+    // announced reliably. The skeleton is aria-hidden, so only the settled count
+    // is read.
+    this.#countNotice.setAttribute('role', 'status');
+    this.#countNotice.setAttribute('aria-live', 'polite');
     // Static, not state-dependent (unlike the text/skeleton toggle below) -
     // the magnifying glass reads as "search result count" regardless of
     // whether the resolved text or the loading skeleton is showing next to it.

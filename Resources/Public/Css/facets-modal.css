@@ -402,32 +402,31 @@
     width: 9em;
     height: 0.85em;
     border-radius: 3px;
-    /* Same backend-global token (with fallback) the match-count text itself
-     * uses, for consistency with the rest of this row - not a scoping
-     * requirement. */
+    /* Same backend-global token the match-count text itself uses, for
+     * consistency with the rest of this row - not a scoping requirement. */
     background: var(--typo3-text-color-variant);
-    opacity: 0.3;
-    animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
+    opacity: 0.4;
 }
 
 .pagetree-facets__match-count-skeleton[hidden] {
     display: none;
 }
 
-@keyframes pagetree-facets-skeleton-pulse {
-    0%, 100% {
-        opacity: 0.3;
-    }
-
-    50% {
-        opacity: 0.55;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
+/* Motion is opt-in: the placeholder is a still bar unless the user allows
+ * animation. */
+@media (prefers-reduced-motion: no-preference) {
     .pagetree-facets__match-count-skeleton {
-        animation: none;
-        opacity: 0.4;
+        animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pagetree-facets-skeleton-pulse {
+        0%, 100% {
+            opacity: 0.3;
+        }
+
+        50% {
+            opacity: 0.55;
+        }
     }
 }
 
