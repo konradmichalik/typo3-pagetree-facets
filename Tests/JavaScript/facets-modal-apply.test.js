@@ -446,6 +446,38 @@ describe('the cross-tab filter search', () => {
     expect(modal.querySelector('.pagetree-facets__search-group-title').textContent).toBe('Page state');
   });
 
+  it('shows the matches per facet in the navigation and dims the facets without one', async () => {
+    const { modal } = await openModal();
+    const nav = modal.querySelector('.pagetree-facets__nav');
+    const matches = (identifier) => navItem(modal, identifier).querySelector('.pagetree-facets__nav-matches');
+
+    search(modal, 'hidden');
+
+    expect(nav.classList.contains('is-searching')).toBe(true);
+    expect(matches('state').textContent).toBe('1');
+    expect(navItem(modal, 'state').classList.contains('is-unmatched')).toBe(false);
+    expect(matches('doktype')).toBeNull();
+    expect(navItem(modal, 'doktype').classList.contains('is-unmatched')).toBe(true);
+    // The criteria badge keeps its own count underneath, the stylesheet hides it.
+    expect(navItem(modal, 'state').querySelector('.pagetree-facets__nav-count').textContent).toBe('1');
+
+    search(modal, '');
+
+    expect(nav.classList.contains('is-searching')).toBe(false);
+    expect(matches('state')).toBeNull();
+    expect(modal.querySelector('.pagetree-facets__nav-item.is-unmatched')).toBeNull();
+  });
+
+  it('drops the match counts again when a facet is picked while searching', async () => {
+    const { modal } = await openModal();
+    search(modal, 'hidden');
+
+    navItem(modal, 'doktype').click();
+
+    expect(modal.querySelector('.pagetree-facets__nav').classList.contains('is-searching')).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__nav-matches')).toBeNull();
+  });
+
   it('shows the query as typed in the heading, not its lowercased form', async () => {
     const { modal } = await openModal();
 

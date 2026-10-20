@@ -15,7 +15,7 @@ import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-stat
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
-import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
+import { buildNavigation, isTabEmpty, showMatchCounts } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
@@ -389,7 +389,7 @@ class FacetsModal {
   #applyFilterSearch(query) {
     const trimmed = query.trim();
     if ('' === trimmed) {
-      this.#results.hide();
+      this.#leaveSearch();
       this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => {
         panel.hidden = panel.dataset.panel !== this.#activeTab;
       });
@@ -410,13 +410,22 @@ class FacetsModal {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
     });
-    this.#results.show(findFilterMatches(this.#configuration.tabs, trimmed), trimmed, {
+    const matches = findFilterMatches(this.#configuration.tabs, trimmed);
+    showMatchCounts(this.#modal.querySelector('.pagetree-facets__nav'), matches);
+    this.#results.show(matches, trimmed, {
       // The criterion a result stands for lives in a now-hidden panel; the proxy
       // row mirrors that control and writes back to it.
       findControl: (tab, field, option) => this.#modal.querySelector(
         `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
       ),
     });
+  }
+
+  // Out of search mode: the field, the result view and the match counts.
+  #leaveSearch() {
+    this.#modal.querySelector('[data-role="filter-search"]').value = '';
+    this.#results.hide();
+    showMatchCounts(this.#modal.querySelector('.pagetree-facets__nav'), null);
   }
 
   // The phrase editor, authoritative in token view. Read through the handle so
@@ -612,14 +621,7 @@ class FacetsModal {
     this.#help.close();
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
-    const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');
-    // #renderNavigation() always renders it, unconditionally - unlike the site
-    // scope or page scope controls, there is no configuration that omits it.
-    /* v8 ignore next 3 */
-    if (filterSearch) {
-      filterSearch.value = '';
-    }
-    this.#results.hide();
+    this.#leaveSearch();
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
       const isActive = el.dataset.tab === identifier;
       el.classList.toggle('active', isActive);

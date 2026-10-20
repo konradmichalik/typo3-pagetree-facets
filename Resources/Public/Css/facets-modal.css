@@ -935,6 +935,22 @@
     line-height: 1.25;
 }
 
+/* While searching, the matches per facet take the badge's place and a facet
+   without one steps back to the secondary text colour. */
+.pagetree-facets__nav.is-searching .pagetree-facets__nav-count {
+    display: none;
+}
+
+.pagetree-facets__nav-matches {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pagetree-facets__nav-item.is-unmatched {
+    color: var(--typo3-text-color-variant);
+}
+
 /* Active-criteria count per tab (kept subtle: a small pill, not a loud badge). */
 .pagetree-facets__nav-count {
     flex: 0 0 auto;
