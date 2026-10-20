@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import { BackendPage } from '@konradmichalik/ptu';
 import { FacetsModalPage } from '../support/facets-modal.page.js';
 import { waitForPageTreeReady } from '../support/wait-for-page-tree-ready.js';
@@ -62,6 +62,33 @@ test('the popover opens next to the navigation as a dialog, takes focus and give
 
 test('every example token in the help hydrates into a criterion', async ({ page }) => {
   const modal = new FacetsModalPage(page);
+test('forced colours give the example chips and the open link a border', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  // The tints are dropped here, so the chips and the open state need a border.
+  await page.emulateMedia({ forcedColors: 'active' });
+
+  await modal.open();
+  const width = (locator: Locator, property: string) => locator.evaluate(
+    (element, name) => parseFloat(getComputedStyle(element).getPropertyValue(name)),
+    property,
+  );
+  const size = async (locator: Locator) => {
+    const { width: w, height } = (await locator.boundingBox())!;
+
+    return { width: w, height };
+  };
+  const linkBefore = await size(modal.helpLink());
+  // Core's .btn already paints a thin border here, so the open state needs a thicker one.
+  const closedBorder = await width(modal.helpLink(), 'border-top-width');
+
+  await modal.helpLink().click();
+
+  expect(await width(modal.helpLink(), 'border-top-width')).toBeGreaterThan(closedBorder);
+  // The border takes its width from the padding, so the link does not grow.
+  expect(await size(modal.helpLink())).toEqual(linkBefore);
+  expect(await width(modal.helpPopover().locator('.pagetree-facets__help-chip').first(), 'border-top-width')).toBeGreaterThan(0);
+});
+
 
   await modal.open();
   await modal.helpLink().click();

@@ -1128,7 +1128,7 @@
 
 /* A group heading with its checkbox: the box, the name, the size, then a
    rule to the end of the line. The box is a real control, so it keeps the
-   base text colour and a 24px target. */
+   base text colour; core sizes it. */
 .pagetree-facets__panel legend:has(.pagetree-facets__group-toggle) {
     display: flex;
     align-items: center;
@@ -1519,6 +1519,17 @@
 
     .pagetree-facets__text-switch[aria-pressed="true"] {
         padding-inline: calc(0.75rem - 1px) calc(0.75rem - 2px);
+        border: 2px solid ButtonText;
+    }
+
+    .pagetree-facets__help-chip {
+        padding-inline: calc(0.6rem - 1px);
+        border: 1px solid CanvasText;
+    }
+
+    /* Core's .btn border is 1px and painted here too, so the open state takes 2px. */
+    .pagetree-facets__help-link[aria-expanded="true"] {
+        padding: calc(0.4rem - 1px) calc(0.75rem - 1px);
         border: 2px solid ButtonText;
     }
 
