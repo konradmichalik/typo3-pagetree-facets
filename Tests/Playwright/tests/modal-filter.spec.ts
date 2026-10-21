@@ -149,6 +149,19 @@ test('a facet without options keeps readable text instead of being dimmed furthe
   await expect(unavailable).toHaveCSS('opacity', '1');
 });
 
+test('a facet without options says why on a second line of its item', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // The reason is part of the item, not a tooltip: a disabled button has no
+  // hover a tooltip could rely on.
+  const reason = modal.navItem('translations').locator('.pagetree-facets__nav-reason');
+  await expect(reason).toBeVisible();
+  await expect(reason).toHaveText('Site has only one language');
+  await expect(modal.navItem('translations')).not.toHaveAttribute('title');
+});
+
 test('the loading skeleton renders with a real, visible color', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 

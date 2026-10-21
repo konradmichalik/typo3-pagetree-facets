@@ -72,6 +72,17 @@ final class SeoTabTest extends AbstractTabTestCase
     }
 
     #[Test]
+    public function modalConfigurationDescribesTheFacetAndSaysWhyItCanBeEmpty(): void
+    {
+        $configuration = $this->get(SeoTab::class)->getModalConfiguration($this->createContext());
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:seo.';
+
+        self::assertSame($lll.'description', $configuration['description'] ?? null);
+        // Every option can be switched off through disabledOptions/disableOptions.
+        self::assertSame($lll.'emptyReason', $configuration['emptyReason'] ?? null);
+    }
+
+    #[Test]
     public function identityAndGroupingMetadataIsStable(): void
     {
         $tab = $this->get(SeoTab::class);

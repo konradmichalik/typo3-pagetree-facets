@@ -66,7 +66,7 @@ final class ActivityTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -86,6 +86,7 @@ final class ActivityTab extends AbstractPagesQueryTab
         $searchable = $context->backendUser->check('tables_select', 'be_users');
 
         return [
+            'description' => $lll.'description',
             'fields' => [
                 ['type' => 'radio-presets', 'name' => 'updated', 'label' => $lll.'updated', 'options' => $presetOptions($lll.'preset.')],
                 ['type' => 'radio-presets', 'name' => 'created', 'label' => $lll.'created', 'options' => $presetOptions($lll.'created.preset.')],

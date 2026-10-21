@@ -252,6 +252,34 @@ describe('removing a chip in token view', () => {
   });
 });
 
+describe('clearing a panel in token view', () => {
+  it('drops the panel\'s criteria from the phrase on Select none, so Apply enables', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+
+    modal.querySelector('.pagetree-facets__panel[data-panel="state"] .pagetree-facets__select-none').click();
+
+    await expect.poll(() => field.value).toBe('');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('mirrors a group heading checkbox into the phrase', async () => {
+    const configuration = hydratingFixture('is:hidden');
+    // Two fields of one criterion: the panel then heads each with a group checkbox.
+    configuration.tabs[1].configuration.fields = [
+      { type: 'checkbox-group', name: 'is', label: 'Visibility', options: [{ value: 'hidden', label: 'Hidden' }] },
+      { type: 'checkbox-group', name: 'is', label: 'Content', options: [{ value: 'empty', label: 'Empty' }] },
+    ];
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration });
+    const field = await enterTokenMode(modal);
+
+    modal.querySelectorAll('.pagetree-facets__group-toggle')[1].click();
+
+    await expect.poll(() => field.value).toBe('is:hidden,empty');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+});
+
 describe('loading a favorite while in token view', () => {
   it('writes the favorite straight into the typed field, not just the form', async () => {
     // The typed field is authoritative in token view - Apply reads it, not the

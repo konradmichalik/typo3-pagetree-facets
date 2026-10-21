@@ -66,6 +66,10 @@ interface FacetInterface
      *
      * Shape:
      * [
+     *   'description' => ?string,              // optional: the sentence under the panel heading
+     *                                           //   saying what the facet matches
+     *   'emptyReason' => ?string,              // optional: why the navigation item is disabled
+     *                                           //   when no field offers an option
      *   'fields' => [
      *     [
      *       'type' => 'checkbox-group'|'select'|'radio-presets'|'text'|'user-picker',
@@ -91,7 +95,7 @@ interface FacetInterface
      *   ],
      * ]
      *
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array;
 

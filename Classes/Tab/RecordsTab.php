@@ -79,7 +79,7 @@ final class RecordsTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -119,6 +119,7 @@ final class RecordsTab extends AbstractPagesQueryTab
         }
 
         return [
+            'description' => $lll.'description',
             'fields' => [
                 ...$tableFields,
                 ['type' => 'text', 'name' => 'text', 'label' => $lll.'text', 'placeholder' => $lll.'text.placeholder', 'options' => []],

@@ -9,14 +9,16 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-status.js';
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
-import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
-import { renderHelp, renderHelpToggle } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
+import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
+import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
-import { buildFilterSearchInput, renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
+import { renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
@@ -56,6 +58,8 @@ class FacetsModal {
   // The scope chip (see Filter/scope-menu.js), null when there is nothing to
   // choose: no page open and a single site.
   #scope = null;
+  // The help popover and its link (see Filter/guidance.js).
+  #help = null;
   #panels = null;
   #currentPhrase = '';
   #reflectSeq = 0;
@@ -135,7 +139,7 @@ class FacetsModal {
       this.#opened = false;
       return;
     }
-    this.#activeTab = (this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
+    this.#activeTab = (this.#configuration.tabs.find((tab) => !isTabEmpty(tab)) ?? this.#configuration.tabs[0]).identifier;
 
     this.#modal = Modal.advanced({
       title: TYPO3.lang?.['pagetreeFacets.modal.title'] ?? 'Filter page tree',
@@ -168,7 +172,7 @@ class FacetsModal {
       root?.addEventListener('keydown', (event) => {
         // Buttons are excluded: Enter is their own activation key, and
         // preventDefault() here would swallow it - a keyboard user could never
-        // reach the help toggle or "copy link".
+        // reach the help link or "copy link".
         if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
           event.preventDefault();
           this.#serializeAndApply();
@@ -236,12 +240,18 @@ class FacetsModal {
     closeOpenUserDropdowns();
     this.#scope?.close();
     this.#row?.close();
+    this.#help?.close();
   }
 
   #render() {
     const wrap = document.createElement('div');
     wrap.className = 'pagetree-facets';
-    wrap.append(this.#renderHeader(), this.#renderBody());
+    // Built before the navigation, which holds its link; the popover itself
+    // goes into the content so it can sit over the panels.
+    this.#help = buildHelp({
+      getLayout: () => ({ root: this.#root, nav: this.#root.querySelector('.pagetree-facets__nav') }),
+    });
+    wrap.append(this.#renderHeader(), this.#renderBody(), this.#help.panel);
     // One listener for the whole content: a body-level one would never see the
     // header controls (freetext, site scope, page scope), which change the
     // filter just as much. Text inputs fire per keystroke and get the full
@@ -287,12 +297,7 @@ class FacetsModal {
       this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
     });
     search.append(this.#searchField.element);
-    // Help stays on its own: it explains the dialog rather than switching how
-    // the filter is edited, so grouping it with the toggle would suggest a
-    // kinship the two do not have.
-    const help = renderHelp({ hasPageScope: null !== this.#currentPage });
-    search.append(renderHelpToggle(help));
-    header.append(search, help);
+    header.append(search);
 
     // The scope is picked, not a criterion, so a change here refreshes the
     // indicators directly instead of going through a control's change event.
@@ -349,117 +354,16 @@ class FacetsModal {
   }
 
   #renderNavigation() {
-    const nav = document.createElement('div');
-    nav.className = 'col-3 pagetree-facets__nav';
-    nav.append(buildFilterSearchInput({
+    return buildNavigation({
+      tabs: this.#configuration.tabs,
+      activeTab: this.#activeTab,
+      // Favorites lead the navigation, above every filter group - quick access
+      // to saved filters is the first thing an editor reaches for.
+      leading: this.#renderFavoritesNavItem(),
+      trailing: this.#help.link,
       onQuery: (query) => this.#applyFilterSearch(query),
-    }));
-    const list = document.createElement('ul');
-    list.className = 'list-unstyled';
-
-    // Favorites lead the navigation, above every filter group - quick access to
-    // saved filters is the first thing an editor reaches for.
-    list.append(this.#renderFavoritesNavItem());
-
-    // Tabs arrive priority-ordered, so their groups interleave (content, state,
-    // content, ...). Bucket them by group first, keeping first-seen order, so
-    // each group heading is rendered exactly once.
-    const groups = new Map();
-    for (const tab of this.#configuration.tabs) {
-      const key = tab.group ?? '';
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key).push(tab);
-    }
-
-    for (const [group, tabs] of groups) {
-      if (group !== '') {
-        const heading = document.createElement('li');
-        heading.className = 'pagetree-facets__nav-group text-muted text-uppercase';
-        heading.textContent = group;
-        list.append(heading);
-      }
-      for (const tab of tabs) {
-        list.append(this.#renderNavItem(tab));
-      }
-    }
-
-    // Roving tabindex (see #switchTab): only the active item is a tab stop, so a
-    // single Tab out of the navigation reaches the panel instead of walking past
-    // every remaining tab first. Arrows then move within the navigation.
-    //
-    // Deliberately NOT role="tablist": that role admits only tabs as children,
-    // and this navigation interleaves group headings, so claiming it would
-    // promise a structure we cannot honour. A list of buttons with a roving tab
-    // stop is the honest description, and arrow support is what makes it usable.
-    list.addEventListener('keydown', (event) => {
-      const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-      if (undefined === step && !['Home', 'End'].includes(event.key)) {
-        return;
-      }
-      // Empty tabs are disabled and the favorites item hides itself while there
-      // is nothing saved - neither may swallow an arrow press.
-      const items = [...this.#modal.querySelectorAll('.pagetree-facets__nav-item')]
-        .filter((item) => !item.disabled && true !== item.closest('li')?.hidden);
-      if (0 === items.length) {
-        return;
-      }
-      event.preventDefault();
-      const current = items.indexOf(event.target.closest('.pagetree-facets__nav-item'));
-      const next = 'Home' === event.key
-        ? 0
-        : ('End' === event.key ? items.length - 1 : (current + step + items.length) % items.length);
-      items[next].focus();
-      // Automatic activation: the panels are already in the DOM, so switching as
-      // the user arrows costs nothing and makes browsing them immediate.
-      this.#switchTab(items[next].dataset.tab);
+      onActivate: (identifier, activated) => this.#switchTab(identifier, activated),
     });
-
-    nav.append(list);
-    return nav;
-  }
-
-  #renderNavItem(tab) {
-    const empty = this.#isTabEmpty(tab);
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pagetree-facets__nav-item'
-      + (tab.identifier === this.#activeTab ? ' active' : '')
-      + (empty ? ' is-empty' : '');
-    button.dataset.tab = tab.identifier;
-    button.disabled = empty;
-    if (tab.identifier === this.#activeTab) {
-      button.setAttribute('aria-current', 'true');
-    }
-    button.tabIndex = tab.identifier === this.#activeTab ? 0 : -1;
-    if (empty) {
-      button.title = TYPO3.lang?.['pagetreeFacets.modal.tabEmpty'] ?? 'No options available';
-    }
-    // Label text kept in its own node so the active-criteria dot can be toggled
-    // live (see #setNavDot) without clobbering the label.
-    const text = document.createElement('span');
-    text.textContent = tab.label;
-    button.append(text);
-    if (!empty) {
-      button.addEventListener('click', () => this.#switchTab(tab.identifier, true));
-    }
-    item.append(button);
-    return item;
-  }
-
-  // A tab is "empty" when every field is a choice type (checkbox-group / select
-  // / radio-presets) with zero options - e.g. Translations on a single-language
-  // site. Freeform fields (text, user-picker) are always usable regardless of
-  // options, so their presence means the tab is never considered empty.
-  #isTabEmpty(tab) {
-    const fields = tab.configuration.fields ?? [];
-    if (!fields.length) {
-      return true;
-    }
-    const choiceTypes = ['checkbox-group', 'select', 'radio-presets'];
-    return fields.every((field) => choiceTypes.includes(field.type) && (field.options ?? []).length === 0);
   }
 
   #renderPanels() {
@@ -527,12 +431,8 @@ class FacetsModal {
   }
 
   #renderPanel(tab) {
-    const panel = document.createElement('div');
-    panel.className = 'pagetree-facets__panel';
-    panel.dataset.panel = tab.identifier;
-    panel.hidden = tab.identifier !== this.#activeTab;
-    for (const field of tab.configuration.fields ?? []) {
-      panel.append(renderField(tab, field, {
+    const panel = buildPanel(tab, {
+      fieldDeps: {
         // #root is read lazily: it is only assigned once #render() finished, which
         // is after every field has been built.
         getRoot: () => this.#root,
@@ -540,8 +440,16 @@ class FacetsModal {
         // re-renders a chip's text, not a value - the count is unaffected, so
         // its own immediate refresh must not flash a skeleton over it.
         onLabelResolved: () => this.#refreshActiveIndicators(false),
-      }));
-    }
+      },
+      // Select none changes controls without firing events, like a chip removal,
+      // so the phrase is told here too.
+      onChange: () => {
+        this.#refreshActiveIndicators();
+        this.#scheduleTokenFieldSync();
+      },
+    });
+    panel.hidden = tab.identifier !== this.#activeTab;
+
     return panel;
   }
 
@@ -583,17 +491,12 @@ class FacetsModal {
     panel.hidden = this.#favoritesTabId !== this.#activeTab;
     this.#favoritesList = document.createElement('div');
     this.#favoritesList.className = 'pagetree-facets__favorites-list';
-    // The same fieldset/legend shape every other panel gets from renderField(),
-    // so this one starts on the same line and in the same rhythm instead of
-    // opening straight into rows. The heading repeats the tab label exactly as
-    // the single-field tabs do (Page type, Page state, SEO).
-    const group = document.createElement('fieldset');
-    group.className = 'form-group';
-    const legend = document.createElement('legend');
-    legend.className = 'form-label';
-    legend.textContent = TYPO3.lang?.['pagetreeFacets.modal.favorites'] ?? 'Favorites';
-    group.append(legend, this.#favoritesList);
-    panel.append(group);
+    // The same heading every facet panel gets, so this one starts on the same
+    // line and in the same rhythm. No Select none: favorites are not criteria.
+    panel.append(
+      buildPanelHeading({ label: lang('pagetreeFacets.modal.favorites', 'Favorites') }),
+      this.#favoritesList,
+    );
     this.#renderFavoriteChips();
     return panel;
   }
@@ -638,7 +541,7 @@ class FacetsModal {
       this.#favoritesNavItem.hidden = !hasFavorites;
     }
     if (!hasFavorites && this.#favoritesTabId === this.#activeTab) {
-      const fallback = this.#configuration.tabs.find((tab) => !this.#isTabEmpty(tab)) ?? this.#configuration.tabs[0];
+      const fallback = this.#configuration.tabs.find((tab) => !isTabEmpty(tab)) ?? this.#configuration.tabs[0];
       // Only undefined if this.#configuration.tabs is itself empty - which
       // #build() already refuses to open a modal for. Reachable only via a
       // token-view reflect/loadFavorite response that legitimately empties
@@ -710,6 +613,8 @@ class FacetsModal {
    */
   #switchTab(identifier, activated = false) {
     this.#activeTab = identifier;
+    // The popover covers the panel that is about to show.
+    this.#help.close();
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
     const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');
@@ -826,22 +731,14 @@ class FacetsModal {
       }
       this.#setNavCount(item, counts.get(item.dataset.tab) ?? 0);
     });
+    // The headings (Select none, the selection count) read the same controls.
+    this.#modal.querySelectorAll('.pagetree-facets__panel:not(.pagetree-facets__panel--favorites)').forEach(refreshPanel);
   }
 
   // Clear all: every criterion in place, freetext and scope included. Stays in
   // the modal, Apply still has to confirm.
   #resetAll() {
-    this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach((input) => {
-      if (input.tagName === 'SELECT') {
-        Array.from(input.options).forEach((option) => { option.selected = false; });
-      } else if (input.type === 'checkbox' || input.type === 'radio') {
-        clearChoice(input);
-      } else {
-        input.value = '';
-        delete input.dataset.value;
-        delete input.dataset.label;
-      }
-    });
+    this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach(clearControl);
     this.#searchField.setFreetext('');
     this.#scope?.reset();
     // Clear all clears everything, so the token field (the other editable view)
@@ -917,15 +814,11 @@ class FacetsModal {
               // textContent - that would also pick up the visually-hidden
               // option-description span (see optionHelp in Filter/form-controls.js).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
-              criteria.push(this.#criterion(prefix, tab, label, () => { clearChoice(input); }));
+              criteria.push(this.#criterion(prefix, tab, label, () => clearControl(input)));
             }
           } else if (this.#effectiveValue(input).trim() !== '') {
             const label = input.dataset.label || input.value.trim();
-            criteria.push(this.#criterion(prefix, tab, label, () => {
-              input.value = '';
-              delete input.dataset.value;
-              delete input.dataset.label;
-            }));
+            criteria.push(this.#criterion(prefix, tab, label, () => clearControl(input)));
           }
         }
       }

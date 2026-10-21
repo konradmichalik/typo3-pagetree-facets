@@ -52,6 +52,8 @@ Public (implement/consume freely, changes get a note in the release):
 - The modal field-descriptor shape returned by `getModalConfiguration()`:
   ```php
   [
+      'description' => 'Show pages in one of the selected states.', // optional, see below
+      'emptyReason' => 'All options are disabled by configuration', // optional, see below
       'fields' => [
           [
               'type' => 'checkbox-group', // | 'select' | 'radio-presets' | 'text' | 'user-picker'
@@ -67,6 +69,11 @@ Public (implement/consume freely, changes get a note in the release):
   See `FacetInterface::getModalConfiguration()`'s own docblock for the full shape,
   including `currentUser`, `pinned` and `searchable` (all `user-picker`-only).
   A `radio-presets` field always gets a neutral first option, labelled "Any time", with an empty value. It clears the field and is never a criterion.
+  `description` and `emptyReason` are optional and take an LLL reference like every
+  label. `description` is the sentence under the panel heading that says what the
+  facet matches. `emptyReason` is shown on the disabled navigation item when none of
+  the fields offers an option (`Site has only one language`); without it the modal
+  shows its generic `No options available`. A facet that sets neither works as before.
 - `getIdentifier()` (facets) and `getTokenKey()`+`getValue()` (options) as
   administrator-facing identifiers, used in `disabledFacets`/`disableFacets`,
   `disabledOptions`/`disableOptions` and favorites

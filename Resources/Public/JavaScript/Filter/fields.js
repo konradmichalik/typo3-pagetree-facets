@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { clearable, decorativeIcon, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderUserPicker } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -27,8 +27,10 @@ const dispatch = {
 /**
  * @param {object} tab - the owning tab; supplies the name prefix and hydrated state
  * @param {object} field - the descriptor: `type`, `name`, `label`, `options`, …
- * @param {{getRoot: () => HTMLElement, onLabelResolved: () => void}} deps - only the
- *   user picker needs these; see its module for why
+ * @param {{getRoot: () => HTMLElement, onLabelResolved: () => void, groupToggle?: boolean}} deps -
+ *   the user picker needs the first two (see its module for why); `groupToggle`
+ *   marks a checkbox group that is one group of a criterion split over several
+ *   fields, and gives its heading a checkbox for the whole group
  * @returns {HTMLElement} a labelled fieldset, ready to append to a panel
  */
 export function renderField(tab, field, deps) {
@@ -37,7 +39,12 @@ export function renderField(tab, field, deps) {
 
   const legend = document.createElement('legend');
   legend.className = 'form-label';
-  legend.textContent = field.label;
+  const grouped = deps.groupToggle && 'checkbox-group' === field.type;
+  if (grouped) {
+    legend.append(...renderGroupHeading(field));
+  } else {
+    legend.textContent = field.label;
+  }
   group.append(legend);
 
   const state = tab.state?.[field.name];
@@ -45,8 +52,65 @@ export function renderField(tab, field, deps) {
   // nothing: a third-party tab naming a type this version does not know still gets
   // a usable control instead of an empty fieldset.
   group.append((dispatch[field.type] ?? renderTextField)(tab, field, state, deps));
+  if (grouped) {
+    syncGroupToggle(group);
+    // Ticking options one by one moves the group box between its three states.
+    group.addEventListener('change', (event) => {
+      if (event.target.hasAttribute('name')) {
+        syncGroupToggle(group);
+      }
+    });
+  }
 
   return group;
+}
+
+/**
+ * The group's checkbox, name and size. The checkbox carries no `name`, so the
+ * collectors never mistake it for a criterion; its change event still bubbles
+ * to the modal, which reads the options it set.
+ */
+function renderGroupHeading(field) {
+  const toggle = document.createElement('input');
+  toggle.type = 'checkbox';
+  toggle.className = 'form-check-input pagetree-facets__group-toggle';
+  // A function replacer keeps `$&` and friends in a label literal.
+  const name = lang('pagetreeFacets.modal.selectAllGroup', 'Select all %s').replace('%s', () => field.label);
+  toggle.setAttribute('aria-label', name);
+  toggle.title = name;
+  toggle.addEventListener('change', () => {
+    const group = toggle.closest('fieldset');
+    group.querySelectorAll('input[name]').forEach((option) => { option.checked = toggle.checked; });
+    syncGroupToggle(group);
+  });
+
+  // Core draws its boxes (mask, colours, size) only inside .form-check.
+  const check = document.createElement('span');
+  check.className = 'form-check pagetree-facets__group-check';
+  check.append(toggle);
+
+  const label = document.createElement('span');
+  label.className = 'pagetree-facets__group-label';
+  label.textContent = field.label;
+  const count = document.createElement('span');
+  count.className = 'pagetree-facets__group-count';
+  count.textContent = `(${field.options.length})`;
+
+  return [check, label, count];
+}
+
+/**
+ * Brings a group's checkbox in line with its options: checked for all,
+ * indeterminate for some, clear for none.
+ *
+ * @param {HTMLElement} group - a fieldset rendered with `groupToggle`
+ */
+export function syncGroupToggle(group) {
+  const toggle = group.querySelector('.pagetree-facets__group-toggle');
+  const options = [...group.querySelectorAll('input[name]')];
+  const checked = options.filter((option) => option.checked).length;
+  toggle.checked = checked > 0 && checked === options.length;
+  toggle.indeterminate = checked > 0 && checked < options.length;
 }
 
 function controlName(tab, field) {
@@ -89,7 +153,7 @@ function isChosen(option, state) {
 
 // A cleared radio falls back to its group's neutral option, else no radio shows as
 // selected. No event is dispatched, the callers refresh the modal.
-export function clearChoice(input) {
+function clearChoice(input) {
   if ('radio' === input.type) {
     const neutral = input.closest('fieldset')?.querySelector('input[type="radio"][value=""]');
     if (neutral) {
@@ -99,6 +163,25 @@ export function clearChoice(input) {
     }
   }
   input.checked = false;
+}
+
+/**
+ * Empties any named control, whatever its type. No event is dispatched, the
+ * callers refresh the modal.
+ *
+ * @param {HTMLInputElement|HTMLSelectElement} input
+ */
+export function clearControl(input) {
+  if ('SELECT' === input.tagName) {
+    Array.from(input.options).forEach((option) => { option.selected = false; });
+  } else if ('checkbox' === input.type || 'radio' === input.type) {
+    clearChoice(input);
+  } else {
+    input.value = '';
+    // Picker controls keep the wire value out of band (see Filter/user-picker.js).
+    delete input.dataset.value;
+    delete input.dataset.label;
+  }
 }
 
 function renderChoiceOption(tab, field, option, state, isRadio) {
