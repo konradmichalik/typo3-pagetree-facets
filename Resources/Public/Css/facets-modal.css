@@ -464,7 +464,10 @@
 
 /* --- Criteria row ------------------------------------------------------ */
 
+/* Also the anchor of the +N more popover, which spans the row instead of
+   hanging off its button at the row's end, where it would leave the modal. */
 .pagetree-facets__criteria-row {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -615,7 +618,6 @@
 /* --- +N more ----------------------------------------------------------- */
 
 .pagetree-facets__overflow {
-    position: relative;
     flex: 0 0 auto;
 }
 
@@ -650,14 +652,16 @@
     outline-offset: 1px;
 }
 
+/* Centred under the row and never wider than it. */
 .pagetree-facets__overflow-panel {
     position: absolute;
-    inset-inline-start: 0;
+    inset-inline: 0;
     top: calc(100% + 4px);
     z-index: 1000;
     width: max-content;
-    min-width: 24rem;
-    max-width: min(40rem, 80vw);
+    min-width: min(24rem, 100%);
+    max-width: min(40rem, 100%);
+    margin-inline: auto;
     max-height: 320px;
     overflow-y: auto;
     padding: 0.75rem 1rem;
@@ -717,7 +721,8 @@
 }
 
 .pagetree-facets__overflow-group dt {
-    align-self: center;
+    align-self: start;
+    padding-top: 0.2rem;
     font-size: 0.875rem;
     font-weight: 400;
 }
