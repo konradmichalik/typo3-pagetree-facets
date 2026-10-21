@@ -3,6 +3,7 @@ import { SeverityEnum } from './Stubs/typo3/backend/enum/severity.js';
 import {
   applyButton,
   chipLabels,
+  clearAllButton,
   configurationFixture,
   control,
   footerButton,
@@ -11,8 +12,10 @@ import {
   openModal,
   openedModals,
   panel,
-  resetButton,
+  pickScope,
   resetHarness,
+  scopeValue,
+  statusText,
   type,
 } from './Support/modal-harness.js';
 
@@ -38,7 +41,7 @@ describe('the Apply button', () => {
     const { modal } = await openModal();
 
     expect(applyButton(modal).disabled).toBe(true);
-    expect(modal.querySelector('.pagetree-facets__pending').hidden).toBe(true);
+    expect(statusText(modal)).toBe('');
   });
 
   it('enables itself and announces the pending selection once something differs', async () => {
@@ -47,7 +50,7 @@ describe('the Apply button', () => {
     dirty(modal);
 
     expect(applyButton(modal).disabled).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__pending').hidden).toBe(false);
+    expect(statusText(modal)).toBe('Not applied to the tree yet');
   });
 
   it('stays enabled after the last criterion is removed - the tree is still filtered', async () => {
@@ -63,35 +66,51 @@ describe('the Apply button', () => {
     const { modal, onApply } = await openModal();
     dirty(modal);
     type(modal.querySelector('[data-role="freetext"]'), 'contact');
-    modal.querySelector('[data-role="site-scope"]').value = 'other';
-    modal.querySelector('[data-role="page-scope"]').checked = true;
+    pickScope(modal, 'other');
 
     applyButton(modal).click();
 
-    // pageScope is the page open right now (5), never whatever a hydrated
-    // under: token pointed at.
-    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden site:other under:5 contact']]);
+    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden site:other contact']]);
     expect(document.body.contains(modal)).toBe(false);
+  });
+
+  it('scopes to the page open right now, never to the page a hydrated under: token pointed at', async () => {
+    const { modal, onApply } = await openModal({ configuration: configurationFixture({ pageScope: 7 }) });
+    expect(applyButton(modal).disabled).toBe(true);
+
+    dirty(modal);
+    applyButton(modal).click();
+
+    await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden under:5']]);
+  });
+
+  it('enables Apply when the scope alone changes', async () => {
+    const { modal } = await openModal();
+
+    pickScope(modal, 'Below "Home" [5]');
+
+    expect(applyButton(modal).disabled).toBe(false);
+    expect(statusText(modal)).toBe('Not applied to the tree yet');
   });
 });
 
-describe('the Reset button', () => {
-  it('starts disabled when there is nothing to reset', async () => {
+describe('Clear all', () => {
+  it('is not offered while there is nothing to clear', async () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
     const { modal } = await openModal({ configuration });
 
-    expect(resetButton(modal).disabled).toBe(true);
+    expect(clearAllButton(modal).closest('[hidden]')).not.toBeNull();
   });
 
-  it('enables itself once a criterion is picked', async () => {
+  it('appears once a criterion is picked', async () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
     const { modal } = await openModal({ configuration });
 
     dirty(modal);
 
-    expect(resetButton(modal).disabled).toBe(false);
+    expect(clearAllButton(modal).closest('[hidden]')).toBeNull();
   });
 });
 
@@ -123,9 +142,9 @@ describe('Enter inside the modal', () => {
 describe('before the modal reports itself shown', () => {
   // Core dispatches 'typo3-modal-shown' asynchronously (its own open animation),
   // so there is a real window after the modal is built and in the DOM where
-  // #resetButton/#pendingNotice/#baselineState are still their build-time null -
-  // both the close guard and any control change reachable in that window have
-  // to tolerate it.
+  // #applyButton/#baselineState are still their build-time null - both the
+  // close guard and any control change reachable in that window have to
+  // tolerate it.
   it('closes without a confirmation if closed before a baseline was ever established', async () => {
     const { modal } = await openModal({ show: false });
 
@@ -135,7 +154,7 @@ describe('before the modal reports itself shown', () => {
     expect(openedModals()).toHaveLength(1);
   });
 
-  it('reacts to a control change without the reset button wired up yet', async () => {
+  it('reacts to a control change without the Apply button wired up yet', async () => {
     const { modal } = await openModal({ show: false });
 
     expect(() => control(modal, 'doktype[doktype]', '1').click()).not.toThrow();
@@ -246,31 +265,30 @@ describe('Any time', () => {
     expect(control(modal, 'activity[updated]', '<7d').checked).toBe(false);
   });
 
-  it('is checked again after Reset', async () => {
+  it('is checked again after Clear all', async () => {
     const { modal } = await openModal({ configuration: withPreset() });
 
-    modal.querySelector('.pagetree-facets__reset').click();
+    clearAllButton(modal).click();
 
     expect(anyTime(modal).checked).toBe(true);
   });
 });
 
-describe('Reset', () => {
+describe('clearing everything', () => {
   it('clears every criterion but stays in the modal', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ activeSite: 'other', pageScope: 5, freetext: 'contact' }),
     });
     type(control(modal, 'activity[changed]'), '7d');
 
-    modal.querySelector('.pagetree-facets__reset').click();
+    clearAllButton(modal).click();
 
     expect(chipLabels(modal)).toEqual([]);
     expect(control(modal, 'state[is]', 'hidden').checked).toBe(false);
     expect(control(modal, 'activity[changed]').value).toBe('');
     expect(modal.querySelector('[data-role="freetext"]').value).toBe('');
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('');
-    expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__hint').hidden).toBe(false);
+    expect(scopeValue(modal)).toBe('Whole tree');
+    expect(modal.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(false);
     expect(document.body.contains(modal)).toBe(true);
   });
 
@@ -281,21 +299,21 @@ describe('Reset', () => {
     const { modal } = await openModal({ configuration });
     expect(chipLabels(modal)).toContain('Page type: Standard');
 
-    modal.querySelector('.pagetree-facets__reset').click();
+    clearAllButton(modal).click();
 
     expect(control(modal, 'doktype[doktype]').selectedOptions).toHaveLength(0);
     expect(chipLabels(modal)).toEqual([]);
   });
 
-  it('tolerates having no site scope or page scope control to clear', async () => {
-    // Neither control is rendered without a page open and more than one site
-    // (see "the scope controls") - Reset must not assume they exist.
+  it('tolerates having no scope chip to clear', async () => {
+    // The chip is not rendered without a page open and more than one site (see
+    // "the scope chip") - Reset must not assume it exists.
     const { modal } = await openModal({
       pageId: null,
       configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
     });
 
-    expect(() => modal.querySelector('.pagetree-facets__reset').click()).not.toThrow();
+    expect(() => clearAllButton(modal).click()).not.toThrow();
     expect(chipLabels(modal)).toEqual([]);
   });
 });

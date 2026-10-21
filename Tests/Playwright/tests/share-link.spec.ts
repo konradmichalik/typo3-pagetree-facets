@@ -23,7 +23,7 @@ test('copy link puts the current phrase on the clipboard as a URL parameter', as
 
   await searchTree(page, tree, 'doktype:3');
   await modal.open();
-  await modal.copyLinkButton().click();
+  await (await modal.menuItem('Copy link to this filter')).click();
 
   // #copyLink() computes the phrase and writes to the clipboard through two
   // awaited async steps; the click only dispatches the event and does not

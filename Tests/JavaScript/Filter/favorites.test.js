@@ -92,44 +92,43 @@ describe('favoriteRows', () => {
 
 describe('buildSaveFavoriteForm', () => {
   const mount = (onSave = vi.fn()) => {
-    const { toggle, form } = buildSaveFavoriteForm({ onSave });
-    document.body.replaceChildren(toggle, form);
+    const { form, open, close } = buildSaveFavoriteForm({ onSave });
+    const opener = document.createElement('button');
+    opener.type = 'button';
+    document.body.replaceChildren(opener, form);
 
-    return { toggle, form, onSave, input: form.querySelector('input') };
+    return { form, open, close, opener, onSave, input: form.querySelector('input') };
   };
 
-  it('starts as a toggle with the form hidden', () => {
-    const { toggle, form } = mount();
-
-    expect(toggle.hidden).toBe(false);
-    expect(form.hidden).toBe(true);
+  it('starts hidden', () => {
+    expect(mount().form.hidden).toBe(true);
   });
 
-  it('swaps toggle for form when opened', () => {
-    const { toggle, form } = mount();
+  it('opens on demand with the name field focused', () => {
+    const { form, open, opener, input } = mount();
 
-    toggle.click();
+    open(opener);
 
-    expect(toggle.hidden).toBe(true);
     expect(form.hidden).toBe(false);
+    expect(document.activeElement).toBe(input);
   });
 
-  it('saves the entered name and closes again', () => {
-    const { toggle, form, onSave, input } = mount();
-    toggle.click();
+  it('saves the entered name, closes and hands focus back to whatever opened it', () => {
+    const { form, open, opener, onSave, input } = mount();
+    open(opener);
     input.value = 'My filter';
 
     form.querySelector('.btn-primary').click();
 
     expect(onSave).toHaveBeenCalledWith('My filter');
     expect(form.hidden).toBe(true);
-    expect(toggle.hidden).toBe(false);
     expect(input.value).toBe('');
+    expect(document.activeElement).toBe(opener);
   });
 
   it('saves on Enter without letting the modal apply and close', () => {
-    const { toggle, onSave, input } = mount();
-    toggle.click();
+    const { open, opener, onSave, input } = mount();
+    open(opener);
     input.value = 'Via keyboard';
 
     const reachedModal = vi.fn();
@@ -141,25 +140,39 @@ describe('buildSaveFavoriteForm', () => {
   });
 
   it('discards the entry on Escape and on Cancel', () => {
-    const { toggle, form, onSave, input } = mount();
+    const { form, open, opener, onSave, input } = mount();
 
-    toggle.click();
+    open(opener);
     input.value = 'abandoned';
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(onSave).not.toHaveBeenCalled();
     expect(input.value).toBe('');
+    expect(document.activeElement).toBe(opener);
 
-    toggle.click();
+    open(opener);
     input.value = 'abandoned again';
     form.querySelector('.btn-default').click();
     expect(onSave).not.toHaveBeenCalled();
     expect(form.hidden).toBe(true);
   });
 
-  it('leaves every other key to do whatever it would do in a plain text input', () => {
-    const { toggle, form, onSave, input } = mount();
+  it('can be closed from outside without moving focus, and is a no-op while closed', () => {
+    const { form, open, close, opener, input } = mount();
+    open(opener);
+    input.value = 'typing';
 
-    toggle.click();
+    close();
+    expect(form.hidden).toBe(true);
+    expect(input.value).toBe('');
+    expect(document.activeElement).not.toBe(opener);
+
+    expect(() => close()).not.toThrow();
+  });
+
+  it('leaves every other key to do whatever it would do in a plain text input', () => {
+    const { form, open, opener, onSave, input } = mount();
+
+    open(opener);
     input.value = 'still typing';
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
 

@@ -34,6 +34,7 @@ All colours come from core CSS variables that exist in both v13 and v14 and alre
 | Secondary text, meta, group headings | `--typo3-text-color-variant` |
 | Field and chip-row background | `--typo3-component-bg` |
 | Control and separator borders | `--typo3-component-border-color` |
+| Dashed border of the scope chip | `--typo3-text-color-variant`. The component border is a faint mix of surface and text (`--typo3-border-mix`) and does not reach the 3:1 that 1.4.11 asks of this border; the secondary text colour does in both schemes |
 | Hover | `--typo3-component-hover-bg` |
 | Selected navigation item, chip, selected option row | A tint of `--typo3-state-primary-bg` via `color-mix()` (16%, 26% for the count badge) with `--typo3-text-color-base` |
 | Focus ring | `--typo3-component-focus-color` |
@@ -83,7 +84,7 @@ Left to right:
 1. The scope chip `In: Whole tree`, a button with a chevron and a dashed border so it does not read as a removable criterion. It opens one list: `Whole tree`, `Below "<page title>" [<uid>]` when a page is open, then one entry per site when there is more than one site. Without an open page and with a single site the chip is not rendered.
 2. One chip per picked value, in the order the criteria appear in the navigation: `<Facet>: <value>` with a × button whose accessible name is `Remove <Facet>: <value>`. The freetext is a chip too: `Title: <text>`.
 3. `Clear all`, a text button. It replaces the former footer button Reset.
-4. The actions menu `⋯` (`aria-label="More actions: save as favorite, copy link"`) with `Save as favorite` and `Copy link to this filter`.
+4. The actions menu `⋯` (`aria-label="More actions"`, the `role="menu"` panel is labelled by it) with `Save as favorite` and `Copy link to this filter`. The glyph is core's `actions-menu-alternative` (three dots, stacked), since the registry has no horizontal one. `Save as favorite` opens the name form inline under the row.
 
 Rules for the row:
 
@@ -95,7 +96,7 @@ Rules for the row:
 ## Navigation
 
 - Order: the criterion search, `Favorites` with its count when favorites exist, then the facet groups in priority order, each under its uppercase heading.
-- The active facet carries a 3px start border in the base text colour besides its tint. The tint alone is a weak cue and is dropped in forced-colors mode, a border is not. The label does not shift: the item's start padding shrinks by the border width.
+- The active facet carries a 3px start border in the base text colour besides its tint. The tint alone is a weak cue and is dropped in forced-colors mode, a border is not. The label does not shift: the item's start padding shrinks by the border width. In forced-colors mode a transparent border is painted too, so there the inactive items drop the border and take its width back as padding.
 - A facet with criteria picked shows a badge with the number: the 26% tint of `--typo3-state-primary-bg` with the base text colour, as in the Colour table.
 - A facet without options is disabled and says why on a second line in the item itself, for example `Site has only one language`. Never only in a `title` tooltip.
 - `How filtering works` is the last item, pinned to the bottom edge of the navigation with a separator line. It stays visible however many facets third parties register.
@@ -136,10 +137,10 @@ Rules for the row:
 
 ## Footer
 
-- Left: the status element, `role="status"` and `aria-live="polite"`. It holds the live count and whether the selection is applied: `14 matching pages · not applied to the tree yet`. While counting it shows a placeholder bar instead of the number, the layout does not move.
+- Left: the status line. Its live region (`role="status"`, `aria-live="polite"`) holds the live count and whether the selection is applied: `14 matching pages · not applied to the tree yet`. While counting it shows a placeholder bar instead of the number, the layout does not move.
 - Right: `Cancel` (`btn-default`), then `Apply` (`btn-primary`, check icon), the primary action last as in core. Apply is disabled while the selection equals the applied filter.
 - No Reset button in the footer. Clearing lives in the criteria row.
-- While nothing is picked the status shows the shortcut instead: `Tip: open this dialog from anywhere with Ctrl Shift L` (`Cmd` on macOS).
+- While nothing is picked the status shows the shortcut instead: `Tip: open this dialog from anywhere with Ctrl Shift L` (`Cmd` on macOS). The tip sits beside the live region, not inside it, so its return is never announced.
 
 ## No matching pages
 
