@@ -63,6 +63,33 @@ describe('attachPopover', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('closes on Escape while the trigger itself has focus, keeping the key from the modal', () => {
+    const { trigger, panel } = mount();
+    trigger.click();
+    trigger.focus();
+    const reachedModal = vi.fn();
+    document.body.addEventListener('keydown', reachedModal);
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    trigger.dispatchEvent(event);
+
+    expect(panel.hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(reachedModal).not.toHaveBeenCalled();
+  });
+
+  it('lets Escape on the trigger through to the modal once closed', () => {
+    const { trigger, popover } = mount();
+    trigger.click();
+    popover.close();
+    const reachedModal = vi.fn();
+    document.body.addEventListener('keydown', reachedModal);
+
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+    expect(reachedModal).toHaveBeenCalledTimes(1);
+  });
+
   it('closes on a pointer press outside, leaving focus where the press went', () => {
     const { trigger, panel, outside } = mount();
     trigger.click();
