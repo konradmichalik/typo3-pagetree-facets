@@ -52,7 +52,9 @@
     border-bottom: 1px solid var(--typo3-component-border-color);
 }
 
+/* Positioned, so the suggestions can hang under the field. */
 .pagetree-facets__search {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -171,6 +173,95 @@
 .pagetree-facets__freetext[hidden],
 .pagetree-facets__phrase[hidden] {
     display: none;
+}
+
+/* --- Suggestions in text mode ------------------------------------------ */
+
+/* Under the field where the token starts (top and left are set by
+   Filter/token-suggestions.js), over the navigation and the panel. */
+.pagetree-facets__suggestions {
+    position: absolute;
+    z-index: 1000;
+    min-width: 20rem;
+    max-width: 100%;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 6px;
+    background: var(--typo3-component-bg);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+}
+
+.pagetree-facets__suggestions[hidden] {
+    display: none;
+}
+
+/* Styled like the group headings in the navigation. */
+.pagetree-facets__suggestions-heading {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--typo3-component-border-color);
+    color: var(--typo3-text-color-variant);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.pagetree-facets__suggestions-list {
+    margin: 0;
+    padding: 0.25rem;
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.pagetree-facets__suggestion {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: var(--typo3-text-color-base);
+    cursor: pointer;
+}
+
+.pagetree-facets__suggestion:hover,
+.pagetree-facets__suggestion.is-highlighted {
+    background: var(--typo3-component-hover-bg);
+}
+
+/* The faint hover background alone is too weak a marker for the keyboard
+   position and vanishes in forced-colors mode. */
+.pagetree-facets__suggestion.is-highlighted {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* The token in a fixed column, in core's code colour like the phrase keys. */
+.pagetree-facets__suggestion-token {
+    flex: 0 0 10rem;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    color: var(--typo3-text-color-code);
+    font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
+    font-size: 0.8125rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pagetree-facets__suggestions-hints {
+    display: flex;
+    gap: 1rem;
+    padding: 0.4rem 0.75rem;
+    border-top: 1px solid var(--typo3-component-border-color);
+    color: var(--typo3-text-color-variant);
+    font-size: 0.75rem;
+}
+
+.pagetree-facets__suggestions-hint kbd {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
 }
 
 /* Labelled, never the icon alone. A separator line marks it off from the text

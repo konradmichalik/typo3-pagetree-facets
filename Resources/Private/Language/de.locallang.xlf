@@ -105,6 +105,10 @@
 			<trans-unit id="pagetreeFacets.modal.reference.or"><source>`1,3` any of these</source><target>`1,3` eines davon</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reference.freetext"><source>Text without key searches title and UID</source><target>Text ohne Schlüssel sucht in Titel und UID</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reference.help"><source>All keys: How filtering works</source><target>Alle Schlüssel: Wie das Filtern funktioniert</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.keys"><source>Keys</source><target>Schlüssel</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.choose"><source>[[↑]][[↓]] choose</source><target>[[↑]][[↓]] wählen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.insert"><source>[[↵]] insert</source><target>[[↵]] einfügen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.close"><source>[[Esc]] close</source><target>[[Esc]] schließen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.description"><source>Explains how criteria combine and what each action does.</source><target>Erklärt, wie Kriterien kombiniert werden und was jede Aktion bewirkt.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.close.description"><source>Closes the help.</source><target>Schließt die Hilfe.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clear.description"><source>Empties this field.</source><target>Leert dieses Feld.</target></trans-unit>

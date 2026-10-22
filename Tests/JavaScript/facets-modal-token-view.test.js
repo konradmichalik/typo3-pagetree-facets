@@ -213,6 +213,27 @@ describe('typing a phrase', () => {
   });
 });
 
+describe('suggestions under the phrase', () => {
+  it('offer the values of a key from the loaded configuration and reflect a picked one into the form', async () => {
+    const { modal } = await openModal({ configuration: hydratingFixture });
+    const field = await enterTokenMode(modal);
+    const before = requests().length;
+
+    type(field, 'is:');
+
+    const options = [...modal.querySelectorAll('.pagetree-facets__suggestion')];
+    expect(options.map((option) => option.textContent)).toEqual(['hiddenHidden', 'emptyEmpty']);
+    // No request for the list itself: what is offered was loaded on open.
+    expect(requests().slice(before)).toEqual([]);
+
+    options[1].click();
+
+    expect(field.value).toBe('is:empty ');
+    expect(mirrorText(modal)).toBe('is:empty ');
+    await expect.poll(() => control(modal, 'state[is]', 'empty').checked).toBe(true);
+  });
+});
+
 describe('editing the form in token view', () => {
   it('mirrors the change back into the phrase', async () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });

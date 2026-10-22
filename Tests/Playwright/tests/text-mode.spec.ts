@@ -95,6 +95,56 @@ test('replaces the chips by the short reference, whose link opens the help', asy
   await expect(modal.helpPopover()).toBeVisible();
 });
 
+test('suggests the keys while a word is typed, each with its label', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  await enterTextMode(page, modal);
+
+  await modal.tokenField().press('End');
+  await modal.tokenField().pressSequentially(' i');
+
+  await expect(modal.suggestions()).toBeVisible();
+  await expect(modal.suggestionHeading()).toHaveText('Keys');
+  await expect(modal.suggestionOptions().first()).toHaveText('isPage state');
+  // The list hangs under the field, starting where the word does.
+  const field = await modal.tokenField().boundingBox();
+  const list = await modal.suggestions().boundingBox();
+  expect(list!.y).toBeGreaterThanOrEqual(field!.y + field!.height);
+  expect(list!.x).toBeGreaterThan(field!.x + 40);
+});
+
+test('suggests the values of a key after its colon; a picked one reaches the form', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  await enterTextMode(page, modal);
+
+  await modal.tokenField().press('End');
+  await modal.tokenField().pressSequentially(' is:');
+  await expect(modal.suggestionHeading()).toHaveText('Page state · is:');
+  await modal.tokenField().press('ArrowDown');
+  const picked = await modal.suggestions().locator('.is-highlighted .pagetree-facets__suggestion-token').textContent();
+
+  await modal.tokenField().press('Enter');
+
+  await expect(modal.tokenField()).toHaveValue(`doktype:1 is:${picked} `);
+  await expect(modal.suggestions()).toBeHidden();
+  await expect(modal.phraseKeys()).toHaveText(['doktype:', 'is:']);
+  // Enter inserted instead of applying: the modal is still open and the form followed.
+  await expect(modal.root()).toBeVisible();
+  await expect(modal.option('state', 'is', picked!)).toBeChecked();
+});
+
+test('Escape closes the suggestions and leaves the modal open', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+  await enterTextMode(page, modal);
+  await modal.tokenField().press('End');
+  await modal.tokenField().pressSequentially(' is:');
+  await expect(modal.suggestions()).toBeVisible();
+
+  await modal.tokenField().press('Escape');
+
+  await expect(modal.suggestions()).toBeHidden();
+  await expect(modal.root()).toBeVisible();
+});
+
 test('forced colours drop the mirror, since the input\'s text is forced visible there', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' });
   const modal = new FacetsModalPage(page);

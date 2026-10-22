@@ -307,8 +307,10 @@ describe('the scope chip', () => {
     // against whichever one is on screen.
     expect([...field.children].map((child) => child.className.split(' ').at(-1)))
       .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__phrase', 'pagetree-facets__text-switch']);
-    // Help lives in the navigation now, nothing sits beside the field.
-    expect(modal.querySelector('.pagetree-facets__search').children).toHaveLength(1);
+    // Help lives in the navigation now; beside the field sits only the (closed)
+    // suggestion list of text mode.
+    expect([...modal.querySelector('.pagetree-facets__search').children].map((child) => child.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__search-field', 'pagetree-facets__suggestions']);
     expect(modal.querySelector('.pagetree-facets__help-toggle')).toBeNull();
   });
 

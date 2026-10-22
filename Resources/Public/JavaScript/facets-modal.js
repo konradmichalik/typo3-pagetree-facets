@@ -21,6 +21,7 @@ import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pag
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { criterionPrefixes, distinctFields } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { attachTokenSuggestions } from '@konradmichalik/pagetree-facets/Filter/token-suggestions.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -304,6 +305,13 @@ class FacetsModal {
       this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
     });
     search.append(this.#searchField.element);
+    // The configuration is read per keystroke: a reflect replaces it.
+    attachTokenSuggestions({
+      input: this.#tokenField,
+      anchor: search,
+      caretLeft: this.#searchField.phrase.caretLeft,
+      getConfiguration: () => this.#configuration,
+    });
     header.append(search);
 
     // The scope is picked, not a criterion, so a change here refreshes the

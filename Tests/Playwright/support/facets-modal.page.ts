@@ -170,6 +170,19 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} .pagetree-facets__reference`);
   }
 
+  /** The key and value suggestions under the token field (see Filter/token-suggestions.js). */
+  suggestions(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__suggestions`);
+  }
+
+  suggestionHeading(): Locator {
+    return this.suggestions().locator('.pagetree-facets__suggestions-heading');
+  }
+
+  suggestionOptions(): Locator {
+    return this.suggestions().locator('[role="option"]');
+  }
+
   /** The Text switch built into the search field's trailing edge. */
   textSwitch(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__text-switch`);

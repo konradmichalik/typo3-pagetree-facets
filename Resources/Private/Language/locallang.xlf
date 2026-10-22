@@ -105,6 +105,10 @@
 			<trans-unit id="pagetreeFacets.modal.reference.or"><source>`1,3` any of these</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reference.freetext"><source>Text without key searches title and UID</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reference.help"><source>All keys: How filtering works</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.keys"><source>Keys</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.choose"><source>[[↑]][[↓]] choose</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.insert"><source>[[↵]] insert</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.suggestions.close"><source>[[Esc]] close</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.description"><source>Explains how criteria combine and what each action does.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.close.description"><source>Closes the help.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clear.description"><source>Empties this field.</source></trans-unit>
