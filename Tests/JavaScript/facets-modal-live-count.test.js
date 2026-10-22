@@ -45,6 +45,8 @@ describe('when the setting is off (default)', () => {
     const { modal } = await openModal({ count: 3 });
 
     expect(countText(modal).hidden).toBe(true);
+    // The warning needs the count, so it never shows without it either.
+    expect(modal.querySelector('.pagetree-facets__no-match').hidden).toBe(true);
 
     control(modal, 'doktype[doktype]', '1').click();
     await new Promise((resolve) => { setTimeout(resolve, 400); });
@@ -140,6 +142,47 @@ describe('when the setting is on', () => {
 
     await expect.poll(() => countText(modal)?.textContent).toBe('No matching pages');
     expect(countText(modal).hidden).toBe(false);
+  });
+
+  it('warns under the criteria row while no page matches, naming the number of chips', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ count: 0 });
+    const callout = modal.querySelector('.pagetree-facets__no-match');
+
+    await expect.poll(() => callout.hidden).toBe(false);
+    // The fixture hydrates one criterion, Page state: Hidden.
+    expect(callout.querySelector('.pagetree-facets__no-match-title').textContent).toBe('No page matches this criterion');
+    expect(modal.querySelector('.pagetree-facets__criteria-row').nextElementSibling).toBe(callout);
+    // Not announced twice: the footer status is the live region.
+    expect(callout.hasAttribute('aria-live')).toBe(false);
+
+    control(modal, 'doktype[doktype]', '1').click();
+
+    // Hidden while counting; the new count says 0 again with two chips now.
+    expect(callout.hidden).toBe(true);
+    await expect.poll(() => callout.hidden).toBe(false);
+    expect(callout.querySelector('.pagetree-facets__no-match-title').textContent).toBe('No page matches all 2 criteria');
+  });
+
+  it('drops the warning once the count is above 0 and in text mode', async () => {
+    enableLivePreviewCount();
+    let count = 0;
+    const { modal } = await openModal({ count: () => count });
+    const callout = modal.querySelector('.pagetree-facets__no-match');
+    await expect.poll(() => callout.hidden).toBe(false);
+
+    count = 5;
+    control(modal, 'doktype[doktype]', '1').click();
+    await expect.poll(() => countText(modal)?.textContent).toBe('5 matching pages');
+    expect(callout.hidden).toBe(true);
+
+    count = 0;
+    control(modal, 'doktype[doktype]', '4').click();
+    await expect.poll(() => callout.hidden).toBe(false);
+
+    textSwitch(modal).click();
+    await expect.poll(() => textSwitch(modal).getAttribute('aria-pressed')).toBe('true');
+    expect(callout.hidden).toBe(true);
   });
 
   it('hides the notice when the count is null (nothing resolvable)', async () => {

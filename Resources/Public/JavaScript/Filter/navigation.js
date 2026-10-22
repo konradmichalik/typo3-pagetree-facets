@@ -68,6 +68,33 @@ export function buildNavigation({ tabs, activeTab, leading, trailing, onQuery, o
   return nav;
 }
 
+/**
+ * While the criterion search has text, every facet item shows how many of the
+ * matches it holds; a facet without one is dimmed. The criteria badge stays in
+ * the DOM underneath, the stylesheet swaps the two.
+ *
+ * @param {HTMLElement} nav
+ * @param {Array<{tab: {identifier: string}}>|null} matches - null leaves search mode
+ */
+export function showMatchCounts(nav, matches) {
+  nav.classList.toggle('is-searching', null !== matches);
+  const counts = new Map();
+  for (const { tab } of matches ?? []) {
+    counts.set(tab.identifier, (counts.get(tab.identifier) ?? 0) + 1);
+  }
+  for (const item of nav.querySelectorAll('.pagetree-facets__nav-item')) {
+    item.querySelector('.pagetree-facets__nav-matches')?.remove();
+    const count = counts.get(item.dataset.tab);
+    item.classList.toggle('is-unmatched', null !== matches && undefined === count);
+    if (undefined !== count) {
+      const badge = document.createElement('span');
+      badge.className = 'pagetree-facets__nav-matches';
+      badge.textContent = String(count);
+      item.append(badge);
+    }
+  }
+}
+
 // Tabs arrive priority-ordered, so their groups interleave: bucketing them
 // first, in first-seen order, renders each group heading once.
 function groupTabs(tabs) {
