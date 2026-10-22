@@ -111,6 +111,36 @@ describe('the +N more overflow', () => {
     expect(document.activeElement).toBe(moreButton(row));
   });
 
+  it('never shows a +0 more button while it looks for the chips that fit beside the actions', () => {
+    const seen = [];
+    let row;
+    // Six chips fill both rows at three per line, so only the actions are left over.
+    ({ row } = mount({
+      measure: (elements) => {
+        seen.push(moreButton(row)?.textContent);
+
+        return perRow(3)(elements);
+      },
+    }));
+
+    row.update({ criteria: eight.slice(0, 6), savable: true });
+
+    expect(seen.filter((text) => text?.startsWith('+0'))).toEqual([]);
+    // Four chips, the button and the actions are what two rows of three hold.
+    expect(moreButton(row).textContent).toBe('+2 more');
+  });
+
+  it('keeps focus on the open dialog when a resize re-measures the row', () => {
+    const { row, resize } = mount();
+    row.update({ criteria: eight, savable: true });
+    moreButton(row).click();
+    expect(document.activeElement).toBe(popover(row));
+
+    resize();
+
+    expect(document.activeElement).toBe(popover(row));
+  });
+
   it('opens a named dialog listing every criterion grouped by facet, each removable, plus Clear all', () => {
     const { row, onRemove, onClearAll } = mount();
     row.update({ criteria: eight, savable: true });

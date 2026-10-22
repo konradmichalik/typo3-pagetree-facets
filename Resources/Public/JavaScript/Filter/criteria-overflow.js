@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import { renderChip } from '@konradmichalik/pagetree-facets/Filter/chip.js';
-import { lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { format, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
@@ -54,18 +54,22 @@ export function buildCriteriaOverflow({
     if (visible === nodes.length && rows[nodes.length] < MAX_ROWS) {
       return;
     }
-    // The button and the actions need a place on the second row as well.
-    do {
+    // The button and the actions need a place on the second row as well, so at
+    // least one chip goes behind the button.
+    visible = Math.min(visible, nodes.length - 1);
+    showHidden(nodes, visible);
+    while (visible > 0 && !measure([...nodes.slice(0, visible), button, actions]).every((row) => row < MAX_ROWS)) {
+      visible -= 1;
       showHidden(nodes, visible);
-    } while (visible > 0 && !measure([...nodes.slice(0, visible), button, actions]).every((row) => row < MAX_ROWS) && visible--);
+    }
   }
 
   function showHidden(nodes, visible) {
     nodes.forEach((chip, index) => { chip.hidden = index >= visible; });
     element.hidden = false;
     const count = nodes.length - visible;
-    button.textContent = lang('pagetreeFacets.modal.overflow.more', '+%d more').replace('%d', () => String(count));
-    button.setAttribute('aria-label', lang('pagetreeFacets.modal.overflow.show', 'Show %d more criteria').replace('%d', () => String(count)));
+    button.textContent = format('pagetreeFacets.modal.overflow.more', '+%d more', count);
+    button.setAttribute('aria-label', format('pagetreeFacets.modal.overflow.show', 'Show %d more criteria', count));
   }
 
   function update(criteria) {
@@ -143,7 +147,7 @@ function buildPanel() {
     clearAll,
     entries: () => [...list.querySelectorAll('.pagetree-facets__chip-remove')],
     render: (criteria, { onRemove }) => {
-      title.textContent = lang('pagetreeFacets.modal.overflow.title', 'All %d criteria').replace('%d', () => String(criteria.length));
+      title.textContent = format('pagetreeFacets.modal.overflow.title', 'All %d criteria', criteria.length);
       list.replaceChildren(...renderGroups(criteria, onRemove));
     },
   };
