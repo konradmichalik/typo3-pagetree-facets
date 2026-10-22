@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { decorativeIcon, format, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The warning under the criteria row while the live count is 0: how many
@@ -50,6 +50,6 @@ export class NoMatchCallout {
     this.element.hidden = !none || 0 === criteria;
     this.#title.textContent = 1 === criteria
       ? lang('pagetreeFacets.modal.noMatch.one', 'No page matches this criterion')
-      : lang('pagetreeFacets.modal.noMatch.other', 'No page matches all %d criteria').replace('%d', () => String(criteria));
+      : format('pagetreeFacets.modal.noMatch.other', 'No page matches all %d criteria', criteria);
   }
 }

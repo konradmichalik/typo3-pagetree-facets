@@ -24,6 +24,21 @@ let idCounter = 0;
 export const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
 
 /**
+ * A label with its %d and %s filled in order. One pass with a function replacer,
+ * so `$&` or a placeholder inside a value (a page title) stays literal.
+ *
+ * @param {string} key
+ * @param {string} fallback
+ * @param {...(string|number)} values
+ * @returns {string}
+ */
+export const format = (key, fallback, ...values) => {
+  const queue = [...values];
+
+  return lang(key, fallback).replace(/%[ds]/g, () => String(queue.shift()));
+};
+
+/**
  * A DOM id that no other element carries. Needed wherever aria-describedby or
  * aria-controls has to point somewhere, and the same control can be rendered more
  * than once per document.

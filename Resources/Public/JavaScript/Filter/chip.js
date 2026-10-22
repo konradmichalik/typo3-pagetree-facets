@@ -3,7 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { format } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * One picked value as `<Facet>: <value>` with a × that removes it. The criteria
@@ -38,8 +38,7 @@ export function renderChip(criterion, onRemove, { withPrefix = true } = {}) {
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'pagetree-facets__chip-remove';
-  // A function replacer, so `$&` in a page title is not expanded.
-  const removeLabel = lang('pagetreeFacets.modal.removeCriterion', 'Remove %s').replace('%s', () => criterion.label);
+  const removeLabel = format('pagetreeFacets.modal.removeCriterion', 'Remove %s', criterion.label);
   remove.setAttribute('aria-label', removeLabel);
   remove.title = removeLabel;
   remove.textContent = '×';

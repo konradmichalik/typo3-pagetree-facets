@@ -4,7 +4,7 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 
-import { clearable, decorativeIcon, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { clearable, decorativeIcon, format, lang, optionHelp } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * The criterion search: its input, and the result view that replaces the facet
@@ -103,10 +103,7 @@ function headingLabel(count, query) {
     other: '%d criteria match “%s”',
   }[key];
 
-  // Function replacers: the query is user text, so `$&` in it must stay literal.
-  return lang(`pagetreeFacets.modal.search.matches.${key}`, fallback)
-    .replace('%d', () => String(count))
-    .replace('%s', () => query);
+  return format(`pagetreeFacets.modal.search.matches.${key}`, fallback, ...('other' === key ? [count, query] : [query]));
 }
 
 function renderEmpty() {
@@ -144,7 +141,7 @@ function renderGroup({ tab, field, matches }, query, deps) {
   const showAll = document.createElement('button');
   showAll.type = 'button';
   showAll.className = 'btn btn-link btn-sm pagetree-facets__search-show-all';
-  showAll.textContent = lang('pagetreeFacets.modal.search.showAll', 'Show all in %s').replace('%s', () => tab.label);
+  showAll.textContent = format('pagetreeFacets.modal.search.showAll', 'Show all in %s', tab.label);
   showAll.addEventListener('click', () => deps.onShowAll(tab.identifier));
   head.append(title, showAll);
 
