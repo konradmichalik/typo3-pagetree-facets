@@ -20,7 +20,7 @@ import { NoMatchCallout } from '@konradmichalik/pagetree-facets/Filter/no-match-
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
-import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { criterionPrefixes, distinctFields } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -781,25 +781,7 @@ class FacetsModal {
   #collectActiveCriteria() {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
-      const fields = distinctFields(tab);
-      const nameCounts = fieldNameCounts(tab);
-      // A name that occurs more than once in the raw (non-deduplicated) field
-      // list is bucketed (e.g. RecordsTab's `table` split into TYPO3 Core/News/
-      // Other, ContentElementTab's `ce` split per wizard group) - each field's
-      // `label` there is a section heading, not a criterion name, so those
-      // always fall back to the tab label. Only among the remaining,
-      // non-bucketed names does it make sense to prefix with the field label,
-      // and only when there is more than one of them (e.g. Activity: "Last
-      // updated" vs "Created") - otherwise the tab label reads cleaner and a
-      // single field would just repeat itself.
-      const nonBucketedCount = fields.filter((field) => 1 === nameCounts.get(field.name)).length;
-      for (const field of fields) {
-        // fields (= distinctFields(tab)) and nameCounts are both built from
-        // the same tab.configuration.fields, so field.name is always a key
-        // here - `?? 0` guards a lookup miss that cannot actually happen.
-        /* v8 ignore next */
-        const bucketed = (nameCounts.get(field.name) ?? 0) > 1;
-        const prefix = bucketed ? tab.label : (nonBucketedCount > 1 ? field.label : tab.label);
+      for (const [field, prefix] of criterionPrefixes(tab)) {
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
