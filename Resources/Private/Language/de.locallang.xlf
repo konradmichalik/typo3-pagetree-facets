@@ -89,6 +89,9 @@
 			<trans-unit id="pagetreeFacets.modal.me"><source>Me</source><target>Ich</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userSearchPlaceholder"><source>Search backend user…</source><target>Backend-Benutzer suchen…</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.userPickPlaceholder"><source>Pick from the list…</source><target>Aus der Liste auswählen…</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.user.typeMore"><source>Type one more character to search users</source><target>Gib ein weiteres Zeichen ein, um Benutzer zu suchen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.user.noMatch"><source>No user matches '%s'</source><target>Kein Benutzer passt zu '%s'</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.user.disabled"><source>Disabled</source><target>Deaktiviert</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.copyLink"><source>Copy link to this filter</source><target>Link zu diesem Filter kopieren</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.ariaLabel"><source>Filter tokens</source><target>Filter-Tokens</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.placeholder"><source>doktype:1 is:empty site:main</source><target>doktype:1 is:empty site:main</target></trans-unit>

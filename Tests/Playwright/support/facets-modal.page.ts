@@ -127,6 +127,29 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} input[name="${tab}[${field}]"][value="${value}"]`);
   }
 
+  /** The query input of a user picker, e.g. `activity[by]` (see Filter/user-picker.js). */
+  userPickerInput(name: string): Locator {
+    return this.page.locator(`${MODAL} input[name="${name}"]`);
+  }
+
+  /** The chip inside that picker's field, present while a user is picked. */
+  userPickerChip(name: string): Locator {
+    return this.userPickerInput(name).locator('..').locator('.pagetree-facets__user-chip .pagetree-facets__chip');
+  }
+
+  /** The suggestion list of the open picker: `Me`, the results, the hint. Every picker keeps one, hidden while closed. */
+  userResults(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__user-results:not([hidden])`);
+  }
+
+  userOptions(): Locator {
+    return this.userResults().locator('[role="option"]');
+  }
+
+  userHint(): Locator {
+    return this.userResults().locator('.pagetree-facets__user-hint');
+  }
+
   /** The chips on the row, the hidden ones behind `+N more` included. */
   chips(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__chips .pagetree-facets__chip`);

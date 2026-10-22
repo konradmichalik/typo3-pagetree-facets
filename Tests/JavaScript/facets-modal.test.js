@@ -563,7 +563,9 @@ describe('a user-picker criterion', () => {
   it('serializes the picked value while the chip shows its label', async () => {
     const { modal, onApply } = await openModal({ configuration: withPicker(['me']) });
 
-    expect(control(modal, 'activity[editedBy]').value).toBe('Me (admin)');
+    // The field holds the pick as a chip, the input beside it stays empty.
+    expect(control(modal, 'activity[editedBy]').value).toBe('');
+    expect(modal.querySelector('.pagetree-facets__user-chip .pagetree-facets__chip-label').textContent).toBe('Me (admin)');
     expect(chipLabels(modal)).toContain('Edited by: Me (admin)');
 
     control(modal, 'doktype[doktype]', '1').click();

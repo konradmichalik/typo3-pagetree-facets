@@ -30,20 +30,19 @@ afterEach(() => {
 });
 
 const mount = (state, fieldOverrides = {}) => {
-  const element = renderUserPicker(tab, { ...field, ...fieldOverrides }, state, {
-    getRoot: () => root,
-    clearable: (input) => {
-      const wrap = document.createElement('div');
-      wrap.append(input);
-
-      return wrap;
-    },
-    onLabelResolved,
-  });
+  const element = renderUserPicker(tab, { ...field, ...fieldOverrides }, state, { getRoot: () => root, onLabelResolved });
   root.append(element);
   const input = element.querySelector('input');
 
-  return { element, input, results: () => root.querySelector('[role="listbox"]') };
+  return {
+    element,
+    input,
+    results: () => root.querySelector('.pagetree-facets__user-results'),
+    /** What the chip inside the field reads, null while nothing is picked. */
+    chip: () => element.querySelector('.pagetree-facets__chip-label')?.textContent ?? null,
+    chipRemove: () => element.querySelector('.pagetree-facets__chip-remove'),
+    hint: () => root.querySelector('.pagetree-facets__user-hint'),
+  };
 };
 
 const options = (results) => [...results().querySelectorAll('[role="option"]')].map((o) => o.textContent);
@@ -58,47 +57,49 @@ describe('renderUserPicker', () => {
   });
 
   it('seeds "me" from the record already at hand, without a request', () => {
-    const { input } = mount('me');
+    const { input, chip } = mount('me');
 
-    expect(input.value).toBe('Me (admin)');
+    expect(chip()).toBe('Me (admin)');
+    expect(input.value).toBe('');
     expect(input.dataset.value).toBe('me');
     expect(requests()).toHaveLength(0);
   });
 
   it('resolves a bare uid to its label and reports it upwards', async () => {
     respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
-    const { input } = mount('7');
+    const { input, chip } = mount('7');
 
-    // Before the round trip the uid stands in as the visible text.
-    expect(input.value).toBe('7');
-    await vi.waitFor(() => expect(input.value).toBe('Erika Editor'));
+    // Before the round trip the uid stands in as the chip's text.
+    expect(chip()).toBe('7');
+    await vi.waitFor(() => expect(chip()).toBe('Erika Editor'));
     expect(input.dataset.label).toBe('Erika Editor');
     // The chips are derived from the live controls, so they have to be rebuilt.
     expect(onLabelResolved).toHaveBeenCalled();
   });
 
   it('seeds nothing for an empty state list, same as a missing value', () => {
-    const { input } = mount([]);
+    const { input, chip } = mount([]);
 
     expect(input.value).toBe('');
+    expect(chip()).toBeNull();
     expect(requests()).toHaveLength(0);
   });
 
   it('leaves "me" unresolved as a literal value when the field carries no current user', () => {
     // pinnedLabel() only special-cases "me" when field.currentUser was given -
     // without it, "me" falls through to the real uid lookup like any other value.
-    const { input } = mount('me', { currentUser: undefined });
+    const { input, chip } = mount('me', { currentUser: undefined });
 
     expect(input.dataset.value).toBe('me');
-    expect(input.value).toBe('me');
+    expect(chip()).toBe('me');
   });
 
   it('leaves the visible uid alone when the lookup finds no matching user', async () => {
     respondWith(() => ({ users: [] }));
-    const { input } = mount('7');
+    const { chip } = mount('7');
 
     await vi.waitFor(() => expect(requests()).toHaveLength(1));
-    expect(input.value).toBe('7');
+    expect(chip()).toBe('7');
     expect(onLabelResolved).not.toHaveBeenCalled();
   });
 
@@ -106,10 +107,10 @@ describe('renderUserPicker', () => {
     respondWith(() => {
       throw new Error('network down');
     });
-    const { input } = mount('7');
+    const { chip } = mount('7');
 
     await vi.waitFor(() => expect(requests()).toHaveLength(1));
-    expect(input.value).toBe('7');
+    expect(chip()).toBe('7');
     expect(onLabelResolved).not.toHaveBeenCalled();
   });
 
@@ -118,7 +119,7 @@ describe('renderUserPicker', () => {
     respondWith(() => new Promise((resolve) => {
       release = () => resolve({ users: [{ uid: 7, label: 'Erika Editor' }] });
     }));
-    const { input } = mount('7');
+    const { input, chip } = mount('7');
 
     input.value = 'something else';
     input.dispatchEvent(new Event('input'));
@@ -126,6 +127,7 @@ describe('renderUserPicker', () => {
 
     await vi.waitFor(() => expect(requests()).toHaveLength(1));
     expect(input.value).toBe('something else');
+    expect(chip()).toBeNull();
     expect(onLabelResolved).not.toHaveBeenCalled();
   });
 
@@ -136,6 +138,20 @@ describe('renderUserPicker', () => {
 
     expect(options(results)).toEqual(['Me (admin)']);
     expect(input.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('leaves a typed query alone on focus instead of replacing its results with "Me"', async () => {
+    respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
+    const { input, results } = mount(undefined);
+    input.value = 'er';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(results().hidden).toBe(true);
+    expect(options(results)).toEqual(['Me (admin)', 'Erika Editor']);
   });
 
   it('searches only from two characters, debounced', async () => {
@@ -194,14 +210,15 @@ describe('renderUserPicker', () => {
     expect(options(results)).toEqual(['Me (admin)', 'hit for bb']);
   });
 
-  it('typing invalidates a previous selection', () => {
-    const { input } = mount('me');
+  it('typing invalidates a previous selection and takes its chip away', async () => {
+    const { input, chip } = mount('me');
 
     input.value = 'Er';
     input.dispatchEvent(new Event('input'));
 
     expect(input.dataset.value).toBeUndefined();
     expect(input.dataset.label).toBeUndefined();
+    await vi.waitFor(() => expect(chip()).toBeNull());
   });
 
   it('moves the highlight with the arrow keys and wraps around', async () => {
@@ -245,11 +262,7 @@ describe('renderUserPicker', () => {
   });
 
   it('clears the highlight rather than leaving a stale descendant when there is nothing to highlight', () => {
-    const element = renderUserPicker(tab, { name: 'editor' }, undefined, {
-      getRoot: () => root,
-      clearable: (input) => input,
-      onLabelResolved,
-    });
+    const element = renderUserPicker(tab, { name: 'editor' }, undefined, { getRoot: () => root, onLabelResolved });
     root.append(element);
     const input = element.querySelector('input');
 
@@ -275,8 +288,9 @@ describe('renderUserPicker', () => {
   });
 
   it('selects the highlighted suggestion on Enter and stops the event there', () => {
-    const { input, results } = mount(undefined);
-    input.dispatchEvent(new Event('focus'));
+    const { input, results, chip } = mount(undefined);
+    // Really focused, as in the browser: the pick keeps focus where it is.
+    input.focus();
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
 
     const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
@@ -285,7 +299,8 @@ describe('renderUserPicker', () => {
     input.dispatchEvent(enter);
 
     expect(input.dataset.value).toBe('me');
-    expect(input.value).toBe('Me (admin)');
+    expect(chip()).toBe('Me (admin)');
+    expect(input.value).toBe('');
     expect(results().hidden).toBe(true);
     // The modal applies and closes on Enter - picking a suggestion must not.
     expect(reachedModal).not.toHaveBeenCalled();
@@ -343,7 +358,7 @@ describe('renderUserPicker', () => {
 
   it('selects a real search result by its uid, not by a value field it does not have', async () => {
     respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
-    const { input, results } = mount(undefined);
+    const { input, results, chip } = mount(undefined);
     input.value = 'er';
     input.dispatchEvent(new Event('input'));
     await vi.advanceTimersByTimeAsync(400);
@@ -352,7 +367,7 @@ describe('renderUserPicker', () => {
     searchResult.click();
 
     expect(input.dataset.value).toBe('7');
-    expect(input.value).toBe('Erika Editor');
+    expect(chip()).toBe('Erika Editor');
   });
 
   it('reparents the dropdown to the root so the scrolling panel cannot clip it', () => {
@@ -366,9 +381,19 @@ describe('renderUserPicker', () => {
     expect(results().parentElement).toBe(root);
   });
 
+  it('ignores the scroll that focusing a field below the fold causes, one frame after opening', () => {
+    const { input, results } = mount(undefined);
+    input.dispatchEvent(new Event('focus'));
+
+    document.dispatchEvent(new Event('scroll'));
+
+    expect(results().hidden).toBe(false);
+  });
+
   it('drops its document-level scroll listener when closed', () => {
     const { input, results } = mount(undefined);
     input.dispatchEvent(new Event('focus'));
+    vi.advanceTimersToNextFrame();
 
     document.dispatchEvent(new Event('scroll'));
 
@@ -390,10 +415,11 @@ describe('renderUserPicker', () => {
     element.getBoundingClientRect = () => ({ left: 0, width: 200, ...rect });
   };
 
-  it('opens below the input when the list fits there', () => {
-    const { input, results } = mount(undefined);
+  // The list is measured against the field box, which holds the chip beside the input.
+  it('opens below the field when the list fits there', () => {
+    const { element, input, results } = mount(undefined);
     stubRect(root, { top: 0, bottom: 400 });
-    stubRect(input, { top: 20, bottom: 50 });
+    stubRect(element, { top: 20, bottom: 50 });
     stubRect(results(), { height: 150 });
 
     input.dispatchEvent(new Event('focus'));
@@ -401,10 +427,10 @@ describe('renderUserPicker', () => {
     expect(results().style.top).toBe('54px');
   });
 
-  it('opens above the input when the list would run into the modal footer', () => {
-    const { input, results } = mount(undefined);
+  it('opens above the field when the list would run into the modal footer', () => {
+    const { element, input, results } = mount(undefined);
     stubRect(root, { top: 0, bottom: 300 });
-    stubRect(input, { top: 260, bottom: 290 });
+    stubRect(element, { top: 260, bottom: 290 });
     stubRect(results(), { height: 150 });
 
     input.dispatchEvent(new Event('focus'));
@@ -417,10 +443,10 @@ describe('renderUserPicker', () => {
     modalBody.className = 'modal-body';
     document.body.append(modalBody);
     modalBody.append(root);
-    const { input, results } = mount(undefined);
+    const { element, input, results } = mount(undefined);
     stubRect(modalBody, { top: 0, bottom: 200 });
     stubRect(root, { top: 0, bottom: 480 });
-    stubRect(input, { top: 150, bottom: 180 });
+    stubRect(element, { top: 150, bottom: 180 });
     stubRect(results(), { height: 100 });
 
     input.dispatchEvent(new Event('focus'));
@@ -434,10 +460,10 @@ describe('renderUserPicker', () => {
     modalBody.className = 'modal-body';
     document.body.append(modalBody);
     modalBody.append(root);
-    const { input, results } = mount(undefined);
+    const { element, input, results } = mount(undefined);
     stubRect(modalBody, { top: 100, bottom: 300 });
     stubRect(root, { top: 50, bottom: 530 });
-    stubRect(input, { top: 250, bottom: 280 });
+    stubRect(element, { top: 250, bottom: 280 });
     stubRect(results(), { height: 100 });
 
     input.dispatchEvent(new Event('focus'));
@@ -449,9 +475,9 @@ describe('renderUserPicker', () => {
   });
 
   it('caps the list to the larger side when it fits neither above nor below', () => {
-    const { input, results } = mount(undefined);
+    const { element, input, results } = mount(undefined);
     stubRect(root, { top: 0, bottom: 300 });
-    stubRect(input, { top: 160, bottom: 190 });
+    stubRect(element, { top: 160, bottom: 190 });
     stubRect(results(), { height: 192 });
 
     input.dispatchEvent(new Event('focus'));
@@ -460,10 +486,10 @@ describe('renderUserPicker', () => {
     expect(results().style.maxHeight).toBe('156px');
   });
 
-  it('measures the list only once it is positioned and sized like the input', () => {
-    const { input, results } = mount(undefined);
+  it('measures the list only once it is positioned and sized like the field', () => {
+    const { element, input, results } = mount(undefined);
     stubRect(root, { top: 0, bottom: 400 });
-    stubRect(input, { top: 20, bottom: 50, width: 180 });
+    stubRect(element, { top: 20, bottom: 50, width: 180 });
     let measuredAs;
     results().getBoundingClientRect = () => {
       measuredAs = [results().style.position, results().style.width];
@@ -556,31 +582,31 @@ describe('renderUserPicker', () => {
   });
 
   it('seeds a pinned value from state without a request', () => {
-    const { input } = mount('none', { pinned: [{ value: 'none', label: 'Unassigned' }] });
+    const { input, chip } = mount('none', { pinned: [{ value: 'none', label: 'Unassigned' }] });
 
-    expect(input.value).toBe('Unassigned');
+    expect(chip()).toBe('Unassigned');
     expect(input.dataset.value).toBe('none');
     expect(requests()).toHaveLength(0);
   });
 
   it('seeds a pinned value even with an empty-string label, rather than falling through to a uid lookup', () => {
-    const { input } = mount('none', { pinned: [{ value: 'none', label: '' }] });
+    const { input, chip } = mount('none', { pinned: [{ value: 'none', label: '' }] });
 
-    expect(input.value).toBe('');
+    expect(chip()).toBe('');
     expect(input.dataset.value).toBe('none');
     expect(input.dataset.label).toBe('');
     expect(requests()).toHaveLength(0);
   });
 
   it('selects a pinned entry through the same dataset.value contract as a real user', () => {
-    const { input, results } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned' }] });
+    const { input, results, chip } = mount(undefined, { pinned: [{ value: 'none', label: 'Unassigned' }] });
     input.dispatchEvent(new Event('focus'));
     const [, pinnedOption] = [...results().querySelectorAll('[role="option"]')];
 
     pinnedOption.click();
 
     expect(input.dataset.value).toBe('none');
-    expect(input.value).toBe('Unassigned');
+    expect(chip()).toBe('Unassigned');
   });
 
   it('renders a pinned entry\'s icon decoratively', () => {
@@ -593,15 +619,120 @@ describe('renderUserPicker', () => {
     expect(icon.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('gives the chip its own ×, which empties the pick, tells the modal and keeps focus in the field', () => {
+    const { input, chip, chipRemove } = mount('me');
+    const changed = vi.fn();
+    root.addEventListener('change', changed);
+    expect(chipRemove().getAttribute('aria-label')).toBe('Remove Me (admin)');
+
+    chipRemove().click();
+
+    expect(chip()).toBeNull();
+    expect(input.dataset.value).toBeUndefined();
+    expect(input.dataset.label).toBeUndefined();
+    expect(input.value).toBe('');
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('hides the placeholder while a user is picked, the chip being the field\'s content', () => {
+    const { input, chipRemove } = mount('me');
+    expect(input.placeholder).toBe('');
+
+    chipRemove().click();
+
+    expect(input.placeholder).toBe('Search backend user…');
+  });
+
+  it('follows the dataset when the modal clears the control from outside', async () => {
+    // A chip's × in the criteria row and Clear all unset the dataset directly
+    // (see clearControl in Filter/fields.js), without an event on the input.
+    const { input, chip } = mount('me');
+    expect(chip()).toBe('Me (admin)');
+
+    delete input.dataset.value;
+    delete input.dataset.label;
+
+    await vi.waitFor(() => expect(chip()).toBeNull());
+  });
+
+  it('asks for one more character below two, with "Me" still on offer', () => {
+    const { input, results, hint } = mount(undefined);
+
+    input.value = 'k';
+    input.dispatchEvent(new Event('input'));
+
+    expect(results().hidden).toBe(false);
+    expect(options(results)).toEqual(['Me (admin)']);
+    expect(hint().textContent).toBe('Type one more character to search users');
+  });
+
+  it('shows no hint before anything is typed', () => {
+    const { input, hint } = mount(undefined);
+
+    input.dispatchEvent(new Event('focus'));
+
+    expect(hint().hidden).toBe(true);
+  });
+
+  it('says that nothing matches, naming the query, with "Me" still on offer', async () => {
+    respondWith(() => ({ users: [] }));
+    const { input, results, hint } = mount(undefined);
+
+    input.value = 'kox';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(options(results)).toEqual(['Me (admin)']);
+    expect(hint().textContent).toBe("No user matches 'kox'");
+    expect(hint().hidden).toBe(false);
+  });
+
+  it('shows the hint alone when there is no "Me" to offer either', async () => {
+    respondWith(() => ({ users: [] }));
+    const { input, results, hint } = mount(undefined, { currentUser: undefined });
+
+    input.value = 'kox';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(results().hidden).toBe(false);
+    expect(options(results)).toEqual([]);
+    expect(hint().hidden).toBe(false);
+  });
+
+  it('marks the matched part of each result, but not of "Me"', async () => {
+    respondWith(() => ({ users: [{ uid: 7, label: 'Kora Lindner (klindner)' }] }));
+    const { input, results } = mount(undefined);
+
+    input.value = 'ko';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    const [me, kora] = results().querySelectorAll('[role="option"]');
+    expect(me.querySelector('mark')).toBeNull();
+    expect([...kora.querySelectorAll('mark')].map((mark) => mark.textContent)).toEqual(['Ko']);
+    expect(kora.textContent).toBe('Kora Lindner (klindner)');
+  });
+
+  it('keeps a disabled account in the list and says so', async () => {
+    respondWith(() => ({ users: [{ uid: 8, label: 'editor-koeln', disabled: true }, { uid: 9, label: 'Jakob Kohl (jkohl)', disabled: false }] }));
+    const { input, results } = mount(undefined);
+
+    input.value = 'ko';
+    input.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(400);
+
+    const [, dormant, active] = results().querySelectorAll('[role="option"]');
+    expect(dormant.querySelector('.pagetree-facets__user-disabled').textContent).toBe('Disabled');
+    expect(active.querySelector('.pagetree-facets__user-disabled')).toBeNull();
+  });
+
   it('offers no "Me" entry when the server sent no current user', async () => {
     respondWith(() => ({ users: [{ uid: 7, label: 'Erika Editor' }] }));
-    const element = renderUserPicker(tab, { name: 'editor' }, undefined, {
-      getRoot: () => root,
-      clearable: (input) => input,
-      onLabelResolved,
-    });
+    const element = renderUserPicker(tab, { name: 'editor' }, undefined, { getRoot: () => root, onLabelResolved });
     root.append(element);
-    const input = element.querySelector ? element.querySelector('input') ?? element : element;
+    const input = element.querySelector('input');
 
     input.value = 'er';
     input.dispatchEvent(new Event('input'));
