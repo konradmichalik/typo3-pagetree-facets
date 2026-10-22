@@ -177,8 +177,10 @@ class FacetsModal {
       root?.addEventListener('keydown', (event) => {
         // Buttons are excluded: Enter is their own activation key, and
         // preventDefault() here would swallow it - a keyboard user could never
-        // reach the help link or "copy link".
-        if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
+        // reach the help link or "copy link". The same goes for a dialog opened
+        // from the modal, whose Enter only reads or removes.
+        if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)
+          && !event.target.closest('.pagetree-facets [role="dialog"]')) {
           event.preventDefault();
           this.#serializeAndApply();
         }

@@ -173,6 +173,19 @@ describe('Enter inside the modal', () => {
     await new Promise((resolve) => { setTimeout(resolve, 20); });
     expect(onApply).not.toHaveBeenCalled();
   });
+
+  it('is left alone inside a dialog the modal opens, which only reads or removes', async () => {
+    const { modal, onApply } = await openModal();
+    modal.querySelector('.pagetree-facets__help-link').click();
+    const help = modal.querySelector('.pagetree-facets [role="dialog"]');
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    help.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    expect(onApply).not.toHaveBeenCalled();
+  });
 });
 
 describe('before the modal reports itself shown', () => {
