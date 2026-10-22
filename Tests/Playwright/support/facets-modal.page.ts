@@ -156,6 +156,20 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} [data-role="token-query"]`);
   }
 
+  /** The coloured copy of the phrase under the token field (see Filter/token-highlight.js). */
+  phraseMirror(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__phrase-mirror`);
+  }
+
+  phraseKeys(): Locator {
+    return this.phraseMirror().locator('.pagetree-facets__phrase-key');
+  }
+
+  /** The short reference that replaces the chips in text mode. */
+  reference(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__reference`);
+  }
+
   /** The Text switch built into the search field's trailing edge. */
   textSwitch(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__text-switch`);

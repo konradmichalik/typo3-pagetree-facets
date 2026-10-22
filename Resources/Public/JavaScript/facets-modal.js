@@ -319,6 +319,7 @@ class FacetsModal {
     // not necessarily applied, which is what the footer status spells out.
     this.#row = buildCriteriaRow({
       scope: this.#scope?.element ?? null,
+      helpLink: this.#help.link,
       onRemove: (criterion) => this.#removeCriterion(criterion),
       onClearAll: () => this.#resetAll(),
       onSaveFavorite: (label) => this.#saveFavorite(label),
@@ -330,13 +331,14 @@ class FacetsModal {
     return header;
   }
 
-  // The scope chip while it is on screen, else whichever search field is.
+  // The scope chip while it is on screen, else the page-title field. Text mode
+  // has no chip and no action to lose focus from, so it never ends up here.
   #focusBeforeChips() {
     if (this.#scope && !this.#scope.element.hidden) {
       this.#scope.focus();
       return;
     }
-    (this.#tokenMode ? this.#tokenField : this.#searchField.freetext).focus();
+    this.#searchField.freetext.focus();
   }
 
   #renderBody() {
@@ -534,7 +536,7 @@ class FacetsModal {
       // The typed field is authoritative in token view, so it has to carry the
       // favorite too - otherwise Apply would hand over the phrase it replaced.
       this.#cancelTokenTimers();
-      this.#tokenField.value = tokenString;
+      this.#searchField.setPhrase(tokenString);
     }
     this.#adoptConfiguration(await this.#requestConfiguration(tokenString));
   }
@@ -738,17 +740,12 @@ class FacetsModal {
   }
 
   // Clear all: every criterion in place, freetext and scope included. Stays in
-  // the modal, Apply still has to confirm.
+  // the modal, Apply still has to confirm. Form view only: text mode shows the
+  // reference instead of the row, so the phrase is cleared in the field.
   #resetAll() {
     this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach(clearControl);
     this.#searchField.setFreetext('');
     this.#scope?.reset();
-    // Clear all clears everything, so the token field (the other editable view)
-    // has to go empty too - otherwise it would re-seed the just-cleared form.
-    if (this.#tokenMode) {
-      this.#cancelTokenTimers();
-      this.#tokenField.value = '';
-    }
     this.#refreshActiveIndicators();
   }
 
@@ -933,7 +930,7 @@ class FacetsModal {
     }
     const phrase = await this.#computePhrase();
     this.#tokenMode = true;
-    this.#tokenField.value = phrase;
+    this.#searchField.setPhrase(phrase);
     this.#setTextMode(true);
     this.#tokenField.focus();
     // A refresh armed during the await above must not land in text mode, and
@@ -957,6 +954,7 @@ class FacetsModal {
   // The phrase carries the scope itself, so the chip leaves with the freetext.
   #setTextMode(on) {
     this.#searchField.setTextMode(on);
+    this.#row.setTextMode(on);
     if (this.#scope) {
       this.#scope.close();
       this.#scope.element.hidden = on;
@@ -1016,7 +1014,7 @@ class FacetsModal {
     if (!this.#tokenMode) {
       return; // token view was left while the request was in flight
     }
-    this.#tokenField.value = phrase;
+    this.#searchField.setPhrase(phrase);
     this.#refreshApplyState();
   }
 

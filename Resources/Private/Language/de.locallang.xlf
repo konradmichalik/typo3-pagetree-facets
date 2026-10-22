@@ -100,6 +100,11 @@
 			<trans-unit id="pagetreeFacets.modal.saveFavorite.cancel.description"><source>Discards the name and closes this field.</source><target>Verwirft den Namen und schließt dieses Feld.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.loadFavorite.description"><source>Loads this filter into the dialog. It takes effect once you apply.</source><target>Lädt diesen Filter in den Dialog. Er wird erst wirksam, wenn du die Änderungen anwendest.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.tokenView.description"><source>Shows the whole filter as editable text.</source><target>Zeigt den gesamten Filter als editierbaren Text an.</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reference.criterion"><source>`key:value` one criterion</source><target>`key:value` ein Kriterium</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reference.and"><source>`space` all must match</source><target>`Leerzeichen` alle müssen zutreffen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reference.or"><source>`1,3` any of these</source><target>`1,3` eines davon</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reference.freetext"><source>Text without key searches title and UID</source><target>Text ohne Schlüssel sucht in Titel und UID</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.reference.help"><source>All keys: How filtering works</source><target>Alle Schlüssel: Wie das Filtern funktioniert</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.description"><source>Explains how criteria combine and what each action does.</source><target>Erklärt, wie Kriterien kombiniert werden und was jede Aktion bewirkt.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.help.close.description"><source>Closes the help.</source><target>Schließt die Hilfe.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.clear.description"><source>Empties this field.</source><target>Leert dieses Feld.</target></trans-unit>

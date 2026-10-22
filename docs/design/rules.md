@@ -39,6 +39,7 @@ All colours come from core CSS variables that exist in both v13 and v14 and alre
 | Selected navigation item, chip, selected option row | A tint of `--typo3-state-primary-bg` via `color-mix()` (16%, 26% for the count badge) with `--typo3-text-color-base` |
 | Focus ring | `--typo3-component-focus-color` |
 | Solid accent (toolbar badge, Apply) | `--typo3-state-primary-bg` with `--typo3-state-primary-color` |
+| Token keys (the phrase in text mode, the suggestions, the help) | `--typo3-text-color-code`, core's own colour for code. The primary measures 1.3:1 on the dark field |
 | Not applied yet | `--typo3-state-warning-bg` |
 | No matching pages | `--typo3-state-danger-bg` |
 | Panel and navigation surface | `--typo3-surface-base`, `--typo3-surface-container-low` |
@@ -122,7 +123,7 @@ Rules for the row:
 
 ## Text mode
 
-- The phrase is highlighted: the key and its colon in the primary colour, the value in the text colour, one `ch` between tokens.
+- The phrase is highlighted: the key and its colon in core's code colour (see Colour, the primary fails 4.5:1 in dark mode), the value in the text colour, one `ch` between tokens. The phrase shows the spacing as typed; the serializer writes one space.
 - The short reference replaces the criteria row: `key:value one criterion`, `space all must match`, `1,3 any of these`, `Text without key searches title and UID`, and a link to the help.
 - Suggestions open under the field: first the keys, after a colon the values of that key, each with its label. They come from the configuration loaded on open. No counts.
 - The form below stays usable and in sync in both directions, as today.

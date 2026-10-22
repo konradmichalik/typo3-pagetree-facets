@@ -306,7 +306,7 @@ describe('the scope chip', () => {
     // Both fields share the box because they take turns - the switch sits
     // against whichever one is on screen.
     expect([...field.children].map((child) => child.className.split(' ').at(-1)))
-      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__text-switch']);
+      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__phrase', 'pagetree-facets__text-switch']);
     // Help lives in the navigation now, nothing sits beside the field.
     expect(modal.querySelector('.pagetree-facets__search').children).toHaveLength(1);
     expect(modal.querySelector('.pagetree-facets__help-toggle')).toBeNull();
