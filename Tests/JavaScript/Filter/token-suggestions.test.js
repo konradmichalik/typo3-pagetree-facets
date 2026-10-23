@@ -226,6 +226,40 @@ describe('attachTokenSuggestions', () => {
     expect(input.selectionStart).toBe('doktype:1 '.length);
   });
 
+  it('replaces the rest of the alternative behind the caret, which would otherwise become a word of its own', () => {
+    typeAt('doktype:s3', 'doktype:s'.length);
+    key('ArrowDown');
+
+    key('Enter');
+
+    expect(input.value).toBe('doktype:1 ');
+  });
+
+  it('replaces the rest of a key behind the caret up to its colon', () => {
+    typeAt('dokt:1', 'do'.length);
+    key('ArrowDown');
+
+    key('Enter');
+
+    expect(input.value).toBe('doktype:1');
+    expect(input.selectionStart).toBe('doktype:'.length);
+  });
+
+  it('closes when the caret moves without typing, since the entries belong to where it was', () => {
+    for (const move of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) {
+      typeAt('doktype:');
+      expect(list().hidden).toBe(false);
+
+      key(move);
+
+      expect(list().hidden).toBe(true);
+    }
+
+    typeAt('doktype:');
+    input.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(list().hidden).toBe(true);
+  });
+
   it('replaces only the alternative after the last comma', () => {
     typeAt('doktype:1,sh');
     key('ArrowDown');

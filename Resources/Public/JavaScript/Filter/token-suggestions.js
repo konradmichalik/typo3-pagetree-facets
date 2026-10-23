@@ -203,7 +203,10 @@ export function attachTokenSuggestions({ input, anchor, caretLeft, getConfigurat
     // A value ends the token: one space follows it, and the caret sits after
     // that space, ready for the next token.
     const text = done ? `${entry.insert} ` : entry.insert;
-    const tail = input.value.slice(context.caret).replace(done ? /^ / : '', '');
+    // What is left of the word or alternative behind the caret goes with it, or it
+    // would stand as a word of its own.
+    const rest = input.value.slice(context.caret).replace(done ? /^[^\s,]*/ : /^[^\s:]*:?/, '');
+    const tail = done ? rest.replace(/^ /, '') : rest;
     input.value = input.value.slice(0, context.replaceStart) + text + tail;
     const caret = context.replaceStart + text.length;
     input.setSelectionRange(caret, caret);
@@ -235,12 +238,14 @@ export function attachTokenSuggestions({ input, anchor, caretLeft, getConfigurat
       event.preventDefault();
       event.stopPropagation();
       close();
-    } else if ('Tab' === event.key) {
+    } else if ('Tab' === event.key || ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      // A caret that moved without typing leaves the entries belonging to where it was.
       close();
     }
   }
 
   input.addEventListener('input', update);
+  input.addEventListener('click', close);
   input.addEventListener('keydown', onKeydown);
   input.addEventListener('blur', close);
 }
