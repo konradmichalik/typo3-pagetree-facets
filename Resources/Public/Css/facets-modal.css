@@ -12,13 +12,20 @@
 .pagetree-facets {
     --pf-tint: color-mix(in srgb, var(--typo3-state-primary-bg) 16%, transparent);
     --pf-tint-strong: color-mix(in srgb, var(--typo3-state-primary-bg) 26%, transparent);
+    /* The type scale hangs off core's own sizes (12px and 11px in the backend),
+     * so the modal reads like the rest of it: four steps and no other. */
+    --pf-text-small: var(--typo3-font-size-small, 0.6875rem);
+    --pf-text-base: var(--typo3-font-size, 0.75rem);
+    --pf-text-heading: 0.8125rem;
+    --pf-text-title: 1rem;
 
-    /* Fill the modal body and cap to the viewport so the body scrolls
-     * internally instead of the content being clipped by the modal. */
+    /* The modal has a height of its own and the body is what it leaves. Filling it
+     * keeps the content from being clipped, and lets the navigation's line run into
+     * the footer's. */
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     min-height: 480px;
-    max-height: min(72vh, 720px);
     /* Containing block for the user-picker dropdown (#showUserResults) -
      * positioned absolute against this element's own box once reparented
      * here, not against the viewport. */
@@ -28,16 +35,26 @@
 /* TYPO3 v14's core CSS makes .modal-body a flex column with min-height: 0, so
  * a flex child shrinks to whatever space the modal actually has left. TYPO3
  * v13's .modal-body is plain display: block - it sizes itself to this
- * component's content height instead. That lets our own viewport-based
- * max-height above end up taller than the space really left over inside the
- * modal, and .modal-body's own overflow-y: auto (present in both core
- * versions) then scrolls the WHOLE component as a third scrollbar, on top of
- * the nav and panels' own. Mirroring v14's declaration here fixes it
- * identically on both core versions instead of forking the layout. */
+ * component's content height instead. The component can then end up taller
+ * than the space really left over inside the modal, and .modal-body's own
+ * overflow-y: auto (present in both core versions) scrolls the WHOLE component
+ * as a third scrollbar, on top of the nav and panels' own. Mirroring v14's
+ * declaration here fixes it identically on both core versions instead of
+ * forking the layout. */
 .modal-body:has(.pagetree-facets) {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    /* The navigation's line has to run into the footer's, so the room under the
+       columns is theirs (padding-block-end below) and not the body's. */
+    padding-bottom: 0;
+}
+
+/* Core sizes .form-control-sm and .btn-sm one step down, which would make the
+ * search field and Select none the only 11px text next to the options. */
+.pagetree-facets .form-control-sm,
+.pagetree-facets .btn-sm {
+    font-size: var(--pf-text-base);
 }
 
 /* --- Header region (search + active-filter chips) ---------------------- */
@@ -48,7 +65,6 @@
     flex-direction: column;
     gap: 0.75rem;
     padding-bottom: 1rem;
-    margin-bottom: 1rem;
     border-bottom: 1px solid var(--typo3-component-border-color);
 }
 
@@ -199,7 +215,7 @@
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--typo3-component-border-color);
     color: var(--typo3-text-color-variant);
-    font-size: 0.6875rem;
+    font-size: var(--pf-text-small);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -243,7 +259,7 @@
     background: transparent;
     color: var(--typo3-text-color-code);
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -254,7 +270,7 @@
     padding: 0.4rem 0.75rem;
     border-top: 1px solid var(--typo3-component-border-color);
     color: var(--typo3-text-color-variant);
-    font-size: 0.75rem;
+    font-size: var(--pf-text-small);
 }
 
 .pagetree-facets__suggestions-hint kbd {
@@ -278,7 +294,7 @@
     border-end-end-radius: inherit;
     background: transparent;
     color: var(--typo3-text-color-base);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     cursor: pointer;
 }
 
@@ -368,7 +384,7 @@
     background: var(--typo3-component-bg);
     color: var(--typo3-text-color-base);
     box-shadow: 0 8px 24px color-mix(in srgb, var(--typo3-text-color-base) 18%, transparent);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     line-height: 1.5;
 }
 
@@ -384,7 +400,7 @@
 
 .pagetree-facets__help-title {
     margin: 0 2rem 1rem 0;
-    font-size: 1.125rem;
+    font-size: var(--pf-text-title);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -395,7 +411,7 @@
 
 .pagetree-facets__help-section h3 {
     margin: 0 0 0.25rem;
-    font-size: 0.9375rem;
+    font-size: var(--pf-text-heading);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -421,7 +437,7 @@
     border-radius: 999px;
     background: var(--pf-tint);
     color: var(--typo3-text-color-base);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
 }
 
 /* Token on the left, what it does on the right. Monospace only for the token. */
@@ -446,7 +462,7 @@
     padding: 0;
     background: transparent;
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
 }
 
 /* The one point about leaving this dialog, set off from the rest. */
@@ -526,7 +542,7 @@
     border-radius: 999px;
     background: transparent;
     color: var(--typo3-text-color-base);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     line-height: 1.4;
     cursor: pointer;
 }
@@ -576,7 +592,7 @@
     padding: 0.35rem 0.6rem;
     border-radius: 4px;
     color: var(--typo3-text-color-base);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -655,8 +671,8 @@
     align-items: center;
     gap: 0.25rem 1rem;
     min-width: 0;
-    color: var(--typo3-text-color-variant);
-    font-size: 0.8125rem;
+    color: var(--typo3-text-color-base);
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__reference[hidden] {
@@ -677,13 +693,13 @@
     background: var(--typo3-component-hover-bg);
     color: var(--typo3-text-color-base);
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
-    font-size: 0.75rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets-modal .pagetree-facets__reference-link {
     margin-inline-start: auto;
     padding: 0;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__criteria-empty {
@@ -691,7 +707,7 @@
     margin: 0;
     padding-inline-start: 0.25rem;
     color: var(--typo3-text-color-variant);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__criteria-empty[hidden] {
@@ -714,7 +730,7 @@
 .pagetree-facets__clear-all {
     min-height: 26px;
     padding: 0 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     white-space: nowrap;
 }
 
@@ -758,7 +774,7 @@
     border-radius: 4px;
     background: transparent;
     color: var(--typo3-text-color-base);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     text-align: start;
     white-space: nowrap;
     cursor: pointer;
@@ -800,7 +816,7 @@
 
 .pagetree-facets__no-match-text {
     margin: 0.125rem 0 0;
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
 }
 
 /* --- +N more ----------------------------------------------------------- */
@@ -824,7 +840,7 @@
     border-radius: 999px;
     background: transparent;
     color: var(--typo3-text-color-base);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     font-weight: 500;
     line-height: 1.4;
     white-space: nowrap;
@@ -879,7 +895,7 @@
 
 .pagetree-facets__overflow-title {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--pf-text-heading);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -887,7 +903,7 @@
 .pagetree-facets__overflow-clear {
     min-height: 24px;
     padding: 0 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     white-space: nowrap;
 }
 
@@ -911,7 +927,7 @@
 .pagetree-facets__overflow-group dt {
     align-self: start;
     padding-top: 0.2rem;
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     font-weight: 400;
 }
 
@@ -976,7 +992,7 @@
        rules keep between the status and them when space runs out. */
     margin-inline-end: auto;
     padding-inline-end: 10px;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     line-height: 1.4;
 }
 
@@ -1066,7 +1082,7 @@
      * drops below WCAG contrast in dark mode). */
     background: var(--pf-tint);
     color: var(--typo3-text-color-base);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     line-height: 1.4;
 }
 
@@ -1146,9 +1162,9 @@
     flex-direction: column;
     border-inline-end: 1px solid var(--typo3-component-border-color);
     padding-inline-end: 0;
-    /* Room for the search input's focus ring, which would otherwise be clipped
-       by the list's top edge. */
-    padding-block-start: 0.25rem;
+    /* The columns start right under the header's line so the two meet; this is
+       also room for the search input's focus ring. */
+    padding-block-start: 1rem;
     min-height: 0;
 }
 
@@ -1166,7 +1182,8 @@
 .pagetree-facets__nav-help {
     flex: 0 0 auto;
     margin-top: 0.5rem;
-    margin-inline-end: 0.75rem;
+    /* The line runs into the navigation's own, the link keeps its inset. */
+    padding-inline-end: 0.75rem;
     padding-top: 0.5rem;
     border-top: 1px solid var(--typo3-component-border-color);
 }
@@ -1181,7 +1198,7 @@
     min-height: 32px;
     padding: 0.4rem 0.75rem;
     border-radius: 6px;
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     text-align: start;
     text-decoration: none;
 }
@@ -1203,7 +1220,7 @@
     margin-top: 1.25rem;
     margin-bottom: 0.25rem;
     padding-inline: 0.75rem;
-    font-size: 0.6875rem;
+    font-size: var(--pf-text-small);
     font-weight: 600;
     letter-spacing: 0.06em;
     color: var(--typo3-text-color-variant);
@@ -1228,7 +1245,7 @@
     border-radius: 6px;
     background: transparent;
     color: inherit;
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
     text-align: start;
     text-decoration: none;
     cursor: pointer;
@@ -1272,7 +1289,7 @@
    secondary text colour the rules keep at 4.5:1 in both schemes. */
 .pagetree-facets__nav-reason {
     flex: 1 0 100%;
-    font-size: 0.75rem;
+    font-size: var(--pf-text-small);
     line-height: 1.25;
 }
 
@@ -1284,7 +1301,7 @@
 
 .pagetree-facets__nav-matches {
     flex: 0 0 auto;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     font-variant-numeric: tabular-nums;
 }
 
@@ -1300,7 +1317,7 @@
     border-radius: 999px;
     background: var(--pf-tint-strong);
     color: var(--typo3-text-color-base);
-    font-size: 0.6875rem;
+    font-size: var(--pf-text-small);
     font-weight: 600;
     line-height: 1.4;
     text-align: center;
@@ -1309,6 +1326,7 @@
 /* --- Panels ------------------------------------------------------------ */
 
 .pagetree-facets__panels {
+    padding-block: 1rem;
     padding-inline-start: 1.5rem;
     min-height: 0;
     overflow-y: auto;
@@ -1329,7 +1347,7 @@
 
 .pagetree-facets__panel-title {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: var(--pf-text-title);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -1337,7 +1355,7 @@
 .pagetree-facets__panel-description {
     margin: 0.125rem 0 0;
     color: var(--typo3-text-color-variant);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__panel-description[hidden],
@@ -1374,7 +1392,7 @@
     width: auto;
     margin-bottom: 0.75rem;
     padding: 0;
-    font-size: 0.875rem;
+    font-size: var(--pf-text-heading);
     font-weight: 500;
     color: var(--typo3-text-color-variant);
 }
@@ -1496,10 +1514,16 @@
 /* Not an option row: no padding, no hover surface, no bottom margin. */
 .pagetree-facets__panel legend .pagetree-facets__group-check {
     flex: 0 0 auto;
+    align-items: center;
     margin: 0;
     padding: 0;
     min-height: 0;
     cursor: default;
+}
+
+/* Bootstrap's top margin on the box would sit it below the centre of the name. */
+.pagetree-facets__panel legend .pagetree-facets__group-toggle {
+    margin: 0;
 }
 
 .pagetree-facets__panel legend .pagetree-facets__group-check:hover {
@@ -1547,7 +1571,7 @@
 .pagetree-facets__search-heading {
     flex: 1 1 auto;
     margin: 0;
-    font-size: 1.125rem;
+    font-size: var(--pf-text-title);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -1555,7 +1579,7 @@
 .pagetree-facets__search-esc {
     flex: 0 0 auto;
     color: var(--typo3-text-color-variant);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__search-group + .pagetree-facets__search-group {
@@ -1580,7 +1604,7 @@
 .pagetree-facets__search-group-title {
     flex: 0 0 auto;
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--pf-text-heading);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -1590,7 +1614,7 @@
     order: 2;
     min-height: 24px;
     padding: 0 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     white-space: nowrap;
 }
 
@@ -1618,7 +1642,7 @@
 .pagetree-facets__search-scope {
     margin: 1.25rem 0 0;
     color: var(--typo3-text-color-variant);
-    font-size: 0.875rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__search-result:has(.form-check-input:focus-visible) {
@@ -1726,7 +1750,7 @@
     border: 1px solid var(--typo3-text-color-variant);
     border-radius: 999px;
     color: var(--typo3-text-color-variant);
-    font-size: 0.75rem;
+    font-size: var(--pf-text-small);
 }
 
 /* The two-character and no-match states, under the entries. */
@@ -1734,7 +1758,7 @@
     margin: 0;
     padding: 0.35rem 0.5rem;
     color: var(--typo3-text-color-variant);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
 }
 
 .pagetree-facets__user-hint[hidden] {
@@ -1813,7 +1837,7 @@
     max-width: 100%;
     overflow: hidden;
     color: var(--typo3-text-color-variant);
-    font-size: 0.75rem;
+    font-size: var(--pf-text-small);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1958,7 +1982,7 @@
 .pagetree-facets-empty__text {
     margin: 0;
     color: var(--typo3-text-color-variant);
-    font-size: 0.8125rem;
+    font-size: var(--pf-text-base);
     text-align: center;
 }
 

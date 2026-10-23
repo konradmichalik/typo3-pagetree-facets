@@ -51,8 +51,18 @@ All colours come from core CSS variables that exist in both v13 and v14 and alre
 
 ## Typography
 
-- Core's font stack and sizes. Body 14px, meta and group headings 12px, nothing below 11px.
+- Core's font stack, and four sizes that hang off core's own (`--typo3-font-size` is 12px, `--typo3-font-size-small` 11px in the backend). They are the `--pf-text-*` tokens, no declaration uses another value:
+
+| Token | Size | Used for |
+| --- | --- | --- |
+| `--pf-text-title` | 16px, 600 | Panel title, search heading, help title |
+| `--pf-text-heading` | 13px | Group and field headings, result group titles, popover titles |
+| `--pf-text-base` | 12px | Everything read or clicked: options, navigation items, chips, descriptions, hints, buttons, inputs |
+| `--pf-text-small` | 11px | Uppercase group captions, counts, reasons under a navigation item, key hints, labels such as `Disabled` |
+
+- Core's `.form-control-sm` and `.btn-sm` fall back to the small step, so they are set to the base step explicitly. Nothing in the modal is smaller than the options next to it unless it is a caption or a meta line.
 - Group headings in the navigation are uppercase, 11px, letter spacing `0.06em`.
+- A heading with a checkbox centres the box on the name, whatever height the row has for touch.
 - A monospace font only for tokens: the phrase in text mode, keys and values in suggestions and in the help.
 
 ## Layout
