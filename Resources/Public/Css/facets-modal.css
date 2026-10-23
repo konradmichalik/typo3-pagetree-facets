@@ -12,6 +12,7 @@
 .pagetree-facets {
     --pf-tint: color-mix(in srgb, var(--typo3-state-primary-bg) 16%, transparent);
     --pf-tint-strong: color-mix(in srgb, var(--typo3-state-primary-bg) 26%, transparent);
+    --pf-dropdown-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
     /* The type scale hangs off core's own sizes (12px and 11px in the backend),
      * so the modal reads like the rest of it: four steps and no other. */
     --pf-text-small: var(--typo3-font-size-small, 0.6875rem);
@@ -203,7 +204,7 @@
     border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
     background: var(--typo3-component-bg);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    box-shadow: var(--pf-dropdown-shadow);
 }
 
 .pagetree-facets__suggestions[hidden] {
@@ -579,7 +580,7 @@
     border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
     background: var(--typo3-component-bg);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    box-shadow: var(--pf-dropdown-shadow);
     /* The list holds focus, the active entry below shows the ring. */
     outline: none;
 }
@@ -757,7 +758,7 @@
     border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
     background: var(--typo3-component-bg);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    box-shadow: var(--pf-dropdown-shadow);
 }
 
 .pagetree-facets__menu[hidden] {
@@ -872,7 +873,7 @@
     border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
     background: var(--typo3-component-bg);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    box-shadow: var(--pf-dropdown-shadow);
 }
 
 .pagetree-facets__overflow-panel[hidden] {
@@ -1718,7 +1719,7 @@
     background: var(--typo3-component-bg);
     border: 1px solid var(--typo3-component-border-color);
     border-radius: 6px;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    box-shadow: var(--pf-dropdown-shadow);
 }
 
 .pagetree-facets__user-list {
