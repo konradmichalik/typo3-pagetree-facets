@@ -8,6 +8,24 @@ the form: edit either side and the other follows. Note that editing the form
 re-serialises the phrase, so tokens the form cannot represent survive only while
 you stay in the field.
 
+Every key with its colon is coloured in the phrase. A short reference takes the
+place of the criteria row (`key:value` one criterion, a space means all must
+match, `1,3` any of these, text without a key searches title and UID) with a
+link to the help; Clear all and the actions menu return with the form view.
+While you type, suggestions open under the field: the keys first, after a colon
+the values of that key with their labels, taken from what the dialog loaded on
+open. `↑` `↓` choose, `↵` inserts, `Esc` closes.
+
+## Picking a backend user
+
+The Activity facet's `Edited by` and `Created by` fields offer `Me (<username>)`
+first, without any request. From two characters on, 300 ms after the last key,
+up to 20 users matching the username or the real name are listed with the
+matched part marked; disabled accounts stay in the list with a `Disabled` label,
+because pages they edited are still found. Below two characters the list asks
+for one more character, and with no match it says so; `Me` stays selectable in
+both. The picked user shows as a chip inside the field with its own ×.
+
 ## The criteria row
 
 Everything picked is listed in one row under the search field: the scope chip

@@ -187,10 +187,11 @@ final readonly class FacetsModalController
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         // Only deleted users are excluded, not disabled ones: the picker filters
         // pages by who edited/created them, and a now-disabled account can still
-        // be the author of pages that must stay findable - so it stays offered.
+        // be the author of pages that must stay findable - so it stays offered,
+        // flagged so the picker can label it.
         $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
         $queryBuilder
-            ->select('uid', 'username', 'realName')
+            ->select('uid', 'username', 'realName', 'disable')
             ->from('be_users')
             ->orderBy('username')
             ->setMaxResults(20);
@@ -211,6 +212,7 @@ final readonly class FacetsModalController
             static fn (array $row): array => [
                 'uid' => (int) $row['uid'],
                 'label' => '' !== $row['realName'] ? sprintf('%s (%s)', $row['realName'], $row['username']) : $row['username'],
+                'disabled' => (bool) $row['disable'],
             ],
             $queryBuilder->executeQuery()->fetchAllAssociative(),
         )]);
