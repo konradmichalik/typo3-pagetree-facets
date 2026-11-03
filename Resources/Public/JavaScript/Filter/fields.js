@@ -65,6 +65,10 @@ function renderChoiceField(tab, field, state) {
   // heading well beyond any margin we set.
   const optionsWrap = document.createElement('div');
   optionsWrap.className = 'pagetree-facets__options';
+  if (isRadio) {
+    // The way back from a preset. Its empty value keeps it out of every criterion.
+    optionsWrap.append(renderChoiceOption(tab, field, { value: '', label: anyTimeLabel() }, state, isRadio));
+  }
   for (const option of field.options ?? []) {
     optionsWrap.append(renderChoiceOption(tab, field, option, state, isRadio));
   }
@@ -72,25 +76,43 @@ function renderChoiceField(tab, field, state) {
   return optionsWrap;
 }
 
+const anyTimeLabel = () => TYPO3.lang?.['pagetreeFacets.modal.anyTime'] ?? 'Any time';
+
+/** The neutral option is the chosen one exactly while the field has no value. */
+function isChosen(option, state) {
+  if ('' === option.value) {
+    return undefined === state || null === state || '' === state || (Array.isArray(state) && 0 === state.length);
+  }
+
+  return Array.isArray(state) ? state.includes(option.value) : state === option.value;
+}
+
+// A cleared radio falls back to its group's neutral option, else no radio shows as
+// selected. No event is dispatched, the callers refresh the modal.
+export function clearChoice(input) {
+  if ('radio' === input.type) {
+    const neutral = input.closest('fieldset')?.querySelector('input[type="radio"][value=""]');
+    if (neutral) {
+      neutral.checked = true;
+
+      return;
+    }
+  }
+  input.checked = false;
+}
+
 function renderChoiceOption(tab, field, option, state, isRadio) {
+  // Plain checkboxes, not form-switch: a switch promises an immediate effect, and
+  // nothing here applies before Apply.
   const label = document.createElement('label');
-  // Checkboxes render as TYPO3's own toggle-switch style (form-switch, the same
-  // classes core uses for boolean settings) instead of plain browser checkboxes.
-  // Radios stay plain radios - a switch implies an independent on/off, which does
-  // not fit a mutually-exclusive group.
-  // gap-2 matches the cross-tab search rows, and gives the switch enough room
-  // that its label does not read as part of the control.
-  label.className = 'form-check d-flex align-items-center gap-2' + (isRadio ? '' : ' form-switch');
+  label.className = 'form-check d-flex align-items-center gap-2';
 
   const input = document.createElement('input');
   input.className = 'form-check-input';
   input.type = isRadio ? 'radio' : 'checkbox';
-  if (!isRadio) {
-    input.setAttribute('role', 'switch');
-  }
   input.name = controlName(tab, field);
   input.value = option.value;
-  input.checked = Array.isArray(state) ? state.includes(option.value) : state === option.value;
+  input.checked = isChosen(option, state);
   label.append(input);
 
   if (option.icon) {

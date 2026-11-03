@@ -147,7 +147,7 @@ describe('closing with an unapplied selection', () => {
   it('closes straight away while nothing is pending', async () => {
     const { modal } = await openModal();
 
-    footerButton(modal, 'Close').click();
+    footerButton(modal, 'Cancel').click();
 
     expect(document.body.contains(modal)).toBe(false);
     expect(openedModals()).toHaveLength(1);
@@ -157,7 +157,7 @@ describe('closing with an unapplied selection', () => {
     const { modal } = await openModal();
     dirty(modal);
 
-    footerButton(modal, 'Close').click();
+    footerButton(modal, 'Cancel').click();
 
     expect(document.body.contains(modal)).toBe(true);
     const confirmation = lastModal();
@@ -165,40 +165,93 @@ describe('closing with an unapplied selection', () => {
     // A warning, not an error: nothing went wrong, a choice is simply pending.
     expect(confirmation.severity).toBe(SeverityEnum.warning);
     expect([...confirmation.element.querySelectorAll('.t3js-modal-footer button')].map((b) => b.textContent))
-      .toEqual(['Back', 'Discard', 'Apply & close']);
+      .toEqual(['Keep editing', 'Discard selection', 'Apply and close']);
   });
 
-  it('keeps the modal open on "Back"', async () => {
+  it('keeps discarding neutral, since nothing is lost that cannot be picked again', async () => {
     const { modal } = await openModal();
     dirty(modal);
-    footerButton(modal, 'Close').click();
+    footerButton(modal, 'Cancel').click();
 
-    footerButton(lastModal().element, 'Back').click();
+    const discard = footerButton(lastModal().element, 'Discard selection');
+
+    expect(discard.className).toContain('btn-default');
+    expect(discard.className).not.toContain('btn-warning');
+  });
+
+  it('keeps the modal open on "Keep editing"', async () => {
+    const { modal } = await openModal();
+    dirty(modal);
+    footerButton(modal, 'Cancel').click();
+
+    footerButton(lastModal().element, 'Keep editing').click();
 
     expect(document.body.contains(modal)).toBe(true);
     expect(document.body.contains(lastModal().element)).toBe(false);
   });
 
-  it('lets "Discard" through without applying anything', async () => {
+  it('lets "Discard selection" through without applying anything', async () => {
     const { modal, onApply } = await openModal();
     dirty(modal);
-    footerButton(modal, 'Close').click();
+    footerButton(modal, 'Cancel').click();
 
-    footerButton(lastModal().element, 'Discard').click();
+    footerButton(lastModal().element, 'Discard selection').click();
 
     expect(document.body.contains(modal)).toBe(false);
     expect(onApply).not.toHaveBeenCalled();
   });
 
-  it('turns the interception into a shortcut with "Apply & close"', async () => {
+  it('turns the interception into a shortcut with "Apply and close"', async () => {
     const { modal, onApply } = await openModal();
     dirty(modal);
-    footerButton(modal, 'Close').click();
+    footerButton(modal, 'Cancel').click();
 
-    footerButton(lastModal().element, 'Apply & close').click();
+    footerButton(lastModal().element, 'Apply and close').click();
 
     await expect.poll(() => onApply.mock.calls).toEqual([['doktype:1 is:hidden']]);
     expect(document.body.contains(modal)).toBe(false);
+  });
+});
+
+describe('Any time', () => {
+  const withPreset = () => {
+    const configuration = configurationFixture();
+    configuration.tabs.find((tab) => 'activity' === tab.identifier).state = { updated: ['<7d'] };
+
+    return configuration;
+  };
+  const anyTime = (modal) => control(modal, 'activity[updated]', '');
+
+  it('treats Any time as no criterion', async () => {
+    const { modal, onApply } = await openModal({ configuration: withPreset() });
+    expect(chipLabels(modal)).toContain('Updated: Within the last 7 days');
+
+    anyTime(modal).click();
+
+    expect(chipLabels(modal).some((label) => label.includes('Any time'))).toBe(false);
+    expect(chipLabels(modal).some((label) => label.startsWith('Updated:'))).toBe(false);
+    expect(applyButton(modal).disabled).toBe(false);
+    applyButton(modal).click();
+    await expect.poll(() => onApply.mock.calls).toEqual([['is:hidden']]);
+  });
+
+  it('goes back to Any time when the preset chip is removed', async () => {
+    const { modal } = await openModal({ configuration: withPreset() });
+
+    [...modal.querySelectorAll('.pagetree-facets__chip')]
+      .find((chip) => chip.textContent.includes('Within the last 7 days'))
+      .querySelector('.pagetree-facets__chip-remove').click();
+
+    expect(anyTime(modal).checked).toBe(true);
+    expect(control(modal, 'activity[updated]', '<7d').checked).toBe(false);
+  });
+
+  it('is checked again after Reset', async () => {
+    const { modal } = await openModal({ configuration: withPreset() });
+
+    modal.querySelector('.pagetree-facets__reset').click();
+
+    expect(anyTime(modal).checked).toBe(true);
   });
 });
 

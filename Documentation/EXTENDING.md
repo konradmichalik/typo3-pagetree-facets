@@ -66,6 +66,7 @@ Public (implement/consume freely, changes get a note in the release):
   ```
   See `FacetInterface::getModalConfiguration()`'s own docblock for the full shape,
   including `currentUser`, `pinned` and `searchable` (all `user-picker`-only).
+  A `radio-presets` field always gets a neutral first option, labelled "Any time", with an empty value. It clears the field and is never a criterion.
 - `getIdentifier()` (facets) and `getTokenKey()`+`getValue()` (options) as
   administrator-facing identifiers, used in `disabledFacets`/`disableFacets`,
   `disabledOptions`/`disableOptions` and favorites

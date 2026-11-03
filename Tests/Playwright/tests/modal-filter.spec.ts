@@ -122,18 +122,43 @@ test('the match count renders its icon as a real, resolved icon', async ({ page 
   await expect(icon.locator('svg')).toHaveCount(1);
 });
 
-test('the footer Close and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
+test('the footer Cancel and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
   await modal.open();
 
-  const closeIcon = page.getByRole('button', { name: 'Close', exact: true }).locator('typo3-backend-icon');
-  await expect(closeIcon).toHaveAttribute('identifier', 'actions-close');
-  await expect(closeIcon.locator('svg')).toHaveCount(1);
+  const cancelIcon = page.getByRole('button', { name: 'Cancel', exact: true }).locator('typo3-backend-icon');
+  await expect(cancelIcon).toHaveAttribute('identifier', 'actions-close');
+  await expect(cancelIcon.locator('svg')).toHaveCount(1);
 
   const applyIcon = modal.applyButton().locator('typo3-backend-icon');
   await expect(applyIcon).toHaveAttribute('identifier', 'actions-check');
   await expect(applyIcon.locator('svg')).toHaveCount(1);
+});
+
+test('the active facet is marked by more than a tint', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // A tint alone is a weak cue and disappears in forced-colors mode. A border
+  // stays, so the current facet is told apart without relying on colour.
+  const active = page.locator('typo3-backend-modal .pagetree-facets__nav-item.active');
+  await expect(active).toHaveCSS('border-inline-start-width', '3px');
+  await expect(active).toHaveCSS('border-inline-start-style', 'solid');
+});
+
+test('a facet without options keeps readable text instead of being dimmed further', async ({ page }) => {
+  const modal = new FacetsModalPage(page);
+
+  await modal.open();
+
+  // Translations has no options on this single-language instance. The muted text
+  // colour already marks it as unavailable; an extra opacity on top of that took
+  // the label below the 4.5:1 the design rules ask for.
+  const unavailable = page.locator('typo3-backend-modal .pagetree-facets__nav-item.is-empty').first();
+  await expect(unavailable).toBeDisabled();
+  await expect(unavailable).toHaveCSS('opacity', '1');
 });
 
 test('the loading skeleton renders with a real, visible color', async ({ page }) => {
