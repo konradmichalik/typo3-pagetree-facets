@@ -183,10 +183,24 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     #[Test]
     public function usersSearchesByUsernameAndRealName(): void
     {
+        $request = (new ServerRequest())->withQueryParams(['q' => 'jane doe']);
+        $payload = $this->decode($this->subject->users($request));
+
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)', 'disabled' => false]], $payload['users']);
+    }
+
+    #[Test]
+    public function usersKeepDisabledAccountsAndMarkThem(): void
+    {
+        // Pages a now-disabled account edited must stay findable, so the account
+        // stays in the list; the flag lets the picker say so.
         $request = (new ServerRequest())->withQueryParams(['q' => 'jane']);
         $payload = $this->decode($this->subject->users($request));
 
-        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+        self::assertSame([
+            ['uid' => 5, 'label' => 'Jane Dormant (dormant)', 'disabled' => true],
+            ['uid' => 2, 'label' => 'Jane Doe (jane)', 'disabled' => false],
+        ], $payload['users']);
     }
 
     #[Test]
@@ -204,7 +218,7 @@ final class FacetsModalControllerTest extends FunctionalTestCase
         $request = (new ServerRequest())->withQueryParams(['uid' => '2', 'q' => 'this is ignored']);
         $payload = $this->decode($this->subject->users($request));
 
-        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)', 'disabled' => false]], $payload['users']);
     }
 
     #[Test]
@@ -259,9 +273,9 @@ final class FacetsModalControllerTest extends FunctionalTestCase
     {
         $this->setUpBackendUser(4); // non-admin; group 1 grants tables_select on be_users
 
-        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane'])));
+        $payload = $this->decode($this->subject->users((new ServerRequest())->withQueryParams(['q' => 'jane doe'])));
 
-        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)']], $payload['users']);
+        self::assertSame([['uid' => 2, 'label' => 'Jane Doe (jane)', 'disabled' => false]], $payload['users']);
     }
 
     #[Test]
