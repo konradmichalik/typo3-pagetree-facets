@@ -64,60 +64,51 @@
     display: none;
 }
 
-.pagetree-facets__freetext {
-    flex: 1 1 auto;
-    margin: 0;
-}
-
-/* The token toggle glued to the field it switches, mirroring the page tree
-   toolbar's own button group: zero gap inside, joined radii, and the button's
-   leading border overlapping the input's trailing one by 1px the way Bootstrap's
-   input-group does. Whichever of the two fields is visible (they take turns)
-   ends up flush against the button. */
-.pagetree-facets__search-group {
+/* One box for the page-title field and the Text switch at its trailing edge.
+   The box draws the border, the inputs inside draw none, so the switch reads
+   as part of the field rather than as a button glued to it. */
+.pagetree-facets__search-field {
     display: flex;
     flex: 1 1 auto;
     align-items: stretch;
-    /* Takes the row's full height rather than its own content's. Without a
-       definite height here the toggle inside has none either when its width is
-       resolved, and its 1:1 aspect ratio falls back to the icon's width. */
-    align-self: stretch;
     min-width: 0;
-    gap: 0;
+    min-height: 36px;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: var(--typo3-input-border-radius, 0.25rem);
+    background: var(--typo3-component-bg);
 }
 
-.pagetree-facets__search-group .pagetree-facets__freetext input,
-.pagetree-facets__search-group .pagetree-facets__token-field {
-    border-start-end-radius: 0;
-    border-end-end-radius: 0;
+/* The ring moves to the box while an input inside has focus; the switch keeps
+   its own ring (below), so only one of the two ever shows. */
+.pagetree-facets__search-field:has(.form-control:focus-visible) {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
 }
 
-.pagetree-facets__search-group .pagetree-facets__token-toggle {
-    border-start-start-radius: 0;
-    border-end-start-radius: 0;
-    margin-inline-start: -1px;
+.pagetree-facets__search-field .form-control,
+.pagetree-facets__search-field .form-control:focus {
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
 }
 
-/* Both icon buttons in this row are squares as tall as the field beside them:
-   stretch takes whatever height the input has (so nothing is hard-coded to a
-   pixel size that a theme could change) and the aspect ratio turns that height
-   into the width. */
-.pagetree-facets__token-toggle,
-.pagetree-facets__help-toggle {
+.pagetree-facets__search-icon {
+    display: flex;
     flex: 0 0 auto;
-    align-self: stretch;
-    aspect-ratio: 1;
-    padding: 0;
+    align-items: center;
+    align-self: center;
+    padding-inline-start: 0.75rem;
+    color: var(--typo3-text-color-variant);
+    line-height: 1;
 }
 
-/* Both buttons keep the tab-nav "active" tint while what they opened is on
-   screen, so they read as sticky switches rather than one-shot actions - and
-   the help panel's own × cannot leave the button looking pressed, because both
-   states come from the same place (see renderHelpToggle). */
-.pagetree-facets__token-toggle[aria-pressed="true"],
-.pagetree-facets__help-toggle[aria-expanded="true"] {
-    background: var(--pf-tint);
-    color: var(--typo3-text-color-base);
+.pagetree-facets__freetext {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* Single-line editor for the whole token phrase. Monospace echoes the tree
@@ -129,8 +120,59 @@
     font-family: var(--typo3-font-family-monospace, ui-monospace, "SFMono-Regular", "Menlo", monospace);
 }
 
+/* All three are flex items, so the attribute needs restating. */
+.pagetree-facets__search-icon[hidden],
+.pagetree-facets__freetext[hidden],
 .pagetree-facets__token-field[hidden] {
     display: none;
+}
+
+/* Labelled, never the icon alone. A separator line marks it off from the text
+   it switches; while pressed it carries the same tint as the active facet. */
+.pagetree-facets__text-switch {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.375rem;
+    padding-inline: 0.75rem;
+    border: 0;
+    border-inline-start: 1px solid var(--typo3-component-border-color);
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.pagetree-facets__text-switch:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__text-switch[aria-pressed="true"] {
+    background: var(--pf-tint);
+}
+
+.pagetree-facets__text-switch:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* A square as tall as the field beside it: stretch takes the row's height and
+   the aspect ratio turns it into the width. */
+.pagetree-facets__help-toggle {
+    flex: 0 0 auto;
+    align-self: stretch;
+    aspect-ratio: 1;
+    padding: 0;
+}
+
+/* Keeps the tint while the panel is on screen, so it reads as a sticky switch
+   rather than a one-shot action; the panel's own × cannot leave it looking
+   pressed, since both states come from one place (see renderHelpToggle). */
+.pagetree-facets__help-toggle[aria-expanded="true"] {
+    background: var(--pf-tint);
+    color: var(--typo3-text-color-base);
 }
 
 /* Clear button for text-ish inputs, only present while the field has a value.
@@ -241,86 +283,247 @@
     margin-top: 0.25rem;
 }
 
-.pagetree-facets__site {
-    flex: 0 0 auto;
-    min-width: 12rem;
-    margin: 0;
-}
-
 .pagetree-facets__filter-search {
     margin: 0 0.75rem 0.75rem;
 }
 
-.pagetree-facets__page-scope {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    /* Undo Bootstrap's .form-check float layout so the gap controls the spacing
-     * between the checkbox and its label instead of a fixed indent. */
-    padding-left: 0;
-    grid-column: 1;
-    justify-self: start;
+/* --- Scope chip -------------------------------------------------------- */
+
+.pagetree-facets__scope {
+    position: relative;
+    flex: 0 0 auto;
+    max-width: 300px;
 }
 
-.pagetree-facets__page-scope .form-check-input {
-    float: none;
-    margin: 0;
-}
-
-/* Page scope, the live match count and the filter-wide actions share one row -
-   a 3-column grid, each placed by an explicit grid-column below rather than
-   DOM order, so the centered count does not shift into column 1 when the
-   scope checkbox is absent (no page open). Its min-height is the tallest
-   thing the row can hold - the favorite name form further down - so opening
-   that form swaps the row's contents instead of adding a row and shifting
-   everything under it. */
-.pagetree-facets__utility {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 1.875rem;
-}
-
-.pagetree-facets__utility[hidden] {
+.pagetree-facets__scope[hidden] {
     display: none;
 }
 
-.pagetree-facets__actions {
-    display: flex;
+/* Dashed, so it does not read as a removable criterion. The dash takes the
+   secondary text colour rather than the component border: that one is a faint
+   mix of surface and text and does not reach the 3:1 the rules ask of this
+   border, the text colour does in both schemes. */
+.pagetree-facets__scope-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
-    grid-column: 3;
-    justify-self: end;
+    gap: 0.25rem;
+    max-width: 100%;
+    min-height: 26px;
+    padding-inline: 0.6rem 0.4rem;
+    border: 1px dashed var(--typo3-text-color-variant);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    cursor: pointer;
 }
 
-.pagetree-facets__actions[hidden] {
+.pagetree-facets__scope-chip:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__scope-chip:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
+}
+
+.pagetree-facets__scope-chip typo3-backend-icon {
+    flex: 0 0 auto;
+}
+
+.pagetree-facets__scope-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pagetree-facets__scope-list {
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(100% + 4px);
+    z-index: 1000;
+    min-width: 100%;
+    width: max-content;
+    max-width: 320px;
+    margin: 0;
+    padding: 0.25rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 6px;
+    background: var(--typo3-component-bg);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+    /* The list holds focus, the active entry below shows the ring. */
+    outline: none;
+}
+
+.pagetree-facets__scope-list[hidden] {
     display: none;
 }
 
-.pagetree-facets__active {
+.pagetree-facets__scope-option {
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    color: var(--typo3-text-color-base);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.pagetree-facets__scope-option:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__scope-option[aria-selected="true"] {
+    background: var(--pf-tint);
+    font-weight: 500;
+}
+
+/* The keyboard position: a ring, since the hover tint alone is too weak a
+ * marker and vanishes in forced-colors mode. */
+.pagetree-facets__scope-option.is-active {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* --- Criteria row ------------------------------------------------------ */
+
+.pagetree-facets__criteria-row {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
     gap: 0.5rem;
-    /* Reserve the height of a single chip/hint row so the header keeps its size
-       whether it currently holds the hint or the first chips - no layout shift
-       when a filter activates. */
-    min-height: 1.6rem;
+}
+
+/* One row for everything picked: the scope chip, one chip per value, then
+   Clear all and the actions menu at the end. 40px minimum, as the rules put
+   it, so the first chip does not move anything. */
+.pagetree-facets__criteria {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    min-height: 40px;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: var(--typo3-input-border-radius, 0.25rem);
+    background: var(--typo3-component-bg);
+}
+
+/* Nothing picked: the border goes dashed and the fixed text takes the place
+   of the chips. */
+.pagetree-facets__criteria.is-empty {
+    border-style: dashed;
 }
 
 .pagetree-facets__chips {
-    display: flex;
-    flex: 1 1 auto;
-    flex-wrap: wrap;
-    gap: 0.375rem;
+    display: contents;
 }
 
-/* Both the chips and the hint carry a flex display, which overrides the [hidden]
-   attribute's default display:none - restore it so exactly one shows at a time. */
-.pagetree-facets__chips[hidden],
-.pagetree-facets__hint[hidden] {
+.pagetree-facets__criteria-empty {
+    flex: 1 1 auto;
+    margin: 0;
+    padding-inline-start: 0.25rem;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
+}
+
+.pagetree-facets__criteria-empty[hidden] {
     display: none;
+}
+
+.pagetree-facets__criteria-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.5rem;
+    margin-inline-start: auto;
+}
+
+.pagetree-facets__criteria-actions[hidden] {
+    display: none;
+}
+
+/* A text button as tall as the chips, so it stays a 24px target. */
+.pagetree-facets__clear-all {
+    min-height: 26px;
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.pagetree-facets__more-wrap {
+    position: relative;
+}
+
+.pagetree-facets__more {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+}
+
+.pagetree-facets__menu {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + 4px);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    min-width: 14rem;
+    padding: 0.25rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 6px;
+    background: var(--typo3-component-bg);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+}
+
+.pagetree-facets__menu[hidden] {
+    display: none;
+}
+
+.pagetree-facets__menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.875rem;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.pagetree-facets__menu-item:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__menu-item:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+/* The lists pop open without motion; a short fade is added where motion is
+   welcome (see the rules' Motion table). */
+@media (prefers-reduced-motion: no-preference) {
+    .pagetree-facets__scope-list:not([hidden]),
+    .pagetree-facets__menu:not([hidden]) {
+        animation: pagetree-facets-popover-fade 120ms ease-out;
+    }
+
+    @keyframes pagetree-facets-popover-fade {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
 }
 
 /* The brand icon is injected into core's own title element, which carries no
@@ -339,83 +542,75 @@
     flex: 0 0 auto;
 }
 
-/* The pending notice is injected into the modal's own footer, left of the
-   buttons, so it sits OUTSIDE .pagetree-facets - the --pf-* tints are scoped to that
-   element and are unavailable here. It therefore inherits the
-   footer's own colour (core sets --typo3-modal-color there), which is correct in
-   both themes by construction. The footer is a flex row with
-   justify-content:flex-end, so the auto trailing margin keeps the buttons right
-   and this left. Its meaning is carried by icon and text, never by colour alone,
-   so weight does the emphasis. */
-.pagetree-facets__pending {
+/* --- Footer status ----------------------------------------------------- */
+
+/* Injected into the modal's own footer, left of the buttons, so it sits
+   OUTSIDE .pagetree-facets and its --pf-* tints; everything here is a core
+   variable. The footer is a flex row with justify-content:flex-end, so the
+   auto trailing margin keeps the buttons right and this left. Its meaning is
+   carried by words, the dot only underlines them. */
+.pagetree-facets__status {
     display: inline-flex;
     flex: 0 1 auto;
     align-items: center;
-    gap: 0.375rem;
+    min-height: 1.5rem;
     margin: 0;
+    /* The auto margin keeps the buttons right; the padding is the 10px the
+       rules keep between the status and them when space runs out. */
     margin-inline-end: auto;
+    padding-inline-end: 10px;
     font-size: 0.8125rem;
-    font-weight: 500;
     line-height: 1.4;
 }
 
-/* Grey, because nothing is wrong: this is a status line about something still
-   pending, not a warning. It sits in the modal's own footer, outside
-   .pagetree-facets and therefore outside its tints, so the muted tone comes
-   from the backend's own token here (the dialog carries .pagetree-facets-modal,
-   see Modal.advanced()'s additionalCssClasses). */
-.pagetree-facets-modal .pagetree-facets__pending {
-    color: var(--typo3-text-color-variant);
+.pagetree-facets-modal .pagetree-facets__status {
+    color: var(--typo3-text-color-base);
 }
 
-/* inline-flex overrides the [hidden] attribute's display:none - restore it. */
-.pagetree-facets__pending[hidden] {
-    display: none;
-}
-
-.pagetree-facets__pending typo3-backend-icon {
-    flex: 0 0 auto;
-}
-
-.pagetree-facets__match-count {
+/* The live region and the tip never show at once, so no gap between them. */
+.pagetree-facets__status-live {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1.4;
-    grid-column: 2;
-    justify-self: center;
 }
 
-.pagetree-facets-modal .pagetree-facets__match-count {
-    color: var(--typo3-text-color-variant);
-}
-
-.pagetree-facets__match-count[hidden] {
+.pagetree-facets__status [hidden] {
     display: none;
 }
 
-.pagetree-facets__match-count-skeleton {
+.pagetree-facets__status-dot {
+    flex: 0 0 auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--typo3-state-warning-bg);
+}
+
+.pagetree-facets__status-dot.is-none {
+    background: var(--typo3-state-danger-bg);
+}
+
+.pagetree-facets__status-count {
+    font-weight: 600;
+}
+
+.pagetree-facets-modal .pagetree-facets__status-text {
+    color: var(--typo3-text-color-variant);
+}
+
+.pagetree-facets__status-skeleton {
     display: inline-block;
     width: 9em;
     height: 0.85em;
     border-radius: 3px;
-    /* Same backend-global token the match-count text itself uses, for
-     * consistency with the rest of this row - not a scoping requirement. */
     background: var(--typo3-text-color-variant);
     opacity: 0.4;
-}
-
-.pagetree-facets__match-count-skeleton[hidden] {
-    display: none;
 }
 
 /* Motion is opt-in: the placeholder is a still bar unless the user allows
  * animation. */
 @media (prefers-reduced-motion: no-preference) {
-    .pagetree-facets__match-count-skeleton {
+    .pagetree-facets__status-skeleton {
         animation: pagetree-facets-skeleton-pulse 1.2s ease-in-out infinite;
     }
 
@@ -430,35 +625,7 @@
     }
 }
 
-.pagetree-facets__reset {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-}
-
-.pagetree-facets__hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--typo3-text-color-variant);
-    font-size: 0.8125rem;
-    line-height: 1.4;
-}
-
-.pagetree-facets__hint typo3-backend-icon {
-    flex: 0 0 auto;
-    opacity: 0.85;
-}
-
-.pagetree-facets__hint code {
-    padding-inline: 0.3em;
-    border-radius: 3px;
-    background: var(--pf-tint);
-    color: var(--typo3-text-color-base);
-    font-size: 0.95em;
-}
-
-.pagetree-facets__hint kbd {
+.pagetree-facets__status kbd {
     padding-inline: 0.35em;
     padding-block: 0.05em;
     border: 1px solid var(--typo3-component-border-color);
@@ -469,22 +636,13 @@
     line-height: 1;
 }
 
-/* Zero padding keeps the action links inside the utility row's 1.5rem
- * reservation - with .btn-sm's default vertical padding they are taller, so
- * the row would grow (and shift everything below) when they appear. */
-.pagetree-facets__copy-link,
-.pagetree-facets__favorite-add {
-    flex: 0 0 auto;
-    padding: 0;
-    white-space: nowrap;
-}
-
 .pagetree-facets__chip {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding-inline: 0.6rem 0.2rem;
-    padding-block: 0.15rem;
+    max-width: 300px;
+    min-height: 26px;
+    padding-inline: 0.6rem 0.15rem;
     border-radius: 999px;
     /* Accent tint carries the "filter" identity; the label uses the themed text
      * colour so it stays legible in both light and dark (accent-on-accent-tint
@@ -493,6 +651,20 @@
     color: var(--typo3-text-color-base);
     font-size: 0.8125rem;
     line-height: 1.4;
+}
+
+.pagetree-facets__chip-label {
+    display: flex;
+    min-width: 0;
+    gap: 0.25em;
+    white-space: nowrap;
+}
+
+/* A long value is shortened, the facet prefix is not; the chip's title holds
+   the full text. */
+.pagetree-facets__chip-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* The facet name is subordinate to the value the user picked, so it steps back a
@@ -507,12 +679,14 @@
     font-size: 0.9em;
 }
 
+/* 24px: the smallest target the rules allow, also for the × on a chip. */
 .pagetree-facets__chip-remove {
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -606,7 +780,8 @@
 }
 
 /* Tint plus a border: the tint alone is a weak cue and is dropped in
- * forced-colors mode, where a border survives. */
+ * forced-colors mode. The reserved transparent border is painted there too, so
+ * the forced-colours block takes it off the inactive items. */
 .pagetree-facets__nav-item.active {
     background: var(--pf-tint);
     border-inline-start-color: var(--typo3-text-color-base);
@@ -916,22 +1091,12 @@
     outline-offset: 1px;
 }
 
-/* Inline "name this filter" form: its own header line, unfolded by the "Save
- * current filter" action, so the actions row itself stays a single tidy line. */
-/* Shares the utility row with the page scope, the match count and the actions,
- * and takes it over while open - naming a filter is a moment of its own, and
- * the three controls it displaces have nothing to contribute to it. */
+/* The "name this filter" form, unfolded under the criteria row by the actions
+ * menu. */
 .pagetree-facets__favorite-form {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    grid-column: 1 / -1;
-}
-
-.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__page-scope,
-.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__match-count,
-.pagetree-facets__utility:has(.pagetree-facets__favorite-form:not([hidden])) .pagetree-facets__actions {
-    display: none;
 }
 
 /* The explicit display wins over the UA's [hidden] rule, so restate it. */
@@ -1063,4 +1228,37 @@
 .pagetree-facets-empty__actions .btn:focus {
     background: var(--typo3-component-hover-bg);
     color: var(--typo3-text-color-base);
+}
+
+/* --- Forced colours ---------------------------------------------------- */
+
+/* The tints are dropped here, so each state gets a border in a system colour.
+   The padding gives way to it, so nothing moves. */
+@media (forced-colors: active) {
+    .pagetree-facets__chip {
+        padding-inline: calc(0.6rem - 1px) calc(0.15rem - 1px);
+        border: 1px solid CanvasText;
+    }
+
+    .pagetree-facets__text-switch[aria-pressed="true"] {
+        padding-inline: calc(0.75rem - 1px) calc(0.75rem - 2px);
+        border: 2px solid ButtonText;
+    }
+
+    .pagetree-facets__scope-option[aria-selected="true"] {
+        padding-inline-start: calc(0.6rem - 3px);
+        border-inline-start: 3px solid CanvasText;
+    }
+
+    /* A transparent border is painted in a system colour here, so only the
+       active item keeps its marker. */
+    .pagetree-facets__nav-item {
+        padding-inline-start: 0.75rem;
+        border-inline-start-style: none;
+    }
+
+    .pagetree-facets__nav-item.active {
+        padding-inline-start: calc(0.75rem - 3px);
+        border-inline-start: 3px solid CanvasText;
+    }
 }

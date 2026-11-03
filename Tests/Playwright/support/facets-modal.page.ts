@@ -50,17 +50,22 @@ export class FacetsModalPage {
     return this.navItem(tab).locator('.pagetree-facets__nav-count');
   }
 
-  /** The live match-count text in the header's utility row (see facets-modal.js). */
-  matchCount(): Locator {
-    return this.page.locator(`${MODAL} .pagetree-facets__match-count`);
+  /** The footer's status line: the live region with count and pending notice, or the shortcut tip beside it (see Filter/footer-status.js). */
+  status(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__status`);
+  }
+
+  /** The settled count inside the status line. */
+  countText(): Locator {
+    return this.status().locator('.pagetree-facets__status-count');
   }
 
   /**
    * A checkbox-group / radio option.
    *
    * Options render as `input[name="<tab>[<field>]"][value="<value>"]` (see
-   * facets-modal.js). These are real, visible checkboxes styled as Bootstrap
-   * switches, so .check() works directly - no proxy handling needed.
+   * facets-modal.js). These are real, visible checkboxes, so .check() works
+   * directly - no proxy handling needed.
    */
   option(tab: string, field: string, value: string): Locator {
     return this.page.locator(`${MODAL} input[name="${tab}[${field}]"][value="${value}"]`);
@@ -82,16 +87,52 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} [data-role="freetext"]`);
   }
 
-  copyLinkButton(): Locator {
-    return this.page.locator(`${MODAL} .pagetree-facets__copy-link`);
+  /** The phrase editor shown in text mode. */
+  tokenField(): Locator {
+    return this.page.locator(`${MODAL} [data-role="token-query"]`);
+  }
+
+  /** The Text switch built into the search field's trailing edge. */
+  textSwitch(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__text-switch`);
+  }
+
+  /** The criteria row (scope chip, chips, Clear all, actions menu). */
+  criteriaRow(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__criteria`);
+  }
+
+  emptyState(): Locator {
+    return this.criteriaRow().locator('.pagetree-facets__criteria-empty');
+  }
+
+  scopeChip(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__scope-chip`);
+  }
+
+  /** Opens the scope list and picks the entry whose text matches. */
+  async pickScope(label: string | RegExp): Promise<void> {
+    await this.scopeChip().click();
+    await this.page.locator(`${MODAL} .pagetree-facets__scope-option`, { hasText: label }).click();
+  }
+
+  clearAllButton(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__clear-all`);
+  }
+
+  moreButton(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__more`);
+  }
+
+  /** Opens the actions menu and returns the item with that text. */
+  async menuItem(text: string): Promise<Locator> {
+    await this.moreButton().click();
+
+    return this.page.locator(`${MODAL} .pagetree-facets__menu-item`, { hasText: text });
   }
 
   applyButton(): Locator {
     return this.page.locator(`${MODAL} button[name="pagetree-facets-apply"]`);
-  }
-
-  resetButton(): Locator {
-    return this.page.locator(`${MODAL} button[name="pagetree-facets-reset"]`);
   }
 
   async apply(): Promise<void> {

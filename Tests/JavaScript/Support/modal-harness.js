@@ -168,7 +168,7 @@ export function resetHarness() {
  *   favorites?: Array, onApply?: Function, show?: boolean}} options - `configuration`
  *   may be a function of the requested phrase, which is what the token view needs.
  *   `show: false` skips the 'typo3-modal-shown' dispatch, for the handful of tests
- *   about the narrow window before it - baseline/#resetButton/#pendingNotice are
+ *   about the narrow window before it - baseline and the Apply button are
  *   all still null there, which core's own async "shown" timing makes reachable.
  * @returns {Promise<{modal: HTMLElement|null, onApply: Function}>} `modal` is null
  *   when the configuration offered no tabs and nothing was opened.
@@ -176,6 +176,7 @@ export function resetHarness() {
 export async function openModal({
   phrase = '',
   pageId = 5,
+  pageTitle = 'Home',
   configuration = configurationFixture(),
   favorites = [],
   count = null,
@@ -216,7 +217,7 @@ export async function openModal({
     }
   });
 
-  await FacetsModal.open(phrase, pageId, onApply);
+  await FacetsModal.open(phrase, pageId, onApply, pageTitle);
   const modal = lastModal()?.element ?? null;
   if (show) {
     modal?.show();
@@ -232,12 +233,65 @@ export function applyButton(modal) {
   return modal.querySelector('button[name="pagetree-facets-apply"]');
 }
 
-export function resetButton(modal) {
-  return modal.querySelector('button[name="pagetree-facets-reset"]');
+/** `Clear all` in the criteria row, replacing the former footer Reset button. */
+export function clearAllButton(modal) {
+  return modal.querySelector('.pagetree-facets__clear-all');
+}
+
+/** The `⋯` button opening the actions menu in the criteria row. */
+export function moreButton(modal) {
+  return modal.querySelector('.pagetree-facets__more');
+}
+
+/** Opens the actions menu and returns the item with that text. */
+export function menuItem(modal, text) {
+  moreButton(modal).click();
+
+  return [...modal.querySelectorAll('.pagetree-facets__menu-item')].find((item) => item.textContent.trim() === text);
 }
 
 export function footerButton(modal, text) {
   return [...modal.querySelectorAll('.t3js-modal-footer button')].find((button) => button.textContent === text);
+}
+
+/** The footer's status line (see Filter/footer-status.js). */
+export function status(modal) {
+  return modal.querySelector('.pagetree-facets__status');
+}
+
+/** What the status line shows: its parts are toggled with `hidden`, never removed. */
+export function statusText(modal) {
+  const visibleText = (node) => [...node.childNodes]
+    .filter((child) => !child.hidden)
+    .map((child) => (child.nodeType === Node.TEXT_NODE ? child.textContent : visibleText(child)))
+    .join('');
+
+  return visibleText(status(modal)).replace(/\s+/g, ' ').trim();
+}
+
+/** The Text switch built into the search field (see Filter/criteria-row.js). */
+export function textSwitch(modal) {
+  return modal.querySelector('.pagetree-facets__text-switch');
+}
+
+/** The scope chip `In: …` (see Filter/scope-menu.js), null when there is nothing to choose. */
+export function scopeChip(modal) {
+  return modal.querySelector('.pagetree-facets__scope-chip');
+}
+
+/** What the scope chip currently reads, e.g. `Whole tree`. */
+export function scopeValue(modal) {
+  return scopeChip(modal).querySelector('.pagetree-facets__scope-value').textContent;
+}
+
+export function scopeOptions(modal) {
+  return [...modal.querySelectorAll('.pagetree-facets__scope-option')].map((option) => option.textContent);
+}
+
+/** Opens the scope list and picks the entry with that label. */
+export function pickScope(modal, label) {
+  scopeChip(modal).click();
+  [...modal.querySelectorAll('.pagetree-facets__scope-option')].find((option) => option.textContent === label).click();
 }
 
 export function navItem(modal, identifier) {

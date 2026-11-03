@@ -15,6 +15,15 @@
 let idCounter = 0;
 
 /**
+ * A backend label, or its English fallback while none is loaded.
+ *
+ * @param {string} key
+ * @param {string} fallback
+ * @returns {string}
+ */
+export const lang = (key, fallback) => TYPO3.lang?.[key] ?? fallback;
+
+/**
  * A DOM id that no other element carries. Needed wherever aria-describedby or
  * aria-controls has to point somewhere, and the same control can be rendered more
  * than once per document.
@@ -61,8 +70,8 @@ export function clearable(input) {
   clear.type = 'button';
   clear.className = 'pagetree-facets__clear';
   clear.textContent = '×';
-  const label = TYPO3.lang?.['pagetreeFacets.modal.clear'] ?? 'Clear';
-  clear.title = TYPO3.lang?.['pagetreeFacets.modal.clear.description'] ?? 'Empties this field.';
+  const label = lang('pagetreeFacets.modal.clear', 'Clear');
+  clear.title = lang('pagetreeFacets.modal.clear.description', 'Empties this field.');
   clear.setAttribute('aria-label', label);
   clear.hidden = '' === input.value;
 

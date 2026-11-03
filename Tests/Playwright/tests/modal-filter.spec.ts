@@ -57,25 +57,25 @@ test('removing the chip clears the selection again', async ({ page }) => {
   await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
 });
 
-test('the live match count stays hidden until a criterion is picked, then updates as the selection changes', async ({ page }) => {
+test('the footer status shows the tip until a criterion is picked, then the count with the pending notice', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
   await modal.open();
-  // No criteria yet - showing a count for an unfiltered tree isn't useful, so
-  // the notice stays hidden until the first facet is picked.
-  await expect(modal.matchCount()).toBeHidden();
+  // No criteria yet - the status offers the shortcut instead of a count.
+  await expect(modal.status()).toContainText('Tip: open this dialog from anywhere with');
+  await expect(modal.status().locator('kbd')).toHaveCount(3);
+  await expect(modal.countText()).toBeHidden();
 
   await modal.navItem('doktype').click();
   // doktype 3 ("Link") matches only the one external-link fixture page.
   await modal.option('doktype', 'doktype', '3').check();
 
-  await expect(modal.matchCount()).toBeVisible();
-  // The notice becomes visible the instant a criterion changes (showing the
-  // loading skeleton), before the count itself has resolved - waiting for the
-  // known first result here, not just visibility, keeps firstText from
-  // capturing an empty/stale value instead of doktype:3's real "1 matching page".
-  await expect(modal.matchCount()).toHaveText('1 matching page');
-  const firstText = await modal.matchCount().textContent();
+  // The count and the pending notice share one line. Waiting for the known
+  // first result, not just visibility, keeps firstText from capturing a stale
+  // value instead of doktype:3's real "1 matching page".
+  await expect(modal.countText()).toHaveText('1 matching page');
+  await expect(modal.status()).toContainText('1 matching page · not applied to the tree yet');
+  const firstText = await modal.countText().textContent();
 
   // doktype 1 ("Page") is the common type across the seeded demo content, so
   // it necessarily produces a different (larger) count than doktype 3.
@@ -85,51 +85,39 @@ test('the live match count stays hidden until a criterion is picked, then update
   // Requiring visibility and the real label pattern first, not just "not
   // firstText", rules out a broken update path landing on some other wrong
   // value (e.g. the null-count label) and having that count as "changed".
-  await expect(modal.matchCount()).toBeVisible();
-  await expect(modal.matchCount()).toHaveText(/matching page/);
-  await expect(modal.matchCount()).not.toHaveText(firstText ?? '');
+  await expect(modal.countText()).toBeVisible();
+  await expect(modal.countText()).toHaveText(/matching page/);
+  await expect(modal.countText()).not.toHaveText(firstText ?? '');
 });
 
-test('the footer Reset button renders its icon, is gated like Apply, and clears the selection', async ({ page }) => {
+test('Clear all appears with the first criterion and clears the selection without leaving the modal', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
   await modal.open();
-  await expect(modal.resetButton().locator('typo3-backend-icon')).toHaveCount(1);
-  await expect(modal.resetButton()).toBeDisabled();
+  await expect(modal.clearAllButton()).toBeHidden();
 
   await modal.navItem('doktype').click();
   // doktype 3 is "Link" in this instance's TCA - same fixture value the
   // other tests in this file already rely on.
   await modal.option('doktype', 'doktype', '3').check();
-  await expect(modal.resetButton()).toBeEnabled();
+  await expect(modal.clearAllButton()).toBeVisible();
 
-  await modal.resetButton().click();
+  await modal.clearAllButton().click();
 
   await expect(modal.option('doktype', 'doktype', '3')).not.toBeChecked();
   await expect(modal.chips()).toHaveCount(0);
-  await expect(modal.resetButton()).toBeDisabled();
+  await expect(modal.clearAllButton()).toBeHidden();
+  await expect(modal.root()).toBeVisible();
 });
 
-test('the match count renders its icon as a real, resolved icon', async ({ page }) => {
-  const modal = new FacetsModalPage(page);
-  const icon = page.locator('typo3-backend-modal .pagetree-facets__match-count typo3-backend-icon');
-
-  await modal.open();
-  await modal.navItem('doktype').click();
-  await modal.option('doktype', 'doktype', '3').check(); // "Link" - 1 match
-
-  await expect(icon).toHaveAttribute('identifier', 'actions-search');
-  await expect(icon.locator('svg')).toHaveCount(1);
-});
-
-test('the footer Cancel and Apply buttons render their icons as real, resolved icons', async ({ page }) => {
+test('the footer Cancel button carries no icon, Apply renders its check as a real, resolved icon', async ({ page }) => {
   const modal = new FacetsModalPage(page);
 
   await modal.open();
 
-  const cancelIcon = page.getByRole('button', { name: 'Cancel', exact: true }).locator('typo3-backend-icon');
-  await expect(cancelIcon).toHaveAttribute('identifier', 'actions-close');
-  await expect(cancelIcon.locator('svg')).toHaveCount(1);
+  const cancel = page.getByRole('button', { name: 'Cancel', exact: true });
+  await expect(cancel).toHaveClass(/btn-default/);
+  await expect(cancel.locator('typo3-backend-icon')).toHaveCount(0);
 
   const applyIcon = modal.applyButton().locator('typo3-backend-icon');
   await expect(applyIcon).toHaveAttribute('identifier', 'actions-check');
@@ -173,7 +161,7 @@ test('the loading skeleton renders with a real, visible color', async ({ page })
   // unit test cannot: jsdom does not resolve CSS custom-property scoping the
   // way a real browser does, which is exactly how this bug slipped past 236
   // passing unit tests - the bar was fully transparent in the real backend).
-  const skeleton = page.locator('typo3-backend-modal .pagetree-facets__match-count-skeleton');
+  const skeleton = page.locator('typo3-backend-modal .pagetree-facets__status-skeleton');
   await skeleton.evaluate((el) => { el.hidden = false; });
 
   const backgroundColor = await skeleton.evaluate((el) => window.getComputedStyle(el).backgroundColor);

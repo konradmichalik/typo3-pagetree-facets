@@ -3,11 +3,14 @@ import { respondWith } from './Stubs/typo3/core/ajax/ajax-request.js';
 import {
   applyButton,
   chipLabels,
+  clearAllButton,
   configurationFixture,
   control,
   openModal,
   requests,
   resetHarness,
+  scopeValue,
+  textSwitch,
   type,
 } from './Support/modal-harness.js';
 
@@ -22,7 +25,7 @@ import {
  */
 
 const enterTokenMode = async (modal) => {
-  modal.querySelector('.pagetree-facets__token-toggle').click();
+  textSwitch(modal).click();
   await expect.poll(() => tokenField(modal).hidden).toBe(false);
 
   return tokenField(modal);
@@ -49,9 +52,10 @@ describe('entering token view', () => {
     const field = await enterTokenMode(modal);
 
     expect(field.value).toBe('is:hidden');
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('true');
+    expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('true');
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(true);
-    expect(modal.querySelector('.pagetree-facets__site').hidden).toBe(true);
+    // The phrase carries the scope itself, so the chip leaves with the freetext.
+    expect(modal.querySelector('.pagetree-facets__scope').hidden).toBe(true);
   });
 
   it('leaves Apply disabled while the phrase still matches the tree', async () => {
@@ -72,11 +76,11 @@ describe('entering token view', () => {
   it('drives the filter-wide actions off the typed field', async () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
 
     type(field, '   ');
 
-    await expect.poll(() => modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    await expect.poll(() => modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
   });
 });
 
@@ -92,7 +96,7 @@ describe('typing a phrase', () => {
     expect(chipLabels(modal)).toEqual(['Page state: Empty']);
   });
 
-  it('tolerates having no site scope or page scope control to re-hydrate', async () => {
+  it('tolerates having no scope chip to re-hydrate', async () => {
     const singleSite = (phrase) => hydratingFixture(phrase, configurationFixture({ sites: [{ identifier: 'main' }] }));
     const { modal } = await openModal({ pageId: null, configuration: singleSite });
     const field = await enterTokenMode(modal);
@@ -102,7 +106,7 @@ describe('typing a phrase', () => {
     await expect.poll(() => control(modal, 'state[is]', 'empty').checked).toBe(true);
   });
 
-  it('clears the site dropdown when the re-hydrated configuration carries no activeSite at all', async () => {
+  it('resets the scope chip when the re-hydrated configuration carries no activeSite at all', async () => {
     const { modal } = await openModal({
       phrase: 'site:main',
       configuration: (phrase) => hydratingFixture(
@@ -111,11 +115,11 @@ describe('typing a phrase', () => {
       ),
     });
     const field = await enterTokenMode(modal);
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('main');
+    expect(scopeValue(modal)).toBe('main');
 
     type(field, 'is:hidden');
 
-    await expect.poll(() => modal.querySelector('[data-role="site-scope"]').value).toBe('');
+    await expect.poll(() => scopeValue(modal)).toBe('Whole tree');
   });
 
   it('clears freetext when the re-hydrated configuration carries none at all', async () => {
@@ -167,7 +171,7 @@ describe('typing a phrase', () => {
 
     type(field, 'is:empty');
     await new Promise((resolve) => { setTimeout(resolve, 300); });
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     // Picked in the restored form: rebuilding the panels would wipe it, which is
     // what makes this assertion say more than "empty is still unchecked".
     control(modal, 'doktype[doktype]', '1').click();
@@ -201,11 +205,50 @@ describe('editing the form in token view', () => {
     // now in flight against the promise above.
     await new Promise((resolve) => { setTimeout(resolve, 300); });
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
     release({ phrase: 'doktype:1 is:hidden' });
     await new Promise((resolve) => { setTimeout(resolve, 0); });
 
     expect(field.value).toBe('is:hidden');
+  });
+});
+
+describe('removing a chip in token view', () => {
+  const removeButton = (modal, label) => [...modal.querySelectorAll('.pagetree-facets__chip')]
+    .find((chip) => chip.title === label)
+    .querySelector('.pagetree-facets__chip-remove');
+
+  it('drops the title from the phrase, so Apply enables', async () => {
+    const withTitle = hydratingFixture('home', configurationFixture({ freetext: 'home' }));
+    const { modal } = await openModal({ phrase: 'home', configuration: withTitle });
+    const field = await enterTokenMode(modal);
+    expect(field.value).toBe('home');
+
+    removeButton(modal, 'Title: home').click();
+
+    await expect.poll(() => field.value).toBe('');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('drops a picked option from the phrase as well', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+
+    removeButton(modal, 'Page state: Hidden').click();
+
+    await expect.poll(() => field.value).toBe('');
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('moves focus to the phrase field once the last chip is gone, the scope chip being hidden', async () => {
+    const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
+    const field = await enterTokenMode(modal);
+    const remove = removeButton(modal, 'Page state: Hidden');
+    remove.focus();
+
+    remove.click();
+
+    expect(document.activeElement).toBe(field);
   });
 });
 
@@ -249,11 +292,12 @@ describe('leaving token view', () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
+    textSwitch(modal).click();
 
     expect(field.hidden).toBe(true);
     expect(modal.querySelector('.pagetree-facets__freetext').hidden).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-pressed')).toBe('false');
+    expect(modal.querySelector('.pagetree-facets__scope').hidden).toBe(false);
+    expect(textSwitch(modal).getAttribute('aria-pressed')).toBe('false');
     expect(applyButton(modal).disabled).toBe(true);
   });
 
@@ -276,13 +320,14 @@ describe('leaving token view', () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
-  it('empties the phrase field on Reset, so it cannot re-seed the cleared form', async () => {
+  it('empties the phrase field on Clear all, so it cannot re-seed the cleared form', async () => {
     const { modal } = await openModal({ phrase: 'is:hidden', configuration: hydratingFixture('is:hidden') });
     const field = await enterTokenMode(modal);
 
-    modal.querySelector('.pagetree-facets__reset').click();
+    clearAllButton(modal).click();
 
     expect(field.value).toBe('');
     expect(control(modal, 'state[is]', 'hidden').checked).toBe(false);
+    expect(applyButton(modal).disabled).toBe(false);
   });
 });
