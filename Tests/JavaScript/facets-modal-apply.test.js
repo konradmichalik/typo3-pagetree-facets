@@ -173,6 +173,19 @@ describe('Enter inside the modal', () => {
     await new Promise((resolve) => { setTimeout(resolve, 20); });
     expect(onApply).not.toHaveBeenCalled();
   });
+
+  it('is left alone inside a dialog the modal opens, which only reads or removes', async () => {
+    const { modal, onApply } = await openModal();
+    modal.querySelector('.pagetree-facets__help-link').click();
+    const help = modal.querySelector('.pagetree-facets [role="dialog"]');
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    help.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    expect(onApply).not.toHaveBeenCalled();
+  });
 });
 
 describe('before the modal reports itself shown', () => {
@@ -442,6 +455,48 @@ describe('the cross-tab filter search', () => {
     expect(modal.querySelector('.pagetree-facets__nav-item[aria-current]')).toBeNull();
     expect([...modal.querySelectorAll('.pagetree-facets__search-result-label')].map((l) => l.textContent))
       .toEqual(['Hidden']);
+    expect(modal.querySelector('.pagetree-facets__search-heading').textContent).toBe('1 criterion matches “hidden”');
+    expect(modal.querySelector('.pagetree-facets__search-group-title').textContent).toBe('Page state');
+  });
+
+  it('shows the matches per facet in the navigation and dims the facets without one', async () => {
+    const { modal } = await openModal();
+    const nav = modal.querySelector('.pagetree-facets__nav');
+    const matches = (identifier) => navItem(modal, identifier).querySelector('.pagetree-facets__nav-matches');
+
+    search(modal, 'hidden');
+
+    expect(nav.classList.contains('is-searching')).toBe(true);
+    expect(matches('state').textContent).toBe('1');
+    expect(navItem(modal, 'state').classList.contains('is-unmatched')).toBe(false);
+    expect(matches('doktype')).toBeNull();
+    expect(navItem(modal, 'doktype').classList.contains('is-unmatched')).toBe(true);
+    // The criteria badge keeps its own count underneath, the stylesheet hides it.
+    expect(navItem(modal, 'state').querySelector('.pagetree-facets__nav-count').textContent).toBe('1');
+
+    search(modal, '');
+
+    expect(nav.classList.contains('is-searching')).toBe(false);
+    expect(matches('state')).toBeNull();
+    expect(modal.querySelector('.pagetree-facets__nav-item.is-unmatched')).toBeNull();
+  });
+
+  it('drops the match counts again when a facet is picked while searching', async () => {
+    const { modal } = await openModal();
+    search(modal, 'hidden');
+
+    navItem(modal, 'doktype').click();
+
+    expect(modal.querySelector('.pagetree-facets__nav').classList.contains('is-searching')).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__nav-matches')).toBeNull();
+  });
+
+  it('shows the query as typed in the heading, not its lowercased form', async () => {
+    const { modal } = await openModal();
+
+    search(modal, ' Hid ');
+
+    expect(modal.querySelector('.pagetree-facets__search-heading').textContent).toBe('1 criterion matches “Hid”');
   });
 
   it('says so when nothing matches', async () => {
@@ -450,6 +505,33 @@ describe('the cross-tab filter search', () => {
     search(modal, 'zzz');
 
     expect(modal.querySelector('.pagetree-facets__search-empty')).not.toBeNull();
+  });
+
+  it('opens the facet of a group on Show all in and leaves the search', async () => {
+    const { modal } = await openModal();
+    search(modal, 'hidden');
+
+    modal.querySelector('.pagetree-facets__search-show-all').click();
+
+    expect(modal.querySelector('[data-role="filter-search"]').value).toBe('');
+    expect(modal.querySelector('.pagetree-facets__search-results').hidden).toBe(true);
+    expect(panel(modal, 'state').hidden).toBe(false);
+    expect(navItem(modal, 'state').getAttribute('aria-current')).toBe('true');
+  });
+
+  it('returns to the facet that was open before when Escape clears the search', async () => {
+    const { modal } = await openModal();
+    navItem(modal, 'state').click();
+    search(modal, 'standard');
+    expect(panel(modal, 'state').hidden).toBe(true);
+
+    modal.querySelector('[data-role="filter-search"]')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+    expect(modal.querySelector('.pagetree-facets__search-results').hidden).toBe(true);
+    expect(panel(modal, 'state').hidden).toBe(false);
+    expect(panel(modal, 'doktype').hidden).toBe(true);
+    expect(navItem(modal, 'state').getAttribute('aria-current')).toBe('true');
   });
 
   it('writes a toggled result back to the control in its hidden panel', async () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { appendRichText, clearable, lang, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, clearable, format, lang, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 const textInput = (value = '') => {
   const input = document.createElement('input');
@@ -11,6 +11,19 @@ const textInput = (value = '') => {
 
 beforeEach(() => {
   globalThis.TYPO3 = { lang: {} };
+});
+
+describe('format', () => {
+  it('fills %d and %s in order from the label, or from the fallback', () => {
+    expect(format('missing', '%d of %s', 3, 'pages')).toBe('3 of pages');
+
+    globalThis.TYPO3.lang.units = '%d Seiten in %s';
+    expect(format('units', '%d of %s', 3, 'pages')).toBe('3 Seiten in pages');
+  });
+
+  it('keeps a replacement pattern or a placeholder inside a value literal', () => {
+    expect(format('missing', 'Remove %s, %s', '$& %s', 'x')).toBe('Remove $& %s, x');
+  });
 });
 
 describe('clearable', () => {

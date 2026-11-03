@@ -464,7 +464,10 @@
 
 /* --- Criteria row ------------------------------------------------------ */
 
+/* Also the anchor of the +N more popover, which spans the row instead of
+   hanging off its button at the row's end, where it would leave the modal. */
 .pagetree-facets__criteria-row {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -582,11 +585,161 @@
     outline-offset: -2px;
 }
 
+/* --- No matching pages ------------------------------------------------- */
+
+/* Core's warning alert carries the colours; the header spaces its rows, so
+   the alert's own margin goes. */
+.pagetree-facets__no-match {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.pagetree-facets__no-match[hidden] {
+    display: none;
+}
+
+.pagetree-facets__no-match-icon {
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.pagetree-facets__no-match-title {
+    margin: 0;
+    font-weight: 600;
+}
+
+.pagetree-facets__no-match-text {
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+}
+
+/* --- +N more ----------------------------------------------------------- */
+
+.pagetree-facets__overflow {
+    flex: 0 0 auto;
+}
+
+.pagetree-facets__overflow[hidden] {
+    display: none;
+}
+
+/* Outlined and text-only, so it reads as a control and not as one more
+   criterion. The dash colour of the scope chip, which clears 3:1. */
+.pagetree-facets__overflow-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding-inline: 0.6rem;
+    border: 1px solid var(--typo3-text-color-variant);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--typo3-text-color-base);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.pagetree-facets__overflow-button:hover {
+    background: var(--typo3-component-hover-bg);
+}
+
+.pagetree-facets__overflow-button:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: 1px;
+}
+
+/* Centred under the row and never wider than it. */
+.pagetree-facets__overflow-panel {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + 4px);
+    z-index: 1000;
+    width: max-content;
+    min-width: min(24rem, 100%);
+    max-width: min(40rem, 100%);
+    margin-inline: auto;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: 6px;
+    background: var(--typo3-component-bg);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--typo3-text-color-base) 14%, transparent);
+}
+
+.pagetree-facets__overflow-panel[hidden] {
+    display: none;
+}
+
+.pagetree-facets__overflow-panel:focus-visible {
+    outline: 2px solid var(--typo3-component-focus-color);
+    outline-offset: -2px;
+}
+
+.pagetree-facets__overflow-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--typo3-component-border-color);
+}
+
+.pagetree-facets__overflow-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__overflow-clear {
+    min-height: 24px;
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.pagetree-facets__overflow-list {
+    margin: 0;
+}
+
+/* The facet as the term, its chips as the definition, one line per facet. */
+.pagetree-facets__overflow-group {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 0.5rem 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--typo3-component-border-color);
+}
+
+.pagetree-facets__overflow-group:last-child {
+    border-bottom: 0;
+}
+
+.pagetree-facets__overflow-group dt {
+    align-self: start;
+    padding-top: 0.2rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.pagetree-facets__overflow-group dd {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0;
+}
+
 /* The lists pop open without motion; a short fade is added where motion is
    welcome (see the rules' Motion table). */
 @media (prefers-reduced-motion: no-preference) {
     .pagetree-facets__scope-list:not([hidden]),
     .pagetree-facets__menu:not([hidden]),
+    .pagetree-facets__overflow-panel:not([hidden]),
     .pagetree-facets__help:not([hidden]) {
         animation: pagetree-facets-popover-fade 120ms ease-out;
     }
@@ -935,6 +1088,22 @@
     line-height: 1.25;
 }
 
+/* While searching, the matches per facet take the badge's place and a facet
+   without one steps back to the secondary text colour. */
+.pagetree-facets__nav.is-searching .pagetree-facets__nav-count {
+    display: none;
+}
+
+.pagetree-facets__nav-matches {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pagetree-facets__nav-item.is-unmatched {
+    color: var(--typo3-text-color-variant);
+}
+
 /* Active-criteria count per tab (kept subtle: a small pill, not a loud badge). */
 .pagetree-facets__nav-count {
     flex: 0 0 auto;
@@ -1170,25 +1339,98 @@
     flex: 0 0 auto;
 }
 
-/* --- Cross-tab filter search --------------------------------------------
- * Replaces .pagetree-facets__panels while the search field has text; a flat,
- * clickable list of matches aggregated across every tab. */
+/* --- Criterion search ---------------------------------------------------
+ * Replaces the facet panels while the search field has text: the matches
+ * grouped by facet and field, each group with its own Show all in. */
 
 .pagetree-facets__search-results {
     height: 100%;
     overflow-y: auto;
 }
 
-.pagetree-facets__search-list {
-    margin: 0;
+/* The count on the same line as the panel titles, the Escape hint at the end. */
+.pagetree-facets__search-heading-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pagetree-facets__search-heading {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__search-esc {
+    flex: 0 0 auto;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
+}
+
+.pagetree-facets__search-group + .pagetree-facets__search-group {
+    margin-top: 1.25rem;
+}
+
+/* Facet and field, a rule filling the line, Show all in at the end. */
+.pagetree-facets__search-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.pagetree-facets__search-group-head::after {
+    content: "";
+    flex: 1 1 auto;
+    order: 1;
+    border-top: 1px solid var(--typo3-component-border-color);
+}
+
+.pagetree-facets__search-group-title {
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.pagetree-facets__search-show-all {
+    flex: 0 0 auto;
+    order: 2;
+    min-height: 24px;
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.pagetree-facets__search-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 0.15rem 1rem;
+    margin: 0;
 }
 
 .pagetree-facets__search-result {
     width: 100%;
     color: var(--typo3-text-color-base);
+}
+
+/* The matched part: the stronger tint under the base text colour, no colour of
+   its own. Forced colours get the system mark colours below. */
+.pagetree-facets__search-mark {
+    padding: 0;
+    border-radius: 2px;
+    background: var(--pf-tint-strong);
+    color: var(--typo3-text-color-base);
+}
+
+.pagetree-facets__search-scope {
+    margin: 1.25rem 0 0;
+    color: var(--typo3-text-color-variant);
+    font-size: 0.875rem;
 }
 
 .pagetree-facets__search-result:has(.form-check-input:focus-visible) {
@@ -1206,23 +1448,14 @@
     flex: 1 1 auto;
 }
 
-.pagetree-facets__search-result-tab {
-    flex: 0 0 auto;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-    background: var(--typo3-component-hover-bg);
+.pagetree-facets__search-result-origin {
+    margin: 0 0.25em;
     color: var(--typo3-text-color-variant);
-    font-size: 0.75rem;
     font-weight: 400;
 }
 
-.pagetree-facets__search-result-origin {
-    margin: 0 0.25em;
-    opacity: 0.7;
-}
-
 .pagetree-facets__search-empty {
-    padding: 0.4rem 0.6rem;
+    margin: 0;
     color: var(--typo3-text-color-variant);
 }
 
@@ -1548,5 +1781,11 @@
     .pagetree-facets__nav-item.active {
         padding-inline-start: calc(0.75rem - 3px);
         border-inline-start: 3px solid CanvasText;
+    }
+
+    /* The tint under a match is dropped, the system mark colours are kept. */
+    .pagetree-facets__search-mark {
+        background: Mark;
+        color: MarkText;
     }
 }
