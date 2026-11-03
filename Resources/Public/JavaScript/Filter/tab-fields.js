@@ -16,6 +16,9 @@
  * functions provide.
  */
 
+/** The field types whose options are an enumerable list. */
+export const CHOICE_FIELD_TYPES = ['checkbox-group', 'select', 'radio-presets'];
+
 /**
  * The field list reduced to the first field per name, preserving order.
  *

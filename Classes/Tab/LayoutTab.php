@@ -109,7 +109,7 @@ final class LayoutTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -128,7 +128,11 @@ final class LayoutTab extends AbstractPagesQueryTab
             $fields[] = ['type' => 'checkbox-group', 'name' => 'pagelayout', 'label' => $lll.'frontend', 'options' => $frontendLayouts];
         }
 
-        return ['fields' => $fields];
+        return [
+            'description' => $lll.'description',
+            'emptyReason' => $lll.'emptyReason',
+            'fields' => $fields,
+        ];
     }
 
     /**

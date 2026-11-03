@@ -114,6 +114,42 @@ describe('Clear all', () => {
   });
 });
 
+describe('Select none in a panel', () => {
+  const selectNone = (modal, identifier) => panel(modal, identifier).querySelector('.pagetree-facets__select-none');
+
+  it('is offered only in a panel that has something picked', async () => {
+    const { modal } = await openModal();
+
+    expect(selectNone(modal, 'state').hidden).toBe(false);
+    expect(selectNone(modal, 'doktype').hidden).toBe(true);
+  });
+
+  it('clears that panel alone and refreshes chips, count and Apply like a chip removal', async () => {
+    const { modal } = await openModal();
+    control(modal, 'doktype[doktype]', '1').checked = true;
+    control(modal, 'doktype[doktype]', '1').dispatchEvent(new Event('change', { bubbles: true }));
+    expect(chipLabels(modal)).toEqual(['Page type: Standard', 'Page state: Hidden']);
+
+    selectNone(modal, 'state').click();
+
+    expect(chipLabels(modal)).toEqual(['Page type: Standard']);
+    expect(navItem(modal, 'state').querySelector('.pagetree-facets__nav-count')).toBeNull();
+    expect(navItem(modal, 'doktype').querySelector('.pagetree-facets__nav-count').textContent).toBe('1');
+    expect(applyButton(modal).disabled).toBe(false);
+    expect(selectNone(modal, 'state').hidden).toBe(true);
+  });
+
+  it('heads every panel with the facet name and its description', async () => {
+    const configuration = configurationFixture();
+    configuration.tabs[0].configuration.description = 'Show pages of the selected types.';
+    const { modal } = await openModal({ configuration });
+
+    expect(panel(modal, 'doktype').querySelector('h2').textContent).toBe('Page type');
+    expect(panel(modal, 'doktype').querySelector('.pagetree-facets__panel-description').textContent).toBe('Show pages of the selected types.');
+    expect(panel(modal, 'state').querySelector('.pagetree-facets__panel-description').hidden).toBe(true);
+  });
+});
+
 describe('Enter inside the modal', () => {
   it('applies, so a typed criterion needs no reach for the mouse', async () => {
     const { modal, onApply } = await openModal();
@@ -128,7 +164,7 @@ describe('Enter inside the modal', () => {
 
   it('is left alone on a button, where it is the activation key', async () => {
     const { modal, onApply } = await openModal();
-    const help = modal.querySelector('.pagetree-facets__help-toggle');
+    const help = modal.querySelector('.pagetree-facets__help-link');
 
     const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     help.dispatchEvent(event);
@@ -325,6 +361,18 @@ describe('the navigation', () => {
 
     return event;
   };
+
+  it('keeps the help link out of the arrow walk, closing its popover when a tab is picked', async () => {
+    const { modal } = await openModal();
+    const link = modal.querySelector('.pagetree-facets__help-link');
+    link.click();
+    expect(modal.querySelector('.pagetree-facets__help').hidden).toBe(false);
+
+    arrow(navItem(modal, 'activity'), 'ArrowDown');
+
+    expect(document.activeElement).toBe(navItem(modal, 'doktype'));
+    expect(modal.querySelector('.pagetree-facets__help').hidden).toBe(true);
+  });
 
   it('moves with the arrows and switches as it goes', async () => {
     const { modal } = await openModal();

@@ -63,7 +63,7 @@ final class ContentElementTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
@@ -93,7 +93,14 @@ final class ContentElementTab extends AbstractPagesQueryTab
             ];
         }
 
-        return ['fields' => $fields];
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:ce.';
+
+        return [
+            'description' => $lll.'description',
+            // Every type can be withheld by the authMode permission above.
+            'emptyReason' => $lll.'emptyReason',
+            'fields' => $fields,
+        ];
     }
 
     /**

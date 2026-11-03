@@ -3,112 +3,171 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
-import { decorativeIcon, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import Hotkeys from '@typo3/backend/hotkeys.js';
+import { appendRichText, decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
 
 /**
- * The collapsible panel explaining how filtering works.
- *
- * Reference material rather than a step in the flow, which is why it is
- * collapsed by default. Every string carries an English fallback so the UI stays
- * usable when the language files have not been loaded.
+ * The help popover, opened from `How filtering works` under the navigation and
+ * placed next to it over the content, so it never pushes anything down.
  */
 
-const HELP_POINTS = {
-  combine: 'Criteria from different categories are combined: a page has to match all of them. Picking several options within one category means any of them is enough.',
-  chips: 'Everything you picked is listed above. Remove a single criterion with its ×, or start over with "Clear all". Your selection only takes effect once you choose "Apply".',
-  scope: '"Below" in the scope chip limits the result to the page you currently have open and its subpages.',
-  favorites: 'Save a filter you use often under a name of your choice. Clicking a saved filter loads it back in here — like anything else you pick, it takes effect once you choose "Apply".',
-  share: '"Copy link to this filter" in the actions menu copies a link to your current selection, so you can hand it to a colleague.',
-};
+// Each token exists in the code (DoktypeTab, Option/State, core's CType,
+// ActivityTab::PRESETS); the language key holds what it does.
+const EXAMPLE_TOKENS = [
+  ['doktype:1,3', 'doktype', 'page type, comma means or'],
+  ['is:empty', 'is', 'page state'],
+  ['ce:uploads', 'ce', 'contains this element type'],
+  ['updated:<30d', 'updated', 'changed in the last 30 days'],
+  ['by:me', 'by', 'last edited by you'],
+];
 
 /**
- * @param {{hasPageScope: boolean}} options - the page-scope point is only worth
- *   making while the control it describes is on screen
- * @returns {HTMLElement} collapsed; pair it with renderHelpToggle()
+ * @param {{getLayout: () => {root: HTMLElement, nav: HTMLElement}}} options - the
+ *   modal content and its navigation, read on open: the popover is placed from
+ *   the navigation's edge within the content
+ * @returns {{link: HTMLElement, panel: HTMLElement, close: () => void}} the link
+ *   goes under the navigation, the panel anywhere in the content
  */
-export function renderHelp({ hasPageScope }) {
+export function buildHelp({ getLayout }) {
+  const panel = buildPanel();
+  const link = buildLink(panel.id);
+  const popover = attachPopover({
+    trigger: link,
+    panel,
+    onOpen: () => {
+      place(panel, getLayout());
+      panel.focus();
+    },
+  });
+  panel.append(buildClose(() => popover.close(true)));
+
+  return { link, panel, close: () => popover.close() };
+}
+
+function buildLink(panelId) {
+  const link = document.createElement('button');
+  link.type = 'button';
+  link.className = 'btn btn-link pagetree-facets__help-link';
+  link.title = lang('pagetreeFacets.modal.help.description', 'Explains how criteria combine and what each action does.');
+  link.setAttribute('aria-controls', panelId);
+  link.setAttribute('aria-haspopup', 'dialog');
+  link.append(decorativeIcon('actions-question-circle'), document.createTextNode(lang('pagetreeFacets.modal.help', 'How filtering works')));
+
+  return link;
+}
+
+function buildPanel() {
   const panel = document.createElement('div');
-  panel.className = 'alert alert-info pagetree-facets__help';
+  panel.className = 'pagetree-facets__help';
   panel.id = uniqueId('pagetree-facets__help');
   panel.hidden = true;
+  panel.setAttribute('role', 'dialog');
+  // Focus lands on the dialog itself, so the name is announced before the text.
+  panel.tabIndex = -1;
 
-  const intro = document.createElement('p');
-  intro.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.intro']
-    ?? 'Pick one or more criteria to narrow the page tree down to the pages you are looking for.';
-  panel.append(intro);
+  const title = document.createElement('h2');
+  title.className = 'pagetree-facets__help-title';
+  title.id = uniqueId('pagetree-facets__help-title');
+  title.textContent = lang('pagetreeFacets.modal.help', 'How filtering works');
+  panel.setAttribute('aria-labelledby', title.id);
+  panel.append(title);
 
-  const keys = ['combine', 'chips', ...(hasPageScope ? ['scope'] : []), 'favorites', 'share'];
-  const list = document.createElement('ul');
-  list.className = 'pagetree-facets__help-points';
-  for (const key of keys) {
-    const item = document.createElement('li');
-    item.textContent = TYPO3.lang?.[`pagetreeFacets.modal.help.${key}`] ?? HELP_POINTS[key];
-    list.append(item);
-  }
-  panel.append(list);
-
-  // Kept as a closing paragraph rather than a sixth bullet: it is the one point
-  // that is not about using this dialog, but about leaving it behind.
-  const advanced = document.createElement('p');
-  advanced.className = 'mb-0';
-  advanced.textContent = TYPO3.lang?.['pagetreeFacets.modal.help.advanced']
-    ?? 'Your selection also shows up as text in the page tree’s search field. If you prefer typing, you can edit it there directly, or switch this dialog to its editable filter text with the Text switch in the search field.';
-  panel.append(advanced);
+  panel.append(
+    section('combine', 'Combining criteria', [buildIllustration(), paragraph('combine.text', 'Within one category, any choice is enough. Across categories, a page must match all of them.')]),
+    section('apply', 'Nothing changes until you apply', [paragraph('apply.text', 'The count at the bottom previews the result. The page tree only updates once you choose Apply.')]),
+    section('share', 'Keep and share', [paragraph('share.text', 'The actions menu next to Clear all saves a filter as a favorite or copies a link to it for a colleague.')]),
+    section('typing', 'Prefer typing?', [paragraph('typing.text', 'Switch to Text, or type straight into the page tree search field:'), buildTokens()]),
+    buildGlobalSearch(),
+  );
 
   return panel;
 }
 
-/**
- * The icon-only button expanding the help panel. Icon-only, so its accessible name
- * comes from aria-label rather than from content.
- *
- * It also fits the panel with its own × - the two are wired together here
- * because this is the one place that knows both, and a panel that can only be
- * closed by the button that opened it makes the reader hunt for that button
- * again once the text has scrolled it out of reach.
- *
- * @param {HTMLElement} panel - as returned by renderHelp()
- * @returns {HTMLElement}
- */
-export function renderHelpToggle(panel) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'btn btn-sm btn-default btn-icon pagetree-facets__help-toggle';
-  const label = TYPO3.lang?.['pagetreeFacets.modal.help'] ?? 'Filter syntax';
-  // Icon-only: aria-label stays the short name, the title explains.
-  button.title = TYPO3.lang?.['pagetreeFacets.modal.help.description']
-    ?? 'Explains how criteria combine and what each action does.';
-  button.setAttribute('aria-label', label);
-  button.setAttribute('aria-expanded', 'false');
-  button.setAttribute('aria-controls', panel.id);
+function section(key, fallbackTitle, children) {
+  const wrap = document.createElement('section');
+  wrap.className = 'pagetree-facets__help-section';
+  const heading = document.createElement('h3');
+  heading.textContent = lang(`pagetreeFacets.modal.help.${key}.title`, fallbackTitle);
+  wrap.append(heading, ...children);
 
-  button.append(decorativeIcon('actions-info-circle'));
-
-  // One place decides, so the panel and the button can never disagree - which
-  // is what the [aria-expanded="true"] styling on the button relies on.
-  const setExpanded = (expand) => {
-    panel.hidden = !expand;
-    button.setAttribute('aria-expanded', String(expand));
-  };
-  button.addEventListener('click', () => setExpanded(panel.hidden));
-  panel.append(renderHelpClose(() => {
-    setExpanded(false);
-    // Focus would otherwise be left on a node that just became hidden.
-    button.focus();
-  }));
-
-  return button;
+  return wrap;
 }
 
-function renderHelpClose(onClose) {
+function paragraph(key, fallback) {
+  const text = document.createElement('p');
+  text.textContent = lang(`pagetreeFacets.modal.help.${key}`, fallback);
+
+  return text;
+}
+
+// `Standard Page or Link and Hidden`: two values of one facet, then another facet.
+function buildIllustration() {
+  const row = document.createElement('p');
+  row.className = 'pagetree-facets__help-chips';
+  const chip = (key, fallback) => {
+    const span = document.createElement('span');
+    span.className = 'pagetree-facets__help-chip';
+    span.textContent = lang(`pagetreeFacets.modal.help.combine.${key}`, fallback);
+
+    return span;
+  };
+  const word = (key, fallback) => {
+    const strong = document.createElement('strong');
+    strong.textContent = lang(`pagetreeFacets.modal.help.combine.${key}`, fallback);
+
+    return strong;
+  };
+  row.append(chip('exampleA', 'Standard Page'), ' ', word('or', 'or'), ' ', chip('exampleB', 'Link'), ' ', word('and', 'and'), ' ', chip('exampleC', 'Hidden'));
+
+  return row;
+}
+
+function buildTokens() {
+  const list = document.createElement('dl');
+  list.className = 'pagetree-facets__help-tokens';
+  for (const [token, key, fallback] of EXAMPLE_TOKENS) {
+    const term = document.createElement('dt');
+    const code = document.createElement('code');
+    code.textContent = token;
+    term.append(code);
+    const description = document.createElement('dd');
+    description.textContent = lang(`pagetreeFacets.modal.help.token.${key}`, fallback);
+    list.append(term, description);
+  }
+
+  return list;
+}
+
+// Core resolves the modifier per platform; the text names the same key.
+function buildGlobalSearch() {
+  const text = document.createElement('p');
+  text.className = 'pagetree-facets__help-global';
+  const fallback = 'Looking for one record itself? The Records category here only narrows the tree to pages that contain such records. To open a record directly, use the global backend search: ';
+  appendRichText(text, 'meta' === Hotkeys.normalizedCtrlModifierKey
+    ? lang('pagetreeFacets.modal.help.globalSearch.cmd', `${fallback}[[Cmd]] [[K]]`)
+    : lang('pagetreeFacets.modal.help.globalSearch.ctrl', `${fallback}[[Ctrl]] [[K]]`));
+
+  return text;
+}
+
+function buildClose(onClose) {
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'pagetree-facets__help-close';
-  const label = TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close';
-  close.title = TYPO3.lang?.['pagetreeFacets.modal.help.close.description'] ?? 'Closes this panel.';
-  close.setAttribute('aria-label', label);
-  close.textContent = '×';
+  close.setAttribute('aria-label', lang('pagetreeFacets.modal.close', 'Close'));
+  close.title = lang('pagetreeFacets.modal.help.close.description', 'Closes the help.');
+  close.append(decorativeIcon('actions-close'));
   close.addEventListener('click', onClose);
 
   return close;
+}
+
+// Next to the navigation, bottom edge level with the link: measured on open,
+// since the navigation's width is the layout's, not ours.
+function place(panel, { root, nav }) {
+  const content = root.getBoundingClientRect();
+  const navigation = nav.getBoundingClientRect();
+  panel.style.insetInlineStart = `${navigation.right - content.left + 8}px`;
+  panel.style.bottom = `${content.bottom - navigation.bottom}px`;
 }

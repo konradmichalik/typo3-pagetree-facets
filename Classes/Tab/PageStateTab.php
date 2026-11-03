@@ -65,11 +65,16 @@ final class PageStateTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:state.';
+
         return $this->appendOptions([
+            'description' => $lll.'description',
+            // Every option can be switched off through disabledOptions/disableOptions.
+            'emptyReason' => $lll.'emptyReason',
             'fields' => [
                 [
                     'type' => 'checkbox-group',
