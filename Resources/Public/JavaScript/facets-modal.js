@@ -7,7 +7,7 @@ import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
+import { buildCriteriaRow, buildSearchField } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 import { addFavorite, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { clearControl } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
@@ -15,10 +15,11 @@ import { FooterStatus } from '@konradmichalik/pagetree-facets/Filter/footer-stat
 import { LiveCount } from '@konradmichalik/pagetree-facets/Filter/live-count.js';
 import { decorativeIcon, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { buildHelp } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
-import { buildNavigation, isTabEmpty } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
+import { buildNavigation, isTabEmpty, showMatchCounts } from '@konradmichalik/pagetree-facets/Filter/navigation.js';
+import { NoMatchCallout } from '@konradmichalik/pagetree-facets/Filter/no-match-callout.js';
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
-import { renderSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
+import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
@@ -44,6 +45,9 @@ class FacetsModal {
   // The footer's status line (see Filter/footer-status.js), injected into the
   // modal's own footer; #build() says why that is safe.
   #status = null;
+  // The warning under the criteria row while the count is 0 (see Filter/no-match-callout.js).
+  #callout = null;
+  #chipCount = 0;
   // One-shot escape hatch for the close guard: the apply paths close the modal
   // themselves while the state still counts as dirty (see #apply).
   #skipCloseGuard = false;
@@ -65,7 +69,7 @@ class FacetsModal {
   #reflectSeq = 0;
   #reflectTimer = null;
   #syncTimer = null;
-  #resultsPanel = null;
+  #results = null;
   #root = null;
   // The page open in the backend right now, null in a module without one.
   #currentPage = null;
@@ -121,7 +125,8 @@ class FacetsModal {
     this.#baselineState = null;
     this.#skipCloseGuard = false;
     // Fresh per modal: the previous one's status sits in a detached footer.
-    this.#status = new FooterStatus();
+    this.#callout = new NoMatchCallout();
+    this.#status = new FooterStatus({ onRender: ({ none }) => this.#callout.update({ none, criteria: this.#chipCount }) });
     this.#countEnabled = '1' === (TYPO3.settings?.PagetreeFacets?.livePreviewCount ?? '');
     this.#liveCount = new LiveCount({
       status: this.#status,
@@ -172,8 +177,10 @@ class FacetsModal {
       root?.addEventListener('keydown', (event) => {
         // Buttons are excluded: Enter is their own activation key, and
         // preventDefault() here would swallow it - a keyboard user could never
-        // reach the help link or "copy link".
-        if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
+        // reach the help link or "copy link". The same goes for a dialog opened
+        // from the modal, whose Enter only reads or removes.
+        if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)
+          && !event.target.closest('.pagetree-facets [role="dialog"]')) {
           event.preventDefault();
           this.#serializeAndApply();
         }
@@ -312,12 +319,13 @@ class FacetsModal {
     // not necessarily applied, which is what the footer status spells out.
     this.#row = buildCriteriaRow({
       scope: this.#scope?.element ?? null,
+      onRemove: (criterion) => this.#removeCriterion(criterion),
       onClearAll: () => this.#resetAll(),
       onSaveFavorite: (label) => this.#saveFavorite(label),
       onCopyLink: () => this.#copyLink(),
       focusFallback: () => this.#focusBeforeChips(),
     });
-    header.append(this.#row.element);
+    header.append(this.#row.element, this.#callout.element);
 
     return header;
   }
@@ -381,16 +389,14 @@ class FacetsModal {
     for (const tab of this.#configuration.tabs) {
       this.#panels.append(this.#renderPanel(tab));
     }
-    this.#resultsPanel = document.createElement('div');
-    this.#resultsPanel.className = 'pagetree-facets__search-results';
-    this.#resultsPanel.hidden = true;
-    this.#panels.append(this.#resultsPanel);
+    this.#results = buildSearchResults({ onShowAll: (identifier) => this.#switchTab(identifier, true) });
+    this.#panels.append(this.#results.element);
   }
 
   #applyFilterSearch(query) {
-    const trimmed = query.trim().toLowerCase();
+    const trimmed = query.trim();
     if ('' === trimmed) {
-      this.#resultsPanel.hidden = true;
+      this.#leaveSearch();
       this.#modal.querySelectorAll('.pagetree-facets__panel').forEach((panel) => {
         panel.hidden = panel.dataset.panel !== this.#activeTab;
       });
@@ -411,17 +417,22 @@ class FacetsModal {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
     });
-    this.#resultsPanel.replaceChildren(renderSearchResults(
-      findFilterMatches(this.#configuration.tabs, trimmed),
-      {
-        // The criterion a result stands for lives in a now-hidden panel; the proxy
-        // row mirrors that control and writes back to it.
-        findControl: (tab, field, option) => this.#modal.querySelector(
-          `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
-        ),
-      },
-    ));
-    this.#resultsPanel.hidden = false;
+    const matches = findFilterMatches(this.#configuration.tabs, trimmed);
+    showMatchCounts(this.#modal.querySelector('.pagetree-facets__nav'), matches);
+    this.#results.show(matches, trimmed, {
+      // The criterion a result stands for lives in a now-hidden panel; the proxy
+      // row mirrors that control and writes back to it.
+      findControl: (tab, field, option) => this.#modal.querySelector(
+        `[name="${tab.identifier}[${field.name}]"][value="${CSS.escape(option.value)}"]`,
+      ),
+    });
+  }
+
+  // Out of search mode: the field, the result view and the match counts.
+  #leaveSearch() {
+    this.#modal.querySelector('[data-role="filter-search"]').value = '';
+    this.#results.hide();
+    showMatchCounts(this.#modal.querySelector('.pagetree-facets__nav'), null);
   }
 
   // The phrase editor, authoritative in token view. Read through the handle so
@@ -617,14 +628,7 @@ class FacetsModal {
     this.#help.close();
     // Picking a tab directly always exits search mode - otherwise the results
     // list and the newly-shown panel would be visible at the same time.
-    const filterSearch = this.#modal.querySelector('[data-role="filter-search"]');
-    // #renderNavigation() always renders it, unconditionally - unlike the site
-    // scope or page scope controls, there is no configuration that omits it.
-    /* v8 ignore next 3 */
-    if (filterSearch) {
-      filterSearch.value = '';
-    }
-    this.#resultsPanel.hidden = true;
+    this.#leaveSearch();
     this.#modal.querySelectorAll('.pagetree-facets__nav-item').forEach((el) => {
       const isActive = el.dataset.tab === identifier;
       el.classList.toggle('active', isActive);
@@ -707,12 +711,10 @@ class FacetsModal {
       return;
     }
     const criteria = [...this.#titleCriterion(), ...this.#collectActiveCriteria()];
+    this.#chipCount = criteria.length;
     // Clear all and the actions act on the whole phrase, so they follow whether
     // anything is picked - a scope alone counts, not just chips.
-    this.#row.update({
-      chips: criteria.map((criterion) => this.#renderChip(criterion)),
-      savable: this.#isPicked(),
-    });
+    this.#row.update({ criteria, savable: this.#isPicked() });
     // Covers the programmatic paths (clear all, chip removal, search-result
     // proxies) that change controls without firing events on the wrapper.
     this.#refreshApplyState();
@@ -913,13 +915,12 @@ class FacetsModal {
     return { tab: tab.identifier, prefix, value: valueLabel, label: `${prefix}: ${valueLabel}`, remove };
   }
 
-  #renderChip(criterion) {
-    return renderChip(criterion, () => {
-      criterion.remove();
-      this.#refreshActiveIndicators();
-      // Unsetting a control fires no change event, so the phrase is told here.
-      this.#scheduleTokenFieldSync();
-    });
+  // A chip's ×, on the row or in the `+N more` popover.
+  #removeCriterion(criterion) {
+    criterion.remove();
+    this.#refreshActiveIndicators();
+    // Unsetting a control fires no change event, so the phrase is told here.
+    this.#scheduleTokenFieldSync();
   }
 
   // Enter token view: reveal the editable phrase field seeded from the current

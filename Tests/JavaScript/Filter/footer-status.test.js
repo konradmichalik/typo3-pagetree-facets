@@ -33,6 +33,23 @@ beforeEach(() => {
   Hotkeys.normalizedCtrlModifierKey = 'control';
 });
 
+describe('the zero-count callback', () => {
+  it('reports after every render whether a settled count of 0 is on screen', () => {
+    const seen = [];
+    const status = new FooterStatus({ onRender: ({ none }) => seen.push(none) });
+    status.update({ picked: true, dirty: true, countable: true });
+
+    status.showLoading();
+    status.setCount(0);
+    status.setCount(3);
+    status.setCount(0);
+    status.update({ picked: true, dirty: true, countable: false });
+
+    // The construction renders once, then every state change once.
+    expect(seen).toEqual([false, false, false, true, false, true, false]);
+  });
+});
+
 describe('the element', () => {
   it('holds a polite live region for the count and the pending text, with the bar kept out of it', () => {
     const status = mount();
