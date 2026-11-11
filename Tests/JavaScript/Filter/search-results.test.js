@@ -44,6 +44,23 @@ beforeEach(() => {
   globalThis.TYPO3 = { lang: {} };
 });
 
+describe('a checkbox match', () => {
+  it('is a plain checkbox that still writes back to the original control', () => {
+    const control = realCheckbox(false);
+    const list = renderSearchResults([match()], deps(control));
+    const proxy = list.querySelector('input');
+
+    expect(proxy.type).toBe('checkbox');
+    expect(proxy.getAttribute('role')).toBeNull();
+    expect(list.querySelector('label').className).not.toContain('form-switch');
+
+    proxy.checked = true;
+    proxy.dispatchEvent(new Event('change'));
+
+    expect(control.checked).toBe(true);
+  });
+});
+
 describe('buildFilterSearchInput', () => {
   it('reports every keystroke so the caller can filter as you type', () => {
     const onQuery = vi.fn();
@@ -164,14 +181,6 @@ describe('renderSearchResults', () => {
     // with it here would make the proxies look like criteria of their own.
     expect(proxy.name).toBe('search-radio-state-age');
     expect(proxy.name).not.toContain('[');
-  });
-
-  it('marks a checkbox proxy as a switch, matching the panels', () => {
-    const list = renderSearchResults([match()], deps(realCheckbox()));
-    const proxy = list.querySelector('input');
-
-    expect(proxy.type).toBe('checkbox');
-    expect(proxy.getAttribute('role')).toBe('switch');
   });
 
   it('exposes a description to screen readers without putting it in the label', () => {

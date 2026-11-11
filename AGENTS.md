@@ -7,6 +7,7 @@ TYPO3 extension `pagetree_facets` (`konradmichalik/typo3-pagetree-facets`). It a
 - PHP: `~8.2 || ~8.3 || ~8.4 || ~8.5`
 - TYPO3: `^13.4.0 || ^14.3.6` (`cms-core`, `cms-backend`)
 - Docs for users and integrators: `Documentation/` (`USAGE.md`, `CONFIGURATION.md`, `EXTENDING.md`, `LIMITATIONS.md`)
+- Contributor docs: `docs/design/` holds the binding UI design rules for the filter modal (`rules.md`) and the reference screens (`screens.md`). Any change to the modal follows `docs/design/rules.md`; a change that breaks a rule updates the rule in the same pull request
 
 ## Structure
 
