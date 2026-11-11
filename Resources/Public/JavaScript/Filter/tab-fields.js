@@ -52,3 +52,21 @@ export function fieldNameCounts(tab) {
 
   return counts;
 }
+
+/**
+ * Each distinct field with the name a criterion of it carries: the chips and the
+ * key suggestions both read it. A bucketed field's labels are section headings,
+ * so it is named after the tab; a single field would only repeat the tab, so it
+ * is too. Only several non-bucketed fields are told apart by their own labels
+ * (Activity: `Last updated` next to `Created`).
+ *
+ * @param {{label: string, configuration: {fields?: Array<{name: string, label: string}>}}} tab
+ * @returns {Array<[object, string]>} field and its prefix, in field order
+ */
+export function criterionPrefixes(tab) {
+  const fields = distinctFields(tab);
+  const counts = fieldNameCounts(tab);
+  const single = fields.filter((field) => 1 === counts.get(field.name));
+
+  return fields.map((field) => [field, single.length > 1 && single.includes(field) ? field.label : tab.label]);
+}

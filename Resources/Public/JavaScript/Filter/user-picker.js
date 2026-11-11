@@ -4,7 +4,9 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { renderChip } from '@konradmichalik/pagetree-facets/Filter/chip.js';
+import { decorativeIcon, format, lang } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { markMatches } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
 
 /**
  * Typeahead over be_users, backed by a small debounced AJAX search - one single
@@ -17,11 +19,13 @@ import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filte
  * (e.g. "Unassigned") - the owning tab is free to give that value whatever
  * meaning it likes in resolvePageUids().
  *
- * The input's visible value is a display label ("Me (admin)" or a picked user's
- * own label); the value actually serialized lives in `input.dataset.value` (uid,
- * "me", or a pinned value), flagged by `dataset.picker`. That dataset pair is the
- * entire contract with the modal: its generic collectors read it instead of the
- * visible text, so mid-typing input never counts as a criterion.
+ * The picked user shows as a chip inside the field with its own ×; the input
+ * beside it holds only the query being typed. The value actually serialized
+ * lives in `input.dataset.value` (uid, "me", or a pinned value), flagged by
+ * `dataset.picker`. That dataset pair is the entire contract with the modal: its
+ * generic collectors read it instead of the visible text, so mid-typing input
+ * never counts as a criterion, and the chip is rendered from it, whoever wrote
+ * it (the modal clears it directly, see clearControl in Filter/fields.js).
  *
  * ARIA "combobox with list autocomplete" pattern (WAI-ARIA APG): the input keeps
  * real DOM focus at all times, arrow keys move a highlighted suggestion via
@@ -73,7 +77,11 @@ export function renderUserPicker(tab, field, state, deps) {
 
 class UserPicker {
   #input;
+  #chip;
+  #placeholder;
   #results;
+  #listbox;
+  #hint;
   #resultsId;
   #currentUser;
   #currentUserLabel;
@@ -93,28 +101,34 @@ class UserPicker {
    */
   #searchToken = 0;
   #hideOnScroll = null;
+  // Focusing a field below the fold scrolls it into view, and that scroll event
+  // arrives a frame after the focus opened the list; it must not close it again.
+  #settling = false;
   #close = () => this.#hide();
 
   constructor(tab, field, state, deps) {
     this.#deps = deps;
     this.#resultsId = `pagetree-facets__user-results-${nextListId++}`;
 
-    const meLabel = TYPO3.lang?.['pagetreeFacets.modal.me'] ?? 'Me';
+    const meLabel = lang('pagetreeFacets.modal.me', 'Me');
     this.#currentUser = field.currentUser?.uid ? field.currentUser : null;
     this.#currentUserLabel = this.#currentUser ? `${meLabel} (${this.#currentUser.username})` : meLabel;
     this.#pinned = field.pinned ?? [];
     this.#searchable = field.searchable ?? true;
 
     this.#input = this.#buildInput(tab, field);
+    this.#chip = document.createElement('span');
+    this.#chip.className = 'pagetree-facets__user-chip';
     this.#results = this.#buildResults();
-    this.#input.setAttribute('aria-controls', this.#resultsId);
+    this.#input.setAttribute('aria-controls', this.#listbox.id);
 
     this.#seedFromState(state);
     this.#bindInputEvents();
+    this.#renderChip();
 
     this.#element = document.createElement('div');
     this.#element.className = 'pagetree-facets__user-picker';
-    this.#element.append(clearable(this.#input), this.#results);
+    this.#element.append(this.#chip, this.#input, this.#results);
   }
 
   get element() {
@@ -127,9 +141,9 @@ class UserPicker {
     input.type = 'text';
     input.name = `${tab.identifier}[${field.name}]`;
     input.autocomplete = 'off';
-    input.placeholder = this.#searchable
-      ? TYPO3.lang?.['pagetreeFacets.modal.userSearchPlaceholder'] ?? 'Search backend user…'
-      : TYPO3.lang?.['pagetreeFacets.modal.userPickPlaceholder'] ?? 'Pick from the list…';
+    this.#placeholder = this.#searchable
+      ? lang('pagetreeFacets.modal.userSearchPlaceholder', 'Search backend user…')
+      : lang('pagetreeFacets.modal.userPickPlaceholder', 'Pick from the list…');
     // Without search, typed text could only discard the current selection.
     input.readOnly = !this.#searchable;
     // Marks this control as "dataset.value is the source of truth" - the typed
@@ -149,11 +163,20 @@ class UserPicker {
   }
 
   #buildResults() {
-    const results = document.createElement('ul');
-    results.id = this.#resultsId;
-    results.className = 'pagetree-facets__user-results list-unstyled';
-    results.setAttribute('role', 'listbox');
+    const results = document.createElement('div');
+    results.className = 'pagetree-facets__user-results';
     results.hidden = true;
+
+    this.#listbox = document.createElement('ul');
+    this.#listbox.id = this.#resultsId;
+    this.#listbox.className = 'pagetree-facets__user-list list-unstyled';
+    this.#listbox.setAttribute('role', 'listbox');
+
+    this.#hint = document.createElement('p');
+    this.#hint.className = 'pagetree-facets__user-hint';
+    this.#hint.hidden = true;
+
+    results.append(this.#listbox, this.#hint);
 
     return results;
   }
@@ -167,7 +190,6 @@ class UserPicker {
     const existing = Array.isArray(state) ? (state[0] ?? '') : (state ?? '');
     const pinnedLabel = this.#pinnedLabel(existing);
     if (undefined !== pinnedLabel) {
-      this.#input.value = pinnedLabel;
       this.#input.dataset.value = existing;
       this.#input.dataset.label = pinnedLabel;
 
@@ -176,11 +198,9 @@ class UserPicker {
     if (!existing) {
       return;
     }
-    this.#input.value = existing;
     this.#input.dataset.value = existing;
     resolveUserLabel(existing).then((label) => {
       if (label && this.#input.dataset.value === existing) {
-        this.#input.value = label;
         this.#input.dataset.label = label;
         this.#deps.onLabelResolved();
       }
@@ -216,6 +236,33 @@ class UserPicker {
       // chance to register before the list disappears.
       window.setTimeout(() => this.#hide(), BLUR_HIDE_DELAY_MS);
     });
+    // The modal unsets the dataset without an event when a chip on the criteria
+    // row or Clear all drops this criterion; the chip in the field follows it.
+    new MutationObserver(() => this.#renderChip())
+      .observe(this.#input, { attributes: true, attributeFilter: ['data-value', 'data-label'] });
+  }
+
+  // The picked user as a chip with its own ×, rendered from the dataset. While
+  // a label is still being resolved, the value stands in.
+  #renderChip() {
+    const { value, label } = this.#input.dataset;
+    const picked = undefined !== value;
+    this.#chip.replaceChildren();
+    if (picked) {
+      const text = label ?? value;
+      this.#chip.append(renderChip({ prefix: '', value: text, label: text }, () => this.#clear(), { withPrefix: false }));
+    }
+    this.#input.placeholder = picked ? '' : this.#placeholder;
+  }
+
+  #clear() {
+    delete this.#input.dataset.value;
+    delete this.#input.dataset.label;
+    this.#input.value = '';
+    this.#renderChip();
+    this.#input.dispatchEvent(new Event('input', { bubbles: true }));
+    this.#input.dispatchEvent(new Event('change', { bubbles: true }));
+    this.#input.focus();
   }
 
   #onInput() {
@@ -225,7 +272,7 @@ class UserPicker {
     const query = this.#input.value.trim();
     const token = ++this.#searchToken;
     if (!this.#searchable || query.length < MIN_QUERY_LENGTH) {
-      this.#renderSuggestions([]);
+      this.#renderSuggestions([], query);
 
       return;
     }
@@ -234,7 +281,7 @@ class UserPicker {
       if (token !== this.#searchToken) {
         return; // a newer query has started since - this response is stale
       }
-      this.#renderSuggestions(users);
+      this.#renderSuggestions(users, query);
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -242,7 +289,7 @@ class UserPicker {
     if ('ArrowDown' === event.key) {
       event.preventDefault();
       if (this.#results.hidden) {
-        if (this.#results.children.length) {
+        if (this.#listbox.children.length) {
           this.#show();
         } else {
           this.#renderSuggestions([]);
@@ -266,7 +313,7 @@ class UserPicker {
   }
 
   #options() {
-    return Array.from(this.#results.querySelectorAll('[role="option"]'));
+    return Array.from(this.#listbox.querySelectorAll('[role="option"]'));
   }
 
   #setHighlighted(index) {
@@ -300,24 +347,43 @@ class UserPicker {
     }
   }
 
-  #renderSuggestions(users) {
-    this.#results.replaceChildren();
+  /**
+   * "Me" and the pinned entries first, then the results with the query marked.
+   * Below two characters the hint asks for one more, with no match it says so;
+   * "Me" stays on offer in both.
+   */
+  #renderSuggestions(users, query = '') {
+    this.#listbox.replaceChildren();
     const meEntry = this.#currentUser ? [{ value: 'me', label: this.#currentUserLabel }] : [];
-    const items = [...meEntry, ...this.#pinned, ...users];
+    const items = [...meEntry, ...this.#pinned, ...users.map((user) => ({ ...user, marked: true }))];
     items.forEach((item, index) => {
       const li = document.createElement('li');
-      li.append(this.#buildOption(item, index));
-      this.#results.append(li);
+      li.append(this.#buildOption(item, index, query));
+      this.#listbox.append(li);
     });
+    const hint = this.#hintFor(query, users);
+    this.#hint.textContent = hint;
+    this.#hint.hidden = '' === hint;
     this.#highlighted = -1;
-    if (items.length) {
+    if (items.length || '' !== hint) {
       this.#show();
     } else {
       this.#hide();
     }
   }
 
-  #buildOption(item, index) {
+  #hintFor(query, users) {
+    if (!this.#searchable || '' === query) {
+      return '';
+    }
+    if (query.length < MIN_QUERY_LENGTH) {
+      return lang('pagetreeFacets.modal.user.typeMore', 'Type one more character to search users');
+    }
+
+    return users.length ? '' : format('pagetreeFacets.modal.user.noMatch', "No user matches '%s'", query);
+  }
+
+  #buildOption(item, index, query) {
     const button = document.createElement('button');
     button.type = 'button';
     button.id = `${this.#resultsId}-option-${index}`;
@@ -330,7 +396,17 @@ class UserPicker {
     if (item.icon) {
       button.append(decorativeIcon(item.icon));
     }
-    button.append(document.createTextNode(item.label));
+    const label = document.createElement('span');
+    label.className = 'pagetree-facets__user-label';
+    label.append(item.marked ? markMatches(item.label, query) : item.label);
+    button.append(label);
+    // Still offered: pages a disabled account edited stay findable.
+    if (item.disabled) {
+      const disabled = document.createElement('span');
+      disabled.className = 'pagetree-facets__user-disabled';
+      disabled.textContent = lang('pagetreeFacets.modal.user.disabled', 'Disabled');
+      button.append(disabled);
+    }
     // Keeps focus on the input for mouse clicks too, so selecting a suggestion
     // never needs the blur/setTimeout dance to "just work".
     button.addEventListener('mousedown', (event) => event.preventDefault());
@@ -340,9 +416,10 @@ class UserPicker {
   }
 
   #select(value, label) {
-    this.#input.value = label;
+    this.#input.value = '';
     this.#input.dataset.value = value;
     this.#input.dataset.label = label;
+    this.#renderChip();
     this.#hide();
     this.#input.focus();
     this.#input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -366,6 +443,7 @@ class UserPicker {
    * Content overflowing the root's edges is clipped by .modal-body, at the bottom
    * right above the footer buttons. So the list flips above the input when it
    * does not fit below and there is more room above, and is capped to that side.
+   * It spans the whole field, chip included.
    */
   #show() {
     const root = this.#deps.getRoot();
@@ -373,30 +451,32 @@ class UserPicker {
       root.append(this.#results);
     }
     const rootRect = root.getBoundingClientRect();
-    const inputRect = this.#input.getBoundingClientRect();
+    const fieldRect = this.#element.getBoundingClientRect();
     // Positioned and sized before measuring: as an in-flow child of the root the
     // list would report a different height.
     this.#results.style.position = 'absolute';
-    this.#results.style.left = `${inputRect.left - rootRect.left}px`;
-    this.#results.style.width = `${inputRect.width}px`;
+    this.#results.style.left = `${fieldRect.left - rootRect.left}px`;
+    this.#results.style.width = `${fieldRect.width}px`;
     this.#results.style.maxHeight = '';
     this.#results.hidden = false;
     const listHeight = this.#results.getBoundingClientRect().height;
     // In a short window the root's min-height outgrows .modal-body, so its own
     // edges lie outside the visible area.
     const bodyRect = root.closest('.modal-body')?.getBoundingClientRect() ?? rootRect;
-    const spaceBelow = Math.min(rootRect.bottom, bodyRect.bottom) - inputRect.bottom - DROPDOWN_GAP_PX;
-    const spaceAbove = inputRect.top - Math.max(rootRect.top, bodyRect.top) - DROPDOWN_GAP_PX;
+    const spaceBelow = Math.min(rootRect.bottom, bodyRect.bottom) - fieldRect.bottom - DROPDOWN_GAP_PX;
+    const spaceAbove = fieldRect.top - Math.max(rootRect.top, bodyRect.top) - DROPDOWN_GAP_PX;
     const above = listHeight > spaceBelow && spaceAbove > spaceBelow;
     const space = above ? spaceAbove : spaceBelow;
     if (listHeight > space) {
       this.#results.style.maxHeight = `${space}px`;
     }
     const top = above
-      ? inputRect.top - rootRect.top - DROPDOWN_GAP_PX - Math.min(listHeight, space)
-      : inputRect.bottom - rootRect.top + DROPDOWN_GAP_PX;
+      ? fieldRect.top - rootRect.top - DROPDOWN_GAP_PX - Math.min(listHeight, space)
+      : fieldRect.bottom - rootRect.top + DROPDOWN_GAP_PX;
     this.#results.style.top = `${top}px`;
     this.#input.setAttribute('aria-expanded', 'true');
+    this.#settling = true;
+    window.requestAnimationFrame(() => { this.#settling = false; });
 
     if (null === this.#hideOnScroll) {
       // Scroll events on inner scrollable containers do not bubble - a capture
@@ -404,7 +484,7 @@ class UserPicker {
       // scrolled. The list's own scrolling (wheel, or #revealInList from the
       // arrow keys) must not close it.
       this.#hideOnScroll = (event) => {
-        if (!this.#results.contains(event.target)) {
+        if (!this.#settling && !this.#results.contains(event.target)) {
           this.#hide();
         }
       };
@@ -426,8 +506,8 @@ class UserPicker {
 }
 
 /**
- * @returns {Promise<Array<{uid: number, label: string}>>} empty on failure - a
- *   broken suggestion lookup must not break typing.
+ * @returns {Promise<Array<{uid: number, label: string, disabled: boolean}>>} empty
+ *   on failure - a broken suggestion lookup must not break typing.
  */
 async function searchUsers(query) {
   const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.typo3_pagetree_facets_users)
