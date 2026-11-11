@@ -14,6 +14,10 @@ import {
   openedModals,
   panel,
   resetHarness,
+  scopeChip,
+  scopeOptions,
+  scopeValue,
+  textSwitch,
   type,
 } from './Support/modal-harness.js';
 
@@ -165,7 +169,7 @@ describe('opening', () => {
   it('renders without a sites list at all, same as an empty one', async () => {
     const { modal } = await openModal({ configuration: configurationFixture({ sites: undefined }) });
 
-    expect(modal.querySelector('[data-role="site-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'Below "Home" [5]']);
   });
 
   it('starts the freetext field empty when the configuration carries none', async () => {
@@ -236,48 +240,63 @@ describe('opening', () => {
   });
 });
 
-describe('the scope controls', () => {
-  it('offers the site dropdown only when there is more than one site', async () => {
+describe('the scope chip', () => {
+  it('lists the sites only when there is more than one', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
     });
 
-    expect(modal.querySelector('[data-role="site-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'Below "Home" [5]']);
   });
 
-  it('preselects the site the phrase already scopes to', async () => {
+  it('reads the site the phrase already scopes to', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ activeSite: 'other' }),
     });
 
-    expect(modal.querySelector('[data-role="site-scope"]').value).toBe('other');
+    expect(scopeValue(modal)).toBe('other');
   });
 
-  it('omits the page scope where there is no page to scope to', async () => {
+  it('offers no page entry where there is no page to scope to', async () => {
     const { modal } = await openModal({ pageId: null });
 
-    expect(modal.querySelector('[data-role="page-scope"]')).toBeNull();
+    expect(scopeOptions(modal)).toEqual(['Whole tree', 'main', 'other']);
   });
 
-  it('checks the page scope when the phrase carries an under: token', async () => {
+  it('is not rendered at all without a page and with a single site', async () => {
+    const { modal } = await openModal({
+      pageId: null,
+      configuration: configurationFixture({ sites: [{ identifier: 'main' }] }),
+    });
+
+    expect(scopeChip(modal)).toBeNull();
+  });
+
+  it('reads the open page when the phrase carries an under: token', async () => {
     const { modal } = await openModal({
       configuration: configurationFixture({ pageScope: 5 }),
     });
 
-    expect(modal.querySelector('[data-role="page-scope"]').checked).toBe(true);
+    expect(scopeValue(modal)).toBe('Below "Home" [5]');
   });
 
-  it('glues the token toggle to the two fields it switches between', async () => {
+  it('leads the criteria row, ahead of the chips', async () => {
     const { modal } = await openModal();
-    const group = modal.querySelector('.pagetree-facets__search-group');
 
-    // Both fields belong to the group because they take turns - the button has
-    // to sit against whichever one is on screen.
-    expect([...group.children].map((child) => child.className.split(' ').at(-1)))
-      .toEqual(['pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__token-toggle']);
+    expect(modal.querySelector('.pagetree-facets__criteria').firstElementChild.className).toBe('pagetree-facets__scope');
+  });
+
+  it('builds the Text switch into the search field, with the help toggle outside it', async () => {
+    const { modal } = await openModal();
+    const field = modal.querySelector('.pagetree-facets__search-field');
+
+    // Both fields share the box because they take turns - the switch sits
+    // against whichever one is on screen.
+    expect([...field.children].map((child) => child.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__text-switch']);
     // Help explains the dialog rather than switching how it is edited, so it
-    // stays outside the group.
-    expect(group.querySelector('.pagetree-facets__help-toggle')).toBeNull();
+    // stays outside the field.
+    expect(field.querySelector('.pagetree-facets__help-toggle')).toBeNull();
     expect(modal.querySelector('.pagetree-facets__search > .pagetree-facets__help-toggle')).not.toBeNull();
   });
 
@@ -288,21 +307,18 @@ describe('the scope controls', () => {
     const { modal } = await openModal();
     const titleOf = (selector) => modal.querySelector(selector).title;
 
-    expect(titleOf('.pagetree-facets__copy-link')).toBe('Copies a link to this view with the current filter attached.');
-    expect(titleOf('.pagetree-facets__reset'))
-      .toBe('Removes every criterion here. The page tree keeps its current filter until you apply.');
-    expect(titleOf('.pagetree-facets__favorite-add'))
-      .toBe('Saves the current filter under a name so you can reuse it later.');
-    expect(titleOf('.pagetree-facets__token-toggle')).toBe('Shows the whole filter as editable text.');
+    expect(titleOf('.pagetree-facets__text-switch')).toBe('Shows the whole filter as editable text.');
     expect(titleOf('.pagetree-facets__help-toggle')).toBe('Explains how criteria combine and what each action does.');
-    expect(modal.querySelector('.pagetree-facets__token-toggle').getAttribute('aria-label')).toBe('Token view');
+    // Not icon-only: the word is the name, so no aria-label has to repeat it.
+    expect(textSwitch(modal).textContent.trim()).toBe('Text');
+    expect(textSwitch(modal).hasAttribute('aria-label')).toBe(false);
   });
 
   it('names the criterion a chip\'s × would drop, there being several in a row', async () => {
     const { modal } = await openModal();
     const remove = modal.querySelector('.pagetree-facets__chip-remove');
 
-    expect(remove.title).toBe('Page state: Hidden – remove filter');
+    expect(remove.title).toBe('Remove Page state: Hidden');
     expect(remove.getAttribute('aria-label')).toBe(remove.title);
   });
 
@@ -324,15 +340,62 @@ describe('the active-filter chips', () => {
     expect(navItem(modal, 'doktype').querySelector('.pagetree-facets__nav-count')).toBeNull();
   });
 
-  it('show the usage hint instead while nothing is selected', async () => {
+  it('give way to the fixed empty state while nothing is selected', async () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
 
     const { modal } = await openModal({ configuration });
 
-    expect(modal.querySelector('.pagetree-facets__chips').hidden).toBe(true);
-    expect(modal.querySelector('.pagetree-facets__hint').hidden).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria').classList.contains('is-empty')).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(false);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
+    // The scope chip stays in that state.
+    expect(scopeChip(modal)).not.toBeNull();
+  });
+
+  it('lead with the page title as a chip of its own, which empties the field when removed', async () => {
+    const { modal } = await openModal({ configuration: configurationFixture({ freetext: 'home' }) });
+    expect(chipLabels(modal)).toEqual(['Title: home', 'Page state: Hidden']);
+    // Not a facet, so no navigation item counts it.
+    expect(modal.querySelectorAll('.pagetree-facets__nav-count')).toHaveLength(1);
+
+    modal.querySelector('.pagetree-facets__chip-remove').click();
+
+    expect(modal.querySelector('[data-role="freetext"]').value).toBe('');
+    expect(modal.querySelector('.pagetree-facets__clear').hidden).toBe(true);
+    expect(chipLabels(modal)).toEqual(['Page state: Hidden']);
+    expect(applyButton(modal).disabled).toBe(false);
+  });
+
+  it('move focus to the scope chip once the last chip was removed from the keyboard', async () => {
+    const { modal } = await openModal();
+    const remove = modal.querySelector('.pagetree-facets__chip-remove');
+    remove.focus();
+
+    remove.click();
+
+    expect(document.activeElement).toBe(scopeChip(modal));
+  });
+
+  it('move focus to the page-title field instead when there is no scope chip', async () => {
+    const { modal } = await openModal({ pageId: null, configuration: configurationFixture({ sites: [{ identifier: 'main' }] }) });
+    const remove = modal.querySelector('.pagetree-facets__chip-remove');
+    remove.focus();
+
+    remove.click();
+
+    expect(scopeChip(modal)).toBeNull();
+    expect(document.activeElement).toBe(modal.querySelector('[data-role="freetext"]'));
+  });
+
+  it('grow a title chip while typing, trimmed, and drop it for blank input', async () => {
+    const { modal } = await openModal();
+
+    type(modal.querySelector('[data-role="freetext"]'), '  contact ');
+    await expect.poll(() => chipLabels(modal)).toEqual(['Title: contact', 'Page state: Hidden']);
+
+    type(modal.querySelector('[data-role="freetext"]'), '   ');
+    await expect.poll(() => chipLabels(modal)).toEqual(['Page state: Hidden']);
   });
 
   it('appear for a newly ticked option, with the tab label as prefix', async () => {
@@ -442,12 +505,12 @@ describe('the active-filter chips', () => {
     const configuration = configurationFixture();
     configuration.tabs[1].state = {};
     const { modal } = await openModal({ configuration });
-    expect(modal.querySelector('.pagetree-facets__actions').hidden).toBe(true);
+    expect(modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
 
     // Freetext alone counts - the actions act on the whole phrase, not on chips.
     type(modal.querySelector('[data-role="freetext"]'), 'contact');
 
-    await expect.poll(() => modal.querySelector('.pagetree-facets__actions').hidden).toBe(false);
+    await expect.poll(() => modal.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
   });
 });
 

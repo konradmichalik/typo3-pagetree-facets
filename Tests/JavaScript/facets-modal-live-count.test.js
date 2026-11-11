@@ -5,23 +5,20 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  configurationFixture, control, openModal, requests, resetButton, resetHarness, urls,
+  clearAllButton, configurationFixture, control, openModal, pickScope, requests, resetHarness, status, textSwitch, urls,
 } from './Support/modal-harness.js';
 
 function enableLivePreviewCount() {
   globalThis.TYPO3.settings.PagetreeFacets = { livePreviewCount: '1' };
 }
 
-function matchCount(modal) {
-  return modal.querySelector('.pagetree-facets__match-count');
+/** The settled count inside the footer's status line (see Filter/footer-status.js). */
+function countText(modal) {
+  return status(modal).querySelector('.pagetree-facets__status-count');
 }
 
 function skeleton(modal) {
-  return matchCount(modal)?.querySelector('.pagetree-facets__match-count-skeleton');
-}
-
-function text(modal) {
-  return matchCount(modal)?.querySelector('.pagetree-facets__match-count-text');
+  return status(modal).querySelector('.pagetree-facets__status-skeleton');
 }
 
 /**
@@ -44,10 +41,10 @@ beforeEach(() => {
 });
 
 describe('when the setting is off (default)', () => {
-  it('never renders the match count or requests one', async () => {
+  it('never shows a match count or requests one', async () => {
     const { modal } = await openModal({ count: 3 });
 
-    expect(matchCount(modal)).toBeNull();
+    expect(countText(modal).hidden).toBe(true);
 
     control(modal, 'doktype[doktype]', '1').click();
     await new Promise((resolve) => { setTimeout(resolve, 400); });
@@ -66,21 +63,21 @@ describe('when the setting is on', () => {
     // reopens onto an already-filtered tree, so that's what this test opens with.
     const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
 
-    await expect.poll(() => matchCount(modal)?.textContent).toBe('4 matching pages');
-    expect(matchCount(modal).hidden).toBe(false);
+    await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
+    expect(countText(modal).hidden).toBe(false);
   });
 
   it('announces the settled count politely and keeps the skeleton out of it', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
 
-    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
 
-    // The live region is the notice that stays in the DOM, not the text span that
-    // is hidden while counting: a region that is shown and hidden itself is not
-    // announced reliably.
-    expect(matchCount(modal).getAttribute('role')).toBe('status');
-    expect(matchCount(modal).getAttribute('aria-live')).toBe('polite');
+    // The live region stays in the DOM and holds the count: a region that is
+    // shown and hidden itself is not announced reliably.
+    const live = status(modal).querySelector('[role="status"]');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    expect(live.contains(countText(modal))).toBe(true);
     expect(skeleton(modal).getAttribute('aria-hidden')).toBe('true');
   });
 
@@ -94,7 +91,7 @@ describe('when the setting is on', () => {
     // synchronously before #refreshCount()'s own threshold logic gets to.
     expect(skeleton(modal).hidden).toBe(true);
 
-    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
   });
 
   it('never fires a count request or shows the skeleton when nothing is active on open', async () => {
@@ -112,21 +109,21 @@ describe('when the setting is on', () => {
     // round trip entirely, not just win a timing race against it.
     await new Promise((resolve) => { setTimeout(resolve, 400); });
     expect(calls).toBe(0);
-    expect(matchCount(modal).hidden).toBe(true);
+    expect(countText(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);
   });
 
-  it('does not show the skeleton when Reset clears the last active criterion', async () => {
+  it('does not show the skeleton when Clear all clears the last active criterion', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
-    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
 
-    resetButton(modal).click();
+    clearAllButton(modal).click();
 
     // Nothing is active anymore, so there is nothing to recompute -
     // #scheduleCountRefresh() takes its "nothing active" branch and hides the
     // notice directly, the same as the fresh-open case above.
-    expect(matchCount(modal).hidden).toBe(true);
+    expect(countText(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);
   });
 
@@ -134,22 +131,22 @@ describe('when the setting is on', () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 1 });
 
-    await expect.poll(() => matchCount(modal)?.textContent).toBe('1 matching page');
+    await expect.poll(() => countText(modal)?.textContent).toBe('1 matching page');
   });
 
   it('uses the zero label and stays visible for no matches', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 0 });
 
-    await expect.poll(() => matchCount(modal)?.textContent).toBe('No matching pages');
-    expect(matchCount(modal).hidden).toBe(false);
+    await expect.poll(() => countText(modal)?.textContent).toBe('No matching pages');
+    expect(countText(modal).hidden).toBe(false);
   });
 
   it('hides the notice when the count is null (nothing resolvable)', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: null });
 
-    await expect.poll(() => matchCount(modal)?.hidden).toBe(true);
+    await expect.poll(() => countText(modal)?.hidden).toBe(true);
   });
 
   it('debounces rapid changes into a single follow-up request', async () => {
@@ -172,7 +169,7 @@ describe('when the setting is on', () => {
   it('shows the skeleton immediately on a change, before the debounced request even fires', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 4 });
-    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('4 matching pages');
     expect(skeleton(modal).hidden).toBe(true);
 
     control(modal, 'doktype[doktype]', '1').click();
@@ -180,9 +177,8 @@ describe('when the setting is on', () => {
     // Synchronous, well before the 350ms debounce - the stale count must not
     // still be showing while a fresher one is pending, and the skeleton
     // doesn't wait for #refreshCount()'s own (much shorter) in-flight delay.
-    expect(matchCount(modal).hidden).toBe(false);
     expect(skeleton(modal).hidden).toBe(false);
-    expect(text(modal).hidden).toBe(true);
+    expect(countText(modal).hidden).toBe(true);
   });
 
   it('drops a response overtaken by a later change', async () => {
@@ -202,33 +198,33 @@ describe('when the setting is on', () => {
     });
     // The initial, undebounced population - the redundant duplicate request this
     // notice used to race against is gone, so this is the one and only call so far.
-    await expect.poll(() => matchCount(modal)?.textContent).toBe('1 matching page');
+    await expect.poll(() => countText(modal)?.textContent).toBe('1 matching page');
 
     control(modal, 'doktype[doktype]', '1').click(); // 2nd call - hangs on the gate
     await new Promise((resolve) => { setTimeout(resolve, 400); }); // let it start and hang on the gate
     control(modal, 'state[is]', 'hidden').click(); // 3rd call - resolves immediately
-    await expect.poll(() => matchCount(modal)?.textContent).toBe('2 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('2 matching pages');
 
     releaseHung();
     await new Promise((resolve) => { setTimeout(resolve, 20); });
 
-    expect(matchCount(modal).textContent).toBe('2 matching pages');
+    expect(countText(modal).textContent).toBe('2 matching pages');
   });
 
   it('hides the count while in token mode and resumes on exit', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 4 });
-    await expect.poll(() => matchCount(modal)?.hidden).toBe(false);
+    await expect.poll(() => countText(modal)?.hidden).toBe(false);
 
     // Entering token mode awaits #computePhrase() (a serialize round trip)
     // before flipping #tokenMode and hiding the notice, so this can't be a
     // synchronous assertion right after click() - poll for it like the other
     // assertions in this suite that depend on an AJAX round trip.
-    modal.querySelector('.pagetree-facets__token-toggle').click();
-    await expect.poll(() => matchCount(modal)?.hidden).toBe(true);
+    textSwitch(modal).click();
+    await expect.poll(() => countText(modal)?.hidden).toBe(true);
 
-    modal.querySelector('.pagetree-facets__token-toggle').click();
-    await expect.poll(() => matchCount(modal)?.hidden).toBe(false);
+    textSwitch(modal).click();
+    await expect.poll(() => countText(modal)?.hidden).toBe(false);
   });
 
   it('reflects the site scope and freetext, not just tab criteria', async () => {
@@ -241,8 +237,7 @@ describe('when the setting is on', () => {
     });
     await expect.poll(() => seenPayloads.length).toBeGreaterThan(0);
 
-    modal.querySelector('[data-role="site-scope"]').value = 'main';
-    modal.querySelector('[data-role="site-scope"]').dispatchEvent(new Event('change', { bubbles: true }));
+    pickScope(modal, 'main');
 
     await expect.poll(() => seenPayloads.at(-1)?.site).toBe('main');
 
@@ -256,7 +251,7 @@ describe('when the setting is on', () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ count: 5 });
 
-    await expect.poll(() => text(modal)?.textContent).toBe('5 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('5 matching pages');
     expect(skeleton(modal).hidden).toBe(true);
   });
 
@@ -275,14 +270,13 @@ describe('when the setting is on', () => {
     // states either side of it: past the threshold, before the response
     // itself resolves (~250ms), the skeleton is the visible content.
     await new Promise((resolve) => { setTimeout(resolve, 100); });
-    expect(matchCount(modal).hidden).toBe(false);
     expect(skeleton(modal).hidden).toBe(false);
-    expect(text(modal).hidden).toBe(true);
+    expect(countText(modal).hidden).toBe(true);
 
     // The response lands - skeleton is replaced by the resolved count.
-    await expect.poll(() => text(modal)?.textContent).toBe('9 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('9 matching pages');
     expect(skeleton(modal).hidden).toBe(true);
-    expect(text(modal).hidden).toBe(false);
+    expect(countText(modal).hidden).toBe(false);
   });
 
   it('reverts a shown skeleton instead of leaving it stuck when the request fails', async () => {
@@ -298,7 +292,7 @@ describe('when the setting is on', () => {
         throw new Error('simulated failure');
       },
     });
-    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('3 matching pages');
 
     control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, then fails
 
@@ -312,8 +306,8 @@ describe('when the setting is on', () => {
     // stuck on the skeleton.
     await new Promise((resolve) => { setTimeout(resolve, 200); }); // total ~700ms
     expect(skeleton(modal).hidden).toBe(true);
-    expect(text(modal).hidden).toBe(false);
-    expect(text(modal).textContent).toBe('3 matching pages');
+    expect(countText(modal).hidden).toBe(false);
+    expect(countText(modal).textContent).toBe('3 matching pages');
   });
 
   it('does not let an older, now-failing request clobber a newer one that already resolved', async () => {
@@ -333,16 +327,16 @@ describe('when the setting is on', () => {
         return 7; // 3rd call: newer, resolves fast
       },
     });
-    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('3 matching pages');
 
     control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, will fail later
     await new Promise((resolve) => { setTimeout(resolve, 400); }); // past the debounce, now in flight
     control(modal, 'state[is]', 'hidden').click(); // 3rd call supersedes it
-    await expect.poll(() => text(modal)?.textContent).toBe('7 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('7 matching pages');
 
     await new Promise((resolve) => { setTimeout(resolve, 600); }); // let the 2nd call's failure land
 
-    expect(text(modal).textContent).toBe('7 matching pages');
+    expect(countText(modal).textContent).toBe('7 matching pages');
     expect(skeleton(modal).hidden).toBe(true);
   });
 
@@ -362,20 +356,21 @@ describe('when the setting is on', () => {
         if (1 === calls) {
           return 3;
         }
-        modalRef.querySelector('.pagetree-facets__token-toggle').click();
+        textSwitch(modalRef).click();
         await new Promise((resolve) => { setTimeout(resolve, 250); });
         return 9;
       },
     });
     modalRef = modal;
-    await expect.poll(() => text(modal)?.textContent).toBe('3 matching pages');
+    await expect.poll(() => countText(modal)?.textContent).toBe('3 matching pages');
 
     control(modal, 'doktype[doktype]', '1').click(); // 2nd call: slow, toggles token mode itself
-    await expect.poll(() => matchCount(modal)?.hidden).toBe(true); // token mode's existing behavior
+    await expect.poll(() => textSwitch(modal).getAttribute('aria-pressed')).toBe('true');
+    expect(countText(modal).hidden).toBe(true); // token mode's existing behavior
 
     // Let the slow response's resolution pass - it must not reopen the notice.
     await new Promise((resolve) => { setTimeout(resolve, 300); });
-    expect(matchCount(modal).hidden).toBe(true);
+    expect(countText(modal).hidden).toBe(true);
     expect(skeleton(modal).hidden).toBe(true);
   });
 });

@@ -4,7 +4,6 @@
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
-import { decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 /**
  * Personal favorites: saved filter phrases.
@@ -74,24 +73,19 @@ export function favoriteRows(favorites, { onLoad, onRemove }) {
 }
 
 /**
- * "Save current filter" as a toggle that reveals an inline name form, so the
- * actions row it sits in stays a single tidy line of links.
+ * The inline name form behind "Save as favorite". It is opened by the actions
+ * menu and hands focus back to whatever opened it when it closes.
  *
  * @param {{onSave: (label: string) => void}} handlers
- * @returns {{toggle: HTMLElement, form: HTMLElement}} the caller places both -
- *   the toggle belongs in the actions row, the form below it.
+ * @returns {{form: HTMLElement, open: (opener: HTMLElement) => void, close: () => void}}
+ *   `close` is for the caller's own reasons (nothing savable any more) and
+ *   leaves focus alone
  */
 export function buildSaveFavoriteForm({ onSave }) {
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'pagetree-facets__favorite-add btn btn-sm btn-link d-inline-flex align-items-center gap-1';
-  toggle.append(decorativeIcon('actions-star'), document.createTextNode(TYPO3.lang?.['pagetreeFacets.modal.saveFavorite'] ?? 'Save current filter'));
-  toggle.title = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.description']
-    ?? 'Saves the current filter under a name so you can reuse it later.';
-
   const form = document.createElement('div');
   form.className = 'pagetree-facets__favorite-form';
   form.hidden = true;
+  let opener = null;
 
   const nameLabel = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.placeholder'] ?? 'Name this filter';
   const input = document.createElement('input');
@@ -114,22 +108,26 @@ export function buildSaveFavoriteForm({ onSave }) {
   cancel.title = TYPO3.lang?.['pagetreeFacets.modal.saveFavorite.cancel.description']
     ?? 'Discards the name and closes this field.';
 
-  const closeForm = () => {
+  const close = () => {
     form.hidden = true;
-    toggle.hidden = false;
     input.value = '';
+  };
+  // The user's own way out: focus must not be left on a node that just hid.
+  const leave = () => {
+    close();
+    opener?.focus();
   };
   const commit = () => {
     onSave(input.value);
-    closeForm();
+    leave();
   };
-
-  toggle.addEventListener('click', () => {
-    toggle.hidden = true;
+  const open = (from) => {
+    opener = from;
     form.hidden = false;
     input.focus();
-  });
-  cancel.addEventListener('click', closeForm);
+  };
+
+  cancel.addEventListener('click', leave);
   save.addEventListener('click', commit);
   input.addEventListener('keydown', (event) => {
     if ('Enter' === event.key) {
@@ -139,13 +137,13 @@ export function buildSaveFavoriteForm({ onSave }) {
       commit();
     } else if ('Escape' === event.key) {
       event.preventDefault();
-      closeForm();
+      leave();
     }
   });
 
   form.append(input, save, cancel);
 
-  return { toggle, form };
+  return { form, open, close };
 }
 
 /**

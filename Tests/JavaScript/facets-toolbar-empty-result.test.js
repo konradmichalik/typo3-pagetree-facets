@@ -175,7 +175,7 @@ describe('the notice actions', () => {
 
     notice().querySelectorAll('button')[0].click();
 
-    expect(modal.open).toHaveBeenCalledWith('is:hidden doktype:4', null, expect.any(Function));
+    expect(modal.open).toHaveBeenCalledWith('is:hidden doktype:4', null, expect.any(Function), '');
   });
 });
 
