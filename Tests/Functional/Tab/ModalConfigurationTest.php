@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\PagetreeFacets\Tests\Functional\Tab;
 
+use KonradMichalik\PagetreeFacets\Api\FacetInterface;
 use KonradMichalik\PagetreeFacets\Tab\{ActivityTab, ContentElementTab, DoktypeTab, LayoutTab, PageStateTab, RecordsTab, TranslationsTab};
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\CacheManager;
@@ -310,6 +311,62 @@ final class ModalConfigurationTest extends AbstractTabTestCase
             array_column($configuration['fields'][0]['options'], 'value'),
             'Languages of sites outside the web mounts must not be offered',
         );
+    }
+
+    /**
+     * The panel heading needs one sentence per facet. Raw LLL references here,
+     * like every other label: FacetsModalController translates them on the way
+     * out.
+     */
+    #[Test]
+    public function everyBuiltInFacetDescribesWhatItMatches(): void
+    {
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:';
+        $expected = [
+            ContentElementTab::class => $lll.'ce.description',
+            RecordsTab::class => $lll.'records.description',
+            ActivityTab::class => $lll.'activity.description',
+            DoktypeTab::class => $lll.'doktype.description',
+            LayoutTab::class => $lll.'layout.description',
+            PageStateTab::class => $lll.'state.description',
+            TranslationsTab::class => $lll.'translations.description',
+        ];
+
+        foreach ($expected as $class => $description) {
+            $facet = $this->get($class);
+            self::assertInstanceOf(FacetInterface::class, $facet);
+            $configuration = $facet->getModalConfiguration($this->createContext());
+
+            self::assertSame($description, $configuration['description'] ?? null, $class);
+        }
+    }
+
+    /**
+     * A facet that can end up without options says why on its navigation item.
+     * Records and Activity always carry a free-form field, so they never need a
+     * reason.
+     */
+    #[Test]
+    public function facetsThatCanBeEmptySayWhy(): void
+    {
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:';
+        $expected = [
+            ContentElementTab::class => $lll.'ce.emptyReason',
+            DoktypeTab::class => $lll.'doktype.emptyReason',
+            LayoutTab::class => $lll.'layout.emptyReason',
+            PageStateTab::class => $lll.'state.emptyReason',
+            TranslationsTab::class => $lll.'translations.emptyReason',
+            RecordsTab::class => null,
+            ActivityTab::class => null,
+        ];
+
+        foreach ($expected as $class => $reason) {
+            $facet = $this->get($class);
+            self::assertInstanceOf(FacetInterface::class, $facet);
+            $configuration = $facet->getModalConfiguration($this->createContext());
+
+            self::assertSame($reason, $configuration['emptyReason'] ?? null, $class);
+        }
     }
 
     /**

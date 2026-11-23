@@ -3,6 +3,7 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
+import { CHOICE_FIELD_TYPES } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
 /**
  * Cross-tab search over the criteria a modal currently offers.
@@ -12,7 +13,6 @@
  * match: text inputs and the user picker carry no option list to search, so they
  * are skipped rather than half-matched on their field label.
  */
-const SEARCHABLE_TYPES = ['checkbox-group', 'select', 'radio-presets'];
 
 /**
  * @param {Array<{configuration: {fields?: Array<{type: string, options?: Array<{label: string}>}>}}>} tabs
@@ -29,7 +29,7 @@ export function findFilterMatches(tabs, query) {
   const matches = [];
   for (const tab of tabs) {
     for (const field of tab.configuration.fields ?? []) {
-      if (!SEARCHABLE_TYPES.includes(field.type)) {
+      if (!CHOICE_FIELD_TYPES.includes(field.type)) {
         continue;
       }
       for (const option of field.options ?? []) {

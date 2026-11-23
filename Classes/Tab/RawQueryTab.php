@@ -84,13 +84,14 @@ final class RawQueryTab extends AbstractPagesQueryTab
     }
 
     /**
-     * @return array{fields: list<array<string, mixed>>}
+     * @return array{description?: string, emptyReason?: string, fields: list<array<string, mixed>>}
      */
     public function getModalConfiguration(FilterContext $context): array
     {
         $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:raw.';
 
         return [
+            'description' => $lll.'description',
             'fields' => [
                 ['type' => 'text', 'name' => 'raw', 'label' => $lll.'expression', 'placeholder' => $lll.'expression.placeholder', 'options' => []],
             ],

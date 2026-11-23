@@ -193,6 +193,16 @@ final class FormTabTest extends AbstractTabTestCase
         self::assertSame('LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:group.forms', $tab->getGroup());
     }
 
+    #[Test]
+    public function modalConfigurationDescribesTheFacetAndSaysWhyItCanBeEmpty(): void
+    {
+        $configuration = $this->get(FormTab::class)->getModalConfiguration($this->createContext());
+        $lll = 'LLL:EXT:typo3_pagetree_facets/Resources/Private/Language/locallang.xlf:form.';
+
+        self::assertSame($lll.'description', $configuration['description'] ?? null);
+        self::assertSame($lll.'emptyReason', $configuration['emptyReason'] ?? null);
+    }
+
     /**
      * Creates a real local file storage, adds a form definition file to it,
      * points fixture content #300 at the resulting combined identifier, and
