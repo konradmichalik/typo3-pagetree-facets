@@ -8,7 +8,7 @@ import Notification from '@typo3/backend/notification.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import { addFavorite, buildSaveFavoriteForm, favoriteRows, removeFavoriteAt } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
-import { renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
+import { clearChoice, renderField } from '@konradmichalik/pagetree-facets/Filter/fields.js';
 import { findFilterMatches } from '@konradmichalik/pagetree-facets/Filter/filter-search.js';
 import { clearable, decorativeIcon } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { renderHelp, renderHelpToggle, renderHint } from '@konradmichalik/pagetree-facets/Filter/guidance.js';
@@ -147,7 +147,7 @@ class FacetsModal {
       additionalCssClasses: ['pagetree-facets-modal'],
       buttons: [
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.close'] ?? 'Close',
+          text: TYPO3.lang?.['pagetreeFacets.modal.cancel'] ?? 'Cancel',
           btnClass: 'btn-default',
           icon: 'actions-close',
           trigger: () => { this.#modal?.hideModal(); },
@@ -1145,7 +1145,7 @@ class FacetsModal {
       if (input.tagName === 'SELECT') {
         Array.from(input.options).forEach((option) => { option.selected = false; });
       } else if (input.type === 'checkbox' || input.type === 'radio') {
-        input.checked = false;
+        clearChoice(input);
       } else {
         input.value = '';
         delete input.dataset.value;
@@ -1222,12 +1222,13 @@ class FacetsModal {
               criteria.push(this.#criterion(prefix, tab, option.textContent.trim() || option.value, () => { option.selected = false; }));
             }
           } else if (input.type === 'checkbox' || input.type === 'radio') {
-            if (input.checked) {
+            // Not the neutral option ("Any time"): it is the absence of a criterion.
+            if (input.checked && '' !== input.value) {
               // Scoped to the dedicated label span, not the whole <label>'s
               // textContent - that would also pick up the visually-hidden
               // option-description span (see optionHelp in Filter/form-controls.js).
               const label = input.closest('label')?.querySelector('.pagetree-facets__option-label')?.textContent.trim() || input.value;
-              criteria.push(this.#criterion(prefix, tab, label, () => { input.checked = false; }));
+              criteria.push(this.#criterion(prefix, tab, label, () => { clearChoice(input); }));
             }
           } else if (this.#effectiveValue(input).trim() !== '') {
             const label = input.dataset.label || input.value.trim();
@@ -1279,6 +1280,10 @@ class FacetsModal {
     this.#countNotice = document.createElement('p');
     this.#countNotice.className = 'pagetree-facets__match-count';
     this.#countNotice.hidden = true;
+    // The notice is the live region, not the span inside it: the span is hidden
+    // while counting, and a region that is shown and hidden is announced unreliably.
+    this.#countNotice.setAttribute('role', 'status');
+    this.#countNotice.setAttribute('aria-live', 'polite');
     // Static, not state-dependent (unlike the text/skeleton toggle below) -
     // the magnifying glass reads as "search result count" regardless of
     // whether the resolved text or the loading skeleton is showing next to it.
@@ -1346,13 +1351,14 @@ class FacetsModal {
         {
           // ESC and the backdrop close only the confirmation, which lands on this
           // same branch - the safe one - and leaves the filter modal open.
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.back'] ?? 'Back',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.back'] ?? 'Keep editing',
           btnClass: 'btn-default',
           trigger: () => { confirmation.hideModal(); },
         },
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.discard'] ?? 'Discard',
-          btnClass: 'btn-warning',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.discard'] ?? 'Discard selection',
+          // Neutral: discarding loses nothing that cannot be picked again.
+          btnClass: 'btn-default',
           trigger: () => {
             confirmation.hideModal();
             // Without this the guard would intercept the second attempt as well.
@@ -1361,7 +1367,7 @@ class FacetsModal {
           },
         },
         {
-          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply & close',
+          text: TYPO3.lang?.['pagetreeFacets.modal.pendingConfirm.apply'] ?? 'Apply and close',
           btnClass: 'btn-primary',
           // #serializeAndApply() closes the modal and bypasses the guard itself.
           trigger: () => {
@@ -1605,7 +1611,7 @@ class FacetsModal {
           if (input.tagName === 'SELECT') {
             values.push(...Array.from(input.selectedOptions).map((o) => o.value));
           } else if (input.type === 'checkbox' || input.type === 'radio') {
-            if (input.checked) {
+            if (input.checked && '' !== input.value) {
               values.push(input.value);
             }
           } else if (this.#effectiveValue(input) !== '') {

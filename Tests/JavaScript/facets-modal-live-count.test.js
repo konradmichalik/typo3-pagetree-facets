@@ -70,6 +70,20 @@ describe('when the setting is on', () => {
     expect(matchCount(modal).hidden).toBe(false);
   });
 
+  it('announces the settled count politely and keeps the skeleton out of it', async () => {
+    enableLivePreviewCount();
+    const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });
+
+    await expect.poll(() => text(modal)?.textContent).toBe('4 matching pages');
+
+    // The live region is the notice that stays in the DOM, not the text span that
+    // is hidden while counting: a region that is shown and hidden itself is not
+    // announced reliably.
+    expect(matchCount(modal).getAttribute('role')).toBe('status');
+    expect(matchCount(modal).getAttribute('aria-live')).toBe('polite');
+    expect(skeleton(modal).getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('does not flash the skeleton on open before the initial count settles', async () => {
     enableLivePreviewCount();
     const { modal } = await openModal({ phrase: 'doktype:1', count: 4, configuration: hydratingDoktypeFixture('doktype:1') });

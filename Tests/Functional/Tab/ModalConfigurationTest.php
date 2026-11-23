@@ -107,6 +107,18 @@ final class ModalConfigurationTest extends AbstractTabTestCase
     }
 
     #[Test]
+    public function activityPresetsAreWordedForTheirOwnField(): void
+    {
+        $configuration = $this->get(ActivityTab::class)->getModalConfiguration($this->createContext());
+        $fields = array_column($configuration['fields'], null, 'name');
+        $labelOf = static fn (array $field, string $value): string => array_column($field['options'], 'label', 'value')[$value];
+
+        self::assertStringEndsWith(':activity.preset.6m.>', $labelOf($fields['updated'], '>6m'));
+        self::assertStringEndsWith(':activity.created.preset.6m.>', $labelOf($fields['created'], '>6m'));
+        self::assertStringEndsWith(':activity.created.preset.7d.<', $labelOf($fields['created'], '<7d'));
+    }
+
+    #[Test]
     public function userPickersSearchOnlyWithBeUsersListingPermission(): void
     {
         $searchable = static fn (array $configuration): array => array_column(

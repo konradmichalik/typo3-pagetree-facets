@@ -6,6 +6,8 @@
 			<trans-unit id="pagetreeFacets.toolbar.buttonLabel"><source>%s (Ctrl/Cmd+Shift+L)</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.anyTime"><source>Any time</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.cancel"><source>Cancel</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source></trans-unit>
@@ -25,9 +27,9 @@
 			<trans-unit id="pagetreeFacets.modal.matchCount.other"><source>%d matching pages</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.title"><source>Selection not applied</source></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.message"><source>You picked filter criteria but never applied them, so the page tree is unchanged.</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply &amp; close</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard</source></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Back</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply and close</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard selection</source></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Keep editing</source></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.text"><source>No pages match the current filter.</source></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.reset"><source>Reset filter</source></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.adjust"><source>Adjust filter</source></trans-unit>
@@ -106,6 +108,12 @@
 			<trans-unit id="activity.preset.1y.&lt;"><source>Within the last year</source></trans-unit>
 			<trans-unit id="activity.preset.6m.&gt;"><source>Untouched for more than 6 months</source></trans-unit>
 			<trans-unit id="activity.preset.1y.&gt;"><source>Untouched for more than a year</source></trans-unit>
+			<trans-unit id="activity.created.preset.7d.&lt;"><source>Within the last 7 days</source></trans-unit>
+			<trans-unit id="activity.created.preset.30d.&lt;"><source>Within the last 30 days</source></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&lt;"><source>Within the last 6 months</source></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&lt;"><source>Within the last year</source></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&gt;"><source>Created more than 6 months ago</source></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&gt;"><source>Created more than a year ago</source></trans-unit>
 			<trans-unit id="state.empty"><source>Without content elements</source></trans-unit>
 			<trans-unit id="state.empty.description"><source>No tt_content records on the page - hidden elements still count as content.</source></trans-unit>
 			<trans-unit id="state.restricted"><source>Access restricted</source></trans-unit>

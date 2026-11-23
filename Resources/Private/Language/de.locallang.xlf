@@ -6,6 +6,8 @@
 			<trans-unit id="pagetreeFacets.toolbar.buttonLabel"><source>%s (Ctrl/Cmd+Shift+L)</source><target>%s (Strg/Cmd+Umschalt+L)</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.apply"><source>Apply</source><target>Anwenden</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.reset"><source>Reset</source><target>Zurücksetzen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.anyTime"><source>Any time</source><target>Beliebig</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.cancel"><source>Cancel</source><target>Abbrechen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.close"><source>Close</source><target>Schließen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.allSites"><source>All sites</source><target>Alle Websites</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.freetext"><source>Page title or UID</source><target>Seitentitel oder UID</target></trans-unit>
@@ -25,9 +27,9 @@
 			<trans-unit id="pagetreeFacets.modal.matchCount.other"><source>%d matching pages</source><target>%d übereinstimmende Seiten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.title"><source>Selection not applied</source><target>Auswahl nicht angewendet</target></trans-unit>
 			<trans-unit id="pagetreeFacets.modal.pendingConfirm.message"><source>You picked filter criteria but never applied them, so the page tree is unchanged.</source><target>Du hast Filterkriterien ausgewählt, diese aber nicht angewendet, sodass der Seitenbaum unverändert bleibt.</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply &amp; close</source><target>Anwenden &amp; schließen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard</source><target>Verwerfen</target></trans-unit>
-			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Back</source><target>Zurück</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.apply"><source>Apply and close</source><target>Anwenden und schließen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.discard"><source>Discard selection</source><target>Auswahl verwerfen</target></trans-unit>
+			<trans-unit id="pagetreeFacets.modal.pendingConfirm.back"><source>Keep editing</source><target>Weiter bearbeiten</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.text"><source>No pages match the current filter.</source><target>Keine Seiten entsprechen dem aktuellen Filter.</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.reset"><source>Reset filter</source><target>Filter zurücksetzen</target></trans-unit>
 			<trans-unit id="pagetreeFacets.empty.adjust"><source>Adjust filter</source><target>Filter anpassen</target></trans-unit>
@@ -106,6 +108,12 @@
 			<trans-unit id="activity.preset.1y.&lt;"><source>Within the last year</source><target>Innerhalb des letzten Jahres</target></trans-unit>
 			<trans-unit id="activity.preset.6m.&gt;"><source>Untouched for more than 6 months</source><target>Seit mehr als 6 Monaten unberührt</target></trans-unit>
 			<trans-unit id="activity.preset.1y.&gt;"><source>Untouched for more than a year</source><target>Seit mehr als einem Jahr unberührt</target></trans-unit>
+			<trans-unit id="activity.created.preset.7d.&lt;"><source>Within the last 7 days</source><target>Innerhalb der letzten 7 Tage</target></trans-unit>
+			<trans-unit id="activity.created.preset.30d.&lt;"><source>Within the last 30 days</source><target>Innerhalb der letzten 30 Tage</target></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&lt;"><source>Within the last 6 months</source><target>Innerhalb der letzten 6 Monate</target></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&lt;"><source>Within the last year</source><target>Innerhalb des letzten Jahres</target></trans-unit>
+			<trans-unit id="activity.created.preset.6m.&gt;"><source>Created more than 6 months ago</source><target>Vor mehr als 6 Monaten erstellt</target></trans-unit>
+			<trans-unit id="activity.created.preset.1y.&gt;"><source>Created more than a year ago</source><target>Vor mehr als einem Jahr erstellt</target></trans-unit>
 			<trans-unit id="state.empty"><source>Without content elements</source><target>Ohne Inhaltselemente</target></trans-unit>
 			<trans-unit id="state.empty.description"><source>No tt_content records on the page - hidden elements still count as content.</source><target>Keine tt_content-Datensätze auf der Seite – verborgene Elemente zählen weiterhin als Inhalt.</target></trans-unit>
 			<trans-unit id="state.restricted"><source>Access restricted</source><target>Zugriff beschränkt</target></trans-unit>
