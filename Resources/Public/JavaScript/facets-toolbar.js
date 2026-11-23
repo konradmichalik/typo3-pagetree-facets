@@ -350,6 +350,14 @@ class FacetsToolbar {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
+  // The tree marks the open page as selected and shows its title in that
+  // node; the modal's scope list names the page by it. Empty until the tree
+  // has rendered the node, in which case the list falls back to the uid.
+  #currentPageTitle() {
+    return document.querySelector(this.#treeSelector)
+      ?.querySelector('.node-selected .node-name')?.textContent.trim() ?? '';
+  }
+
   // Busy rather than `disabled`: disabling moves focus to the body before the
   // dialog opens, so ESC would return a keyboard user nowhere. FacetsModal
   // guards the second modal; #opening only protects the busy state.
@@ -368,7 +376,7 @@ class FacetsToolbar {
           input.dispatchEvent(new Event('input', { bubbles: true }));
         }
         this.#updateBadge();
-      });
+      }, this.#currentPageTitle());
     } finally {
       this.#opening = false;
       button?.removeAttribute('aria-busy');

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { appendRichText, clearable, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
+import { appendRichText, clearable, lang, optionHelp, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 
 const textInput = (value = '') => {
   const input = document.createElement('input');
@@ -94,6 +94,21 @@ describe('optionHelp', () => {
     optionHelp(second, 'b');
 
     expect(first.getAttribute('aria-describedby')).not.toBe(second.getAttribute('aria-describedby'));
+  });
+});
+
+describe('lang', () => {
+  it('prefers the loaded label and falls back to the English text', () => {
+    globalThis.TYPO3.lang['pagetreeFacets.modal.clear'] = 'Leeren';
+
+    expect(lang('pagetreeFacets.modal.clear', 'Clear')).toBe('Leeren');
+    expect(lang('pagetreeFacets.modal.missing', 'Fallback')).toBe('Fallback');
+  });
+
+  it('copes without any labels loaded', () => {
+    globalThis.TYPO3 = {};
+
+    expect(lang('pagetreeFacets.modal.clear', 'Clear')).toBe('Clear');
   });
 });
 

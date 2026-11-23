@@ -1,0 +1,161 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
+
+/*
+ * The open/close plumbing the scope list and the actions menu share. What the
+ * panel does while open (arrow keys, selection) is each caller's business.
+ */
+
+const mount = (onOpen = vi.fn()) => {
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  const panel = document.createElement('div');
+  panel.hidden = true;
+  const inside = document.createElement('button');
+  inside.type = 'button';
+  panel.append(inside);
+  const outside = document.createElement('button');
+  outside.type = 'button';
+  document.body.replaceChildren(trigger, panel, outside);
+  const popover = attachPopover({ trigger, panel, onOpen });
+
+  return { trigger, panel, inside, outside, popover, onOpen };
+};
+
+beforeEach(() => {
+  document.body.replaceChildren();
+});
+
+describe('attachPopover', () => {
+  it('starts closed and says so on the trigger', () => {
+    const { trigger, panel } = mount();
+
+    expect(panel.hidden).toBe(true);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('toggles on the trigger and reports each opening', () => {
+    const { trigger, panel, onOpen } = mount();
+
+    trigger.click();
+    expect(panel.hidden).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(onOpen).toHaveBeenCalledTimes(1);
+
+    trigger.click();
+    expect(panel.hidden).toBe(true);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes on Escape and hands focus back to the trigger, keeping the key from the modal', () => {
+    const { trigger, panel, inside } = mount();
+    trigger.click();
+    inside.focus();
+    const reachedModal = vi.fn();
+    document.body.addEventListener('keydown', reachedModal);
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    inside.dispatchEvent(event);
+
+    expect(panel.hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(reachedModal).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('closes on Escape while the trigger itself has focus, keeping the key from the modal', () => {
+    const { trigger, panel } = mount();
+    trigger.click();
+    trigger.focus();
+    const reachedModal = vi.fn();
+    document.body.addEventListener('keydown', reachedModal);
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    trigger.dispatchEvent(event);
+
+    expect(panel.hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(reachedModal).not.toHaveBeenCalled();
+  });
+
+  it('lets Escape on the trigger through to the modal once closed', () => {
+    const { trigger, popover } = mount();
+    trigger.click();
+    popover.close();
+    const reachedModal = vi.fn();
+    document.body.addEventListener('keydown', reachedModal);
+
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+    expect(reachedModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on a pointer press outside, leaving focus where the press went', () => {
+    const { trigger, panel, outside } = mount();
+    trigger.click();
+
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    expect(panel.hidden).toBe(true);
+    expect(document.activeElement).not.toBe(trigger);
+  });
+
+  it('stays open on a pointer press inside the panel or on the trigger', () => {
+    const { trigger, panel, inside } = mount();
+    trigger.click();
+
+    inside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    trigger.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    expect(panel.hidden).toBe(false);
+  });
+
+  it('closes once focus leaves the panel for somewhere else', () => {
+    const { panel, inside, outside, trigger } = mount();
+    trigger.click();
+    inside.focus();
+
+    inside.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+
+    expect(panel.hidden).toBe(true);
+  });
+
+  it('does not treat focus moving within the panel, or to nowhere, as leaving', () => {
+    const { panel, inside, trigger } = mount();
+    trigger.click();
+
+    inside.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: inside }));
+    inside.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+
+    expect(panel.hidden).toBe(false);
+  });
+
+  it('drops its document listener when closed, so a later press outside is nobody\'s business', () => {
+    const { trigger, panel, popover, outside } = mount();
+    trigger.click();
+    popover.close();
+    panel.hidden = false; // reopened by hand, without the popover knowing
+
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    expect(panel.hidden).toBe(false);
+  });
+
+  it('ignores a second show while already open, so onOpen runs once', () => {
+    // The scope chip's ArrowDown calls show() whether or not the list is open.
+    const { panel, popover, onOpen } = mount();
+
+    popover.show();
+    popover.show();
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(panel.hidden).toBe(false);
+  });
+
+  it('is a no-op to close while already closed', () => {
+    const { popover, trigger } = mount();
+
+    expect(() => popover.close()).not.toThrow();
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+});

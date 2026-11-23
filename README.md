@@ -85,7 +85,7 @@ the global backend search.
 
 | Topic | What's inside |
 |---|---|
-| [Usage](Documentation/USAGE.md) | Token syntax, the Token view toggle, every built-in facet's token keys, and scope tokens |
+| [Usage](Documentation/USAGE.md) | Token syntax, the Text switch and the criteria row, every built-in facet's token keys, and scope tokens |
 | [Configuration](Documentation/CONFIGURATION.md) | Extension settings, the `raw:` power-user token, and per-user/group control via User TSconfig |
 | [Known Limitations](Documentation/LIMITATIONS.md) | Scopes as a post-filter, layout inheritance, page permissions, and freetext-with-token search behaviour |
 | [Extending](Documentation/EXTENDING.md) | The two extension points, the `example_tab` fixture, and the public API / stability promise |

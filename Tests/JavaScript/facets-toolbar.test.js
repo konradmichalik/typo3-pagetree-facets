@@ -308,23 +308,28 @@ describe('the criteria badge', () => {
 });
 
 describe('opening the modal', () => {
-  it('hands over the current phrase and the page currently open', async () => {
+  it('hands over the current phrase, the page currently open and its title from the tree', async () => {
     await loadToolbarAt('/typo3/module/web/layout?id=42');
     const modal = await facetsModal();
     filterBy('is:hidden');
+    // The core tree's own markup for the selected node (see tree/tree.js).
+    document.querySelector('typo3-backend-navigation-component-pagetree-tree').innerHTML = `
+      <div class="node"><span class="node-contentlabel"><div class="node-name">Products</div></span></div>
+      <div class="node node-selected"><span class="node-contentlabel"><div class="node-name"> Home </div></span></div>
+    `;
 
     toggleButton().click();
 
-    expect(modal.open).toHaveBeenCalledWith('is:hidden', 42, expect.any(Function));
+    expect(modal.open).toHaveBeenCalledWith('is:hidden', 42, expect.any(Function), 'Home');
   });
 
-  it('reports no page id where the URL carries none', async () => {
+  it('reports no page id where the URL carries none, and no title before the tree has one', async () => {
     await loadToolbarAt('/typo3/module/web/layout');
     const modal = await facetsModal();
 
     toggleButton().click();
 
-    expect(modal.open).toHaveBeenCalledWith('', null, expect.any(Function));
+    expect(modal.open).toHaveBeenCalledWith('', null, expect.any(Function), '');
   });
 
   it('is reachable by the registered hotkey too', async () => {
@@ -391,7 +396,7 @@ describe('opening the modal', () => {
     toggleButton().click();
     await Promise.resolve();
 
-    expect(modal.open).toHaveBeenCalledWith('', null, expect.any(Function));
+    expect(modal.open).toHaveBeenCalledWith('', null, expect.any(Function), '');
     expect(() => modal.open.mock.calls[0][2]('is:hidden')).not.toThrow();
   });
 

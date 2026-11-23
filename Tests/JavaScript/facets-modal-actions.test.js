@@ -5,11 +5,13 @@ import {
   applyButton,
   chipLabels,
   configurationFixture,
+  menuItem,
   navItem,
   openModal,
   panel,
   requests,
   resetHarness,
+  statusText,
   urls,
 } from './Support/modal-harness.js';
 
@@ -24,7 +26,7 @@ const saved = [{ label: 'Hidden pages', tokenString: 'is:hidden', criteria: ['Pa
 const favoritesItem = (modal) => navItem(modal, '__favorites').closest('li');
 
 const saveFavorite = (modal, label) => {
-  modal.querySelector('.pagetree-facets__favorite-add').click();
+  menuItem(modal, 'Save as favorite').click();
   const form = modal.querySelector('.pagetree-facets__favorite-form');
   form.querySelector('input').value = label;
   form.querySelector('.btn-primary').click();
@@ -69,7 +71,7 @@ describe('the favorites tab', () => {
     expect(document.body.contains(modal)).toBe(true);
     expect(onApply).not.toHaveBeenCalled();
     expect(applyButton(modal).disabled).toBe(false);
-    expect(modal.querySelector('.pagetree-facets__pending').hidden).toBe(false);
+    expect(statusText(modal)).toBe('Not applied to the tree yet');
   });
 
   it('applies what was loaded once Apply confirms it', async () => {
@@ -220,7 +222,7 @@ describe('copy link', () => {
   it('copies the current view with the phrase attached', async () => {
     const { modal } = await openModal();
 
-    modal.querySelector('.pagetree-facets__copy-link').click();
+    menuItem(modal, 'Copy link to this filter').click();
 
     await expect.poll(() => writeText).toHaveBeenCalled();
     const copied = new URL(writeText.mock.calls[0][0]);
@@ -238,7 +240,7 @@ describe('copy link', () => {
     writeText.mockRejectedValue(new Error('denied'));
     const { modal } = await openModal();
 
-    modal.querySelector('.pagetree-facets__copy-link').click();
+    menuItem(modal, 'Copy link to this filter').click();
 
     await expect.poll(() => shownNotifications()).toEqual([{
       severity: 'error',

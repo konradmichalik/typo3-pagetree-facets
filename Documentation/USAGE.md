@@ -1,12 +1,22 @@
 # Usage
 
-## Token view
+## Text mode
 
-Prefer typing? The **Token view** toggle (top bar of the filter modal) swaps the
-freetext field for the full filter phrase, kept in two-way sync with the form:
-edit either side and the other follows. Note that editing the form re-serialises
-the phrase, so tokens the form cannot represent survive only while you stay in
-the field.
+Prefer typing? The **Text** switch at the trailing edge of the search field
+swaps the page-title field for the full filter phrase, kept in two-way sync with
+the form: edit either side and the other follows. Note that editing the form
+re-serialises the phrase, so tokens the form cannot represent survive only while
+you stay in the field.
+
+## The criteria row
+
+Everything picked is listed in one row under the search field: the scope chip
+`In: Whole tree` first (it offers the page you have open and, with more than one
+site, each site), then one chip per value, `Title: <text>` for the page title
+among them. `Clear all` empties the selection without leaving the dialog, and
+the actions menu next to it saves the filter as a favorite or copies a link to
+it. Nothing reaches the page tree before you choose Apply; the footer status
+says whether the selection is applied and how many pages it matches.
 
 ## Token syntax
 
