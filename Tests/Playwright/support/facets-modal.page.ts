@@ -72,6 +72,31 @@ export class FacetsModalPage {
     return this.panel(tab).locator('.pagetree-facets__select-none');
   }
 
+  /** The criterion search field in the navigation (see Filter/search-results.js). */
+  searchField(): Locator {
+    return this.page.locator(`${MODAL} [data-role="filter-search"]`);
+  }
+
+  /** The result view that replaces the panels while the search has text. */
+  searchResults(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__search-results`);
+  }
+
+  /** The live heading `<n> criteria match “<query>”`. */
+  searchHeading(): Locator {
+    return this.searchResults().locator('.pagetree-facets__search-heading');
+  }
+
+  /** The matches per facet shown in the navigation while searching. */
+  navMatches(tab: string): Locator {
+    return this.navItem(tab).locator('.pagetree-facets__nav-matches');
+  }
+
+  /** The warning under the criteria row while the count is 0 (see Filter/no-match-callout.js). */
+  noMatchCallout(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__no-match`);
+  }
+
   /** `How filtering works`, pinned under the navigation list (see Filter/guidance.js). */
   helpLink(): Locator {
     return this.page.locator(`${MODAL} .pagetree-facets__help-link`);
@@ -102,16 +127,24 @@ export class FacetsModalPage {
     return this.page.locator(`${MODAL} input[name="${tab}[${field}]"][value="${value}"]`);
   }
 
+  /** The chips on the row, the hidden ones behind `+N more` included. */
   chips(): Locator {
-    return this.page.locator(`${MODAL} .pagetree-facets__chip`);
+    return this.page.locator(`${MODAL} .pagetree-facets__chips .pagetree-facets__chip`);
   }
 
   async chipLabels(): Promise<string[]> {
-    const labels = await this.page
-      .locator(`${MODAL} .pagetree-facets__chip .pagetree-facets__chip-label`)
-      .allTextContents();
+    const labels = await this.chips().locator('.pagetree-facets__chip-label').allTextContents();
 
     return labels.map((label) => label.trim());
+  }
+
+  /** `+N more`, shown once the chips would take more than two rows (see Filter/criteria-overflow.js). */
+  overflowButton(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__overflow-button`);
+  }
+
+  overflowPopover(): Locator {
+    return this.page.locator(`${MODAL} .pagetree-facets__overflow-panel`);
   }
 
   freetextField(): Locator {

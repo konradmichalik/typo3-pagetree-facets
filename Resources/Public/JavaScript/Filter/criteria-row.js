@@ -3,6 +3,8 @@
  *
  * (c) 2026 Konrad Michalik <hej@konradmichalik.dev>
  */
+import { renderChip } from '@konradmichalik/pagetree-facets/Filter/chip.js';
+import { buildCriteriaOverflow } from '@konradmichalik/pagetree-facets/Filter/criteria-overflow.js';
 import { buildSaveFavoriteForm } from '@konradmichalik/pagetree-facets/Filter/favorites.js';
 import { clearable, decorativeIcon, lang, uniqueId } from '@konradmichalik/pagetree-facets/Filter/form-controls.js';
 import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js';
@@ -14,17 +16,20 @@ import { attachPopover } from '@konradmichalik/pagetree-facets/Filter/popover.js
  */
 
 /**
- * The row under the search field: the scope chip, one chip per picked value,
- * `Clear all` and the actions menu, or a fixed empty state without chips. The
- * actions follow whether anything is savable, which a scope alone already is.
+ * The row under the search field: the scope chip, one chip per picked value
+ * (two rows at most, the rest behind `+N more`), `Clear all` and the actions
+ * menu, or a fixed empty state without chips. The actions follow whether
+ * anything is savable, which a scope alone already is.
  *
- * @param {{scope: HTMLElement|null, onClearAll: () => void, onSaveFavorite: (label: string) => void,
- *   onCopyLink: () => void, focusFallback: () => void}} options - `focusFallback` takes
- *   the focus when the row has no chip left to hand it to
- * @returns {{element: HTMLElement, update: (state: {chips: HTMLElement[], savable: boolean}) => void,
- *   close: () => void}}
+ * @param {{scope: HTMLElement|null, onRemove: (criterion: object) => void, onClearAll: () => void,
+ *   onSaveFavorite: (label: string) => void, onCopyLink: () => void, focusFallback: () => void,
+ *   measure?: Function, observe?: Function}} options - `focusFallback` takes the focus
+ *   when the row has no chip left to hand it to; `measure` and `observe` go to the
+ *   overflow (see Filter/criteria-overflow.js)
+ * @returns {{element: HTMLElement, update: (state: {criteria: Array<{prefix: string, value: string, label: string}>,
+ *   savable: boolean}) => void, close: () => void}}
  */
-export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink, focusFallback }) {
+export function buildCriteriaRow({ scope, onRemove, onClearAll, onSaveFavorite, onCopyLink, focusFallback, measure, observe }) {
   const criteria = document.createElement('div');
   criteria.className = 'pagetree-facets__criteria is-empty';
   if (scope) {
@@ -33,6 +38,7 @@ export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink
 
   const chips = document.createElement('div');
   chips.className = 'pagetree-facets__chips';
+  criteria.append(chips);
 
   const empty = document.createElement('p');
   empty.className = 'pagetree-facets__criteria-empty';
@@ -56,17 +62,23 @@ export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink
   });
   actions.append(clearAll, menu.element);
 
-  criteria.append(chips, empty, actions);
+  // The popover closing under the focus hands it to the last chip on the row.
+  const overflow = buildCriteriaOverflow({
+    chips, actions, onRemove, onClearAll, measure, observe,
+    onFocusLost: () => focusChip([...chips.children], Infinity, focusFallback, overflow),
+  });
+  criteria.append(overflow.element, empty, actions);
   const element = document.createElement('div');
   element.className = 'pagetree-facets__criteria-row';
   element.append(criteria, saveForm.form);
 
   return {
     element,
-    update: ({ chips: nodes, savable }) => {
+    update: ({ criteria: picked, savable }) => {
       // Read before the rebuild destroys the focused × or hides Clear all.
       const focusedChip = [...chips.children].findIndex((chip) => chip.contains(document.activeElement));
       const focusedAction = actions.contains(document.activeElement);
+      const nodes = picked.map((criterion) => renderChip(criterion, () => onRemove(criterion)));
       chips.replaceChildren(...nodes);
       criteria.classList.toggle('is-empty', 0 === nodes.length);
       empty.hidden = nodes.length > 0;
@@ -75,23 +87,32 @@ export function buildCriteriaRow({ scope, onClearAll, onSaveFavorite, onCopyLink
         menu.close();
         saveForm.close();
       }
+      overflow.update(picked);
       if (focusedChip >= 0) {
-        focusChip(nodes, focusedChip, focusFallback);
+        focusChip(nodes, focusedChip, focusFallback, overflow);
       } else if (focusedAction && !savable) {
         focusFallback();
       }
     },
-    close: () => menu.close(),
+    close: () => {
+      menu.close();
+      overflow.close();
+    },
   };
 }
 
-/** The × of the chip now at `index`, else of the last chip, else the fallback. */
-function focusChip(nodes, index, focusFallback) {
+/**
+ * The × of the chip now at `index`, else of the last chip, else the fallback.
+ * A chip that went behind `+N more` hands the focus to that button instead.
+ */
+function focusChip(nodes, index, focusFallback, overflow) {
   const chip = nodes[Math.min(index, nodes.length - 1)];
-  if (chip) {
-    chip.querySelector('.pagetree-facets__chip-remove').focus();
-  } else {
+  if (!chip) {
     focusFallback();
+  } else if (chip.hidden) {
+    overflow.focusButton();
+  } else {
+    chip.querySelector('.pagetree-facets__chip-remove').focus();
   }
 }
 
@@ -242,43 +263,4 @@ function buildTextSwitch(onToggle) {
   button.addEventListener('click', onToggle);
 
   return button;
-}
-
-/**
- * One picked value as `<Facet>: <value>` with a × that removes it.
- *
- * @param {{prefix: string, value: string, label: string}} criterion - `label` is
- *   the joined form, the chip's accessible name
- * @param {() => void} onRemove
- * @returns {HTMLElement}
- */
-export function renderChip(criterion, onRemove) {
-  const chip = document.createElement('span');
-  chip.className = 'pagetree-facets__chip';
-  // The value gets the ellipsis, so the whole text stays one hover away.
-  chip.title = criterion.label;
-
-  const text = document.createElement('span');
-  text.className = 'pagetree-facets__chip-label';
-  const prefix = document.createElement('span');
-  prefix.className = 'pagetree-facets__chip-prefix';
-  prefix.textContent = `${criterion.prefix}:`;
-  const value = document.createElement('span');
-  value.className = 'pagetree-facets__chip-value';
-  value.textContent = criterion.value;
-  text.append(prefix, document.createTextNode(' '), value);
-
-  const remove = document.createElement('button');
-  remove.type = 'button';
-  remove.className = 'pagetree-facets__chip-remove';
-  // A function replacer, so `$&` in a page title is not expanded.
-  const removeLabel = lang('pagetreeFacets.modal.removeCriterion', 'Remove %s').replace('%s', () => criterion.label);
-  remove.setAttribute('aria-label', removeLabel);
-  remove.title = removeLabel;
-  remove.textContent = '×';
-  remove.addEventListener('click', onRemove);
-
-  chip.append(text, remove);
-
-  return chip;
 }

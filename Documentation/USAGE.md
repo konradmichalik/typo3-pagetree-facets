@@ -15,8 +15,22 @@ Everything picked is listed in one row under the search field: the scope chip
 site, each site), then one chip per value, `Title: <text>` for the page title
 among them. `Clear all` empties the selection without leaving the dialog, and
 the actions menu next to it saves the filter as a favorite or copies a link to
-it. Nothing reaches the page tree before you choose Apply; the footer status
-says whether the selection is applied and how many pages it matches.
+it. The row keeps to two lines of chips; what does not fit is counted on
+`+N more`, which opens a list of every criterion grouped by facet, each with its
+own × and a `Clear all`. Nothing reaches the page tree before you choose Apply;
+the footer status says whether the selection is applied and how many pages it
+matches. While no page matches, a warning under the row says how many criteria
+have to match at once, since every criterion narrows the result further.
+
+## Finding a criterion
+
+`Find a criterion` in the navigation searches the options of every facet by
+their label, not the facet names and not the pages. The matches replace the
+panel, grouped by facet and field with the matched part marked, and the
+navigation shows how many each facet holds. Ticking a match ticks the real
+option, `Show all in <Facet>` opens that facet, and `Esc` or the × in the field
+returns to the facet that was open before. To find a page by its title, use the
+field at the top instead.
 
 ## Token syntax
 

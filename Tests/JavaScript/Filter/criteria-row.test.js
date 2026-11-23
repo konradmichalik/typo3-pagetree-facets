@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildCriteriaRow, buildSearchField, renderChip } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
+import { renderChip } from '@konradmichalik/pagetree-facets/Filter/chip.js';
+import { buildCriteriaRow, buildSearchField } from '@konradmichalik/pagetree-facets/Filter/criteria-row.js';
 
 beforeEach(() => {
   globalThis.TYPO3 = { lang: {} };
   document.body.replaceChildren();
+  // jsdom has no ResizeObserver; the overflow's own suite covers the measuring.
+  globalThis.ResizeObserver = class { observe() {} };
 });
 
 describe('buildSearchField', () => {
@@ -116,11 +119,22 @@ describe('renderChip', () => {
 
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
+
+  it('can show the value alone, keeping the full name on the ×', () => {
+    const chip = renderChip(criterion, vi.fn(), { withPrefix: false });
+
+    expect(chip.querySelector('.pagetree-facets__chip-prefix')).toBeNull();
+    expect(chip.querySelector('.pagetree-facets__chip-label').textContent).toBe('Standard Page');
+    expect(chip.title).toBe('');
+    expect(chip.querySelector('.pagetree-facets__chip-remove').getAttribute('aria-label')).toBe('Remove Page type: Standard Page');
+  });
 });
 
 describe('buildCriteriaRow', () => {
   const mount = (options = {}) => {
-    const handlers = { onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn() };
+    const handlers = {
+      onRemove: vi.fn(), onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn(),
+    };
     const scope = document.createElement('div');
     scope.className = 'pagetree-facets__scope';
     const row = buildCriteriaRow({ scope, ...handlers, ...options });
@@ -128,7 +142,7 @@ describe('buildCriteriaRow', () => {
 
     return { row, scope, ...handlers };
   };
-  const chip = (label) => renderChip({ prefix: 'Page type', value: label, label: `Page type: ${label}` }, vi.fn());
+  const chip = (label) => ({ prefix: 'Page type', value: label, label: `Page type: ${label}` });
   const criteria = (row) => row.element.querySelector('.pagetree-facets__criteria');
   const more = (row) => row.element.querySelector('.pagetree-facets__more');
   const menu = (row) => row.element.querySelector('[role="menu"]');
@@ -155,7 +169,7 @@ describe('buildCriteriaRow', () => {
 
   it('renders without a scope element', () => {
     const row = buildCriteriaRow({
-      scope: null, onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn(),
+      scope: null, onRemove: vi.fn(), onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn(),
     });
 
     expect(row.element.querySelector('.pagetree-facets__chips')).not.toBeNull();
@@ -166,10 +180,10 @@ describe('buildCriteriaRow', () => {
 
     it('lands on the chip that took the removed one\'s place', () => {
       const { row, focusFallback } = mount();
-      row.update({ chips: [chip('Standard'), chip('Link'), chip('Shortcut')], savable: true });
+      row.update({ criteria: [chip('Standard'), chip('Link'), chip('Shortcut')], savable: true });
       removeButtons(row)[1].focus();
 
-      row.update({ chips: [chip('Standard'), chip('Shortcut')], savable: true });
+      row.update({ criteria: [chip('Standard'), chip('Shortcut')], savable: true });
 
       expect(document.activeElement).toBe(removeButtons(row)[1]);
       expect(document.activeElement.getAttribute('aria-label')).toBe('Remove Page type: Shortcut');
@@ -178,42 +192,42 @@ describe('buildCriteriaRow', () => {
 
     it('falls back to the previous chip when the last one was removed', () => {
       const { row } = mount();
-      row.update({ chips: [chip('Standard'), chip('Link')], savable: true });
+      row.update({ criteria: [chip('Standard'), chip('Link')], savable: true });
       removeButtons(row)[1].focus();
 
-      row.update({ chips: [chip('Standard')], savable: true });
+      row.update({ criteria: [chip('Standard')], savable: true });
 
       expect(document.activeElement).toBe(removeButtons(row)[0]);
     });
 
     it('hands focus on once no chip is left', () => {
       const { row, focusFallback } = mount();
-      row.update({ chips: [chip('Standard')], savable: true });
+      row.update({ criteria: [chip('Standard')], savable: true });
       removeButtons(row)[0].focus();
 
-      row.update({ chips: [], savable: false });
+      row.update({ criteria: [], savable: false });
 
       expect(focusFallback).toHaveBeenCalledTimes(1);
     });
 
     it('hands focus on when Clear all hides itself under the focus', () => {
       const { row, focusFallback } = mount();
-      row.update({ chips: [chip('Standard')], savable: true });
+      row.update({ criteria: [chip('Standard')], savable: true });
       clearAll(row).focus();
 
-      row.update({ chips: [], savable: false });
+      row.update({ criteria: [], savable: false });
 
       expect(focusFallback).toHaveBeenCalledTimes(1);
     });
 
     it('leaves focus alone while it is elsewhere', () => {
       const { row, focusFallback } = mount();
-      row.update({ chips: [chip('Standard')], savable: true });
+      row.update({ criteria: [chip('Standard')], savable: true });
       const field = document.createElement('input');
       document.body.append(field);
       field.focus();
 
-      row.update({ chips: [chip('Link')], savable: true });
+      row.update({ criteria: [chip('Link')], savable: true });
 
       expect(document.activeElement).toBe(field);
       expect(focusFallback).not.toHaveBeenCalled();
@@ -223,7 +237,7 @@ describe('buildCriteriaRow', () => {
   it('lists the chips in place of the empty text and reveals the actions once something is savable', () => {
     const { row } = mount();
 
-    row.update({ chips: [chip('Standard'), chip('Link')], savable: true });
+    row.update({ criteria: [chip('Standard'), chip('Link')], savable: true });
 
     expect(criteria(row).classList.contains('is-empty')).toBe(false);
     expect(row.element.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(true);
@@ -232,10 +246,20 @@ describe('buildCriteriaRow', () => {
     expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
   });
 
+  it('reports which criterion a chip\'s × removes', () => {
+    const { row, onRemove } = mount();
+    const link = chip('Link');
+    row.update({ criteria: [chip('Standard'), link], savable: true });
+
+    row.element.querySelectorAll('.pagetree-facets__chips .pagetree-facets__chip-remove')[1].click();
+
+    expect(onRemove).toHaveBeenCalledWith(link);
+  });
+
   it('keeps the actions for a savable selection without chips, such as a scope alone', () => {
     const { row } = mount();
 
-    row.update({ chips: [], savable: true });
+    row.update({ criteria: [], savable: true });
 
     expect(criteria(row).classList.contains('is-empty')).toBe(true);
     expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
@@ -243,7 +267,7 @@ describe('buildCriteriaRow', () => {
 
   it('offers Clear all as a text button', () => {
     const { row, onClearAll } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
 
     expect(clearAll(row).textContent).toBe('Clear all');
     expect(clearAll(row).type).toBe('button');
@@ -269,7 +293,7 @@ describe('buildCriteriaRow', () => {
 
   it('opens the menu with its first item focused, and the arrows walk the items', () => {
     const { row } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
 
     more(row).click();
 
@@ -290,7 +314,7 @@ describe('buildCriteriaRow', () => {
 
   it('closes on Escape, handing focus back to the button', () => {
     const { row } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
     more(row).click();
 
     key(items(row)[0], 'Escape');
@@ -301,7 +325,7 @@ describe('buildCriteriaRow', () => {
 
   it('copies the link from the menu and closes it', () => {
     const { row, onCopyLink } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
     more(row).click();
 
     items(row)[1].click();
@@ -313,7 +337,7 @@ describe('buildCriteriaRow', () => {
 
   it('opens the name form under the row from the menu and saves through it', () => {
     const { row, onSaveFavorite } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
     more(row).click();
 
     items(row)[0].click();
@@ -334,11 +358,11 @@ describe('buildCriteriaRow', () => {
 
   it('closes the menu and the name form once nothing is savable any more', () => {
     const { row } = mount();
-    row.update({ chips: [chip('Standard')], savable: true });
+    row.update({ criteria: [chip('Standard')], savable: true });
     more(row).click();
     items(row)[0].click();
 
-    row.update({ chips: [], savable: false });
+    row.update({ criteria: [], savable: false });
 
     expect(row.element.querySelector('.pagetree-facets__favorite-form').hidden).toBe(true);
     expect(menu(row).hidden).toBe(true);
