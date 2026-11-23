@@ -23,6 +23,7 @@ function mount(options = {}) {
   let resize = () => {};
   const row = buildCriteriaRow({
     scope: null,
+    helpLink: document.createElement('button'),
     ...handlers,
     measure: perRow(3),
     observe: (_, callback) => { resize = callback; },

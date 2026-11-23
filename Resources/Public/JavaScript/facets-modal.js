@@ -20,7 +20,8 @@ import { NoMatchCallout } from '@konradmichalik/pagetree-facets/Filter/no-match-
 import { buildPanel, buildPanelHeading, refreshPanel } from '@konradmichalik/pagetree-facets/Filter/panel.js';
 import { buildScopeMenu } from '@konradmichalik/pagetree-facets/Filter/scope-menu.js';
 import { buildSearchResults } from '@konradmichalik/pagetree-facets/Filter/search-results.js';
-import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { criterionPrefixes, distinctFields } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { attachTokenSuggestions } from '@konradmichalik/pagetree-facets/Filter/token-suggestions.js';
 import { closeOpenUserDropdowns } from '@konradmichalik/pagetree-facets/Filter/user-picker.js';
 
 /**
@@ -304,6 +305,13 @@ class FacetsModal {
       this.#reflectTimer = window.setTimeout(() => this.#reflectTokenQuery(), 250);
     });
     search.append(this.#searchField.element);
+    // The configuration is read per keystroke: a reflect replaces it.
+    attachTokenSuggestions({
+      input: this.#tokenField,
+      anchor: search,
+      caretLeft: this.#searchField.phrase.caretLeft,
+      getConfiguration: () => this.#configuration,
+    });
     header.append(search);
 
     // The scope is picked, not a criterion, so a change here refreshes the
@@ -319,6 +327,7 @@ class FacetsModal {
     // not necessarily applied, which is what the footer status spells out.
     this.#row = buildCriteriaRow({
       scope: this.#scope?.element ?? null,
+      helpLink: this.#help.link,
       onRemove: (criterion) => this.#removeCriterion(criterion),
       onClearAll: () => this.#resetAll(),
       onSaveFavorite: (label) => this.#saveFavorite(label),
@@ -330,13 +339,14 @@ class FacetsModal {
     return header;
   }
 
-  // The scope chip while it is on screen, else whichever search field is.
+  // The scope chip while it is on screen, else the page-title field. Text mode
+  // has no chip and no action to lose focus from, so it never ends up here.
   #focusBeforeChips() {
     if (this.#scope && !this.#scope.element.hidden) {
       this.#scope.focus();
       return;
     }
-    (this.#tokenMode ? this.#tokenField : this.#searchField.freetext).focus();
+    this.#searchField.freetext.focus();
   }
 
   #renderBody() {
@@ -534,7 +544,7 @@ class FacetsModal {
       // The typed field is authoritative in token view, so it has to carry the
       // favorite too - otherwise Apply would hand over the phrase it replaced.
       this.#cancelTokenTimers();
-      this.#tokenField.value = tokenString;
+      this.#searchField.setPhrase(tokenString);
     }
     this.#adoptConfiguration(await this.#requestConfiguration(tokenString));
   }
@@ -738,17 +748,12 @@ class FacetsModal {
   }
 
   // Clear all: every criterion in place, freetext and scope included. Stays in
-  // the modal, Apply still has to confirm.
+  // the modal, Apply still has to confirm. Form view only: text mode shows the
+  // reference instead of the row, so the phrase is cleared in the field.
   #resetAll() {
     this.#modal.querySelectorAll('.pagetree-facets__body [name]').forEach(clearControl);
     this.#searchField.setFreetext('');
     this.#scope?.reset();
-    // Clear all clears everything, so the token field (the other editable view)
-    // has to go empty too - otherwise it would re-seed the just-cleared form.
-    if (this.#tokenMode) {
-      this.#cancelTokenTimers();
-      this.#tokenField.value = '';
-    }
     this.#refreshActiveIndicators();
   }
 
@@ -784,25 +789,7 @@ class FacetsModal {
   #collectActiveCriteria() {
     const criteria = [];
     for (const tab of this.#configuration.tabs) {
-      const fields = distinctFields(tab);
-      const nameCounts = fieldNameCounts(tab);
-      // A name that occurs more than once in the raw (non-deduplicated) field
-      // list is bucketed (e.g. RecordsTab's `table` split into TYPO3 Core/News/
-      // Other, ContentElementTab's `ce` split per wizard group) - each field's
-      // `label` there is a section heading, not a criterion name, so those
-      // always fall back to the tab label. Only among the remaining,
-      // non-bucketed names does it make sense to prefix with the field label,
-      // and only when there is more than one of them (e.g. Activity: "Last
-      // updated" vs "Created") - otherwise the tab label reads cleaner and a
-      // single field would just repeat itself.
-      const nonBucketedCount = fields.filter((field) => 1 === nameCounts.get(field.name)).length;
-      for (const field of fields) {
-        // fields (= distinctFields(tab)) and nameCounts are both built from
-        // the same tab.configuration.fields, so field.name is always a key
-        // here - `?? 0` guards a lookup miss that cannot actually happen.
-        /* v8 ignore next */
-        const bucketed = (nameCounts.get(field.name) ?? 0) > 1;
-        const prefix = bucketed ? tab.label : (nonBucketedCount > 1 ? field.label : tab.label);
+      for (const [field, prefix] of criterionPrefixes(tab)) {
         const inputs = this.#modal.querySelectorAll(`[name="${tab.identifier}[${field.name}]"]`);
         for (const input of inputs) {
           if (input.tagName === 'SELECT') {
@@ -933,7 +920,7 @@ class FacetsModal {
     }
     const phrase = await this.#computePhrase();
     this.#tokenMode = true;
-    this.#tokenField.value = phrase;
+    this.#searchField.setPhrase(phrase);
     this.#setTextMode(true);
     this.#tokenField.focus();
     // A refresh armed during the await above must not land in text mode, and
@@ -957,6 +944,7 @@ class FacetsModal {
   // The phrase carries the scope itself, so the chip leaves with the freetext.
   #setTextMode(on) {
     this.#searchField.setTextMode(on);
+    this.#row.setTextMode(on);
     if (this.#scope) {
       this.#scope.close();
       this.#scope.element.hidden = on;
@@ -1016,7 +1004,7 @@ class FacetsModal {
     if (!this.#tokenMode) {
       return; // token view was left while the request was in flight
     }
-    this.#tokenField.value = phrase;
+    this.#searchField.setPhrase(phrase);
     this.#refreshApplyState();
   }
 

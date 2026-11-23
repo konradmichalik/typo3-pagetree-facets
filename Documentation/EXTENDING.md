@@ -69,6 +69,9 @@ Public (implement/consume freely, changes get a note in the release):
   See `FacetInterface::getModalConfiguration()`'s own docblock for the full shape,
   including `currentUser`, `pinned` and `searchable` (all `user-picker`-only).
   A `radio-presets` field always gets a neutral first option, labelled "Any time", with an empty value. It clears the field and is never a criterion.
+  The same configuration feeds text mode: every field name is offered as a key
+  and every option as a value of it, so a facet needs nothing extra to appear in
+  the suggestions.
   `description` and `emptyReason` are optional and take an LLL reference like every
   label. `description` is the sentence under the panel heading that says what the
   facet matches. `emptyReason` is shown on the disabled navigation item when none of

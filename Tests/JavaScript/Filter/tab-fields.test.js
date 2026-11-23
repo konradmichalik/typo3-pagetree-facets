@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
+import { criterionPrefixes, distinctFields, fieldNameCounts } from '@konradmichalik/pagetree-facets/Filter/tab-fields.js';
 
-const tab = (...fields) => ({ configuration: { fields } });
+const tab = (...fields) => ({ label: 'Facet', configuration: { fields } });
 
 describe('distinctFields', () => {
   it('keeps the first field per name', () => {
@@ -46,5 +46,30 @@ describe('fieldNameCounts', () => {
 
   it('reports nothing for a tab without fields', () => {
     expect(fieldNameCounts({ configuration: {} }).size).toBe(0);
+  });
+});
+
+describe('criterionPrefixes', () => {
+  it('names a single field after the facet, since the field would only repeat it', () => {
+    const prefixes = criterionPrefixes(tab({ name: 'doktype', label: 'Page type' }));
+
+    expect(prefixes).toEqual([[{ name: 'doktype', label: 'Page type' }, 'Facet']]);
+  });
+
+  it('names fields after themselves once a facet has several of them', () => {
+    const prefixes = criterionPrefixes(tab({ name: 'updated', label: 'Last updated' }, { name: 'created', label: 'Created' }));
+
+    expect(prefixes.map(([field, prefix]) => [field.name, prefix])).toEqual([['updated', 'Last updated'], ['created', 'Created']]);
+  });
+
+  it('names a bucketed field after the facet, its labels being section headings', () => {
+    const prefixes = criterionPrefixes(tab(
+      { name: 'ce', label: 'TYPO3 Core' },
+      { name: 'ce', label: 'News' },
+      { name: 'colPos', label: 'Column' },
+    ));
+
+    // The other field counts alone, so it keeps the facet label too.
+    expect(prefixes.map(([field, prefix]) => [field.name, prefix])).toEqual([['ce', 'Facet'], ['colPos', 'Facet']]);
   });
 });

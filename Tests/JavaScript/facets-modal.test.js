@@ -306,9 +306,11 @@ describe('the scope chip', () => {
     // Both fields share the box because they take turns - the switch sits
     // against whichever one is on screen.
     expect([...field.children].map((child) => child.className.split(' ').at(-1)))
-      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__token-field', 'pagetree-facets__text-switch']);
-    // Help lives in the navigation now, nothing sits beside the field.
-    expect(modal.querySelector('.pagetree-facets__search').children).toHaveLength(1);
+      .toEqual(['pagetree-facets__search-icon', 'pagetree-facets__freetext', 'pagetree-facets__phrase', 'pagetree-facets__text-switch']);
+    // Help lives in the navigation now; beside the field sits only the (closed)
+    // suggestion list of text mode.
+    expect([...modal.querySelector('.pagetree-facets__search').children].map((child) => child.className.split(' ').at(-1)))
+      .toEqual(['pagetree-facets__search-field', 'pagetree-facets__suggestions']);
     expect(modal.querySelector('.pagetree-facets__help-toggle')).toBeNull();
   });
 
@@ -561,7 +563,9 @@ describe('a user-picker criterion', () => {
   it('serializes the picked value while the chip shows its label', async () => {
     const { modal, onApply } = await openModal({ configuration: withPicker(['me']) });
 
-    expect(control(modal, 'activity[editedBy]').value).toBe('Me (admin)');
+    // The field holds the pick as a chip, the input beside it stays empty.
+    expect(control(modal, 'activity[editedBy]').value).toBe('');
+    expect(modal.querySelector('.pagetree-facets__user-chip .pagetree-facets__chip-label').textContent).toBe('Me (admin)');
     expect(chipLabels(modal)).toContain('Edited by: Me (admin)');
 
     control(modal, 'doktype[doktype]', '1').click();

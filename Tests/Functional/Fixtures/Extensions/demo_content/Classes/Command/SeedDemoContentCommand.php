@@ -24,6 +24,7 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function count;
+use function in_array;
 
 /**
  * SeedDemoContentCommand.
@@ -120,7 +121,11 @@ final class SeedDemoContentCommand extends Command
         'anna.editor' => 'Anna Schmidt',
         'ben.author' => 'Ben Weber',
         'clara.reviewer' => 'Clara Fischer',
+        'dora.former' => 'Dora Former',
     ];
+
+    /** Disabled on creation: the picker keeps such accounts in its list and labels them. */
+    private const DISABLED_EDITORS = ['dora.former'];
 
     /** The password the ddev addon gives its admin - dev-only, same as that one. */
     private const EDITOR_PASSWORD = 'Password1!';
@@ -527,6 +532,7 @@ final class SeedDemoContentCommand extends Command
                 'password' => self::EDITOR_PASSWORD,
                 'admin' => 1,
                 'db_mountpoints' => '1',
+                'disable' => in_array($username, self::DISABLED_EDITORS, true) ? 1 : 0,
             ];
         }
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);

@@ -9,6 +9,8 @@ beforeEach(() => {
   globalThis.ResizeObserver = class { observe() {} };
 });
 
+const phraseEditor = (tokenField) => tokenField.closest('.pagetree-facets__phrase');
+
 describe('buildSearchField', () => {
   it('holds the page-title field with the Text switch at its trailing edge', () => {
     const { element, freetext, tokenField, textSwitch } = buildSearchField({ freetext: 'home', onToggle: vi.fn() });
@@ -18,9 +20,20 @@ describe('buildSearchField', () => {
     expect(freetext.placeholder).toBe('Page title or UID');
     expect(freetext.getAttribute('aria-label')).toBe('Page title or UID');
     expect(tokenField.dataset.role).toBe('token-query');
-    expect(tokenField.hidden).toBe(true);
+    expect(phraseEditor(tokenField).hidden).toBe(true);
     // The switch is the last child, so it sits against the field's trailing edge.
     expect(element.lastElementChild).toBe(textSwitch);
+  });
+
+  it('wraps the token field in the phrase editor, whose mirror carries the colours', () => {
+    const { tokenField, setPhrase } = buildSearchField({ freetext: '', onToggle: vi.fn() });
+    const mirror = phraseEditor(tokenField).querySelector('.pagetree-facets__phrase-mirror');
+
+    setPhrase('doktype:1 is:hidden');
+
+    expect(tokenField.value).toBe('doktype:1 is:hidden');
+    expect(mirror.textContent).toBe('doktype:1 is:hidden');
+    expect([...mirror.querySelectorAll('.pagetree-facets__phrase-key')].map((key) => key.textContent)).toEqual(['doktype:', 'is:']);
   });
 
   it('labels the switch with the code icon and the word Text, never the icon alone', () => {
@@ -47,13 +60,13 @@ describe('buildSearchField', () => {
 
     setTextMode(true);
     expect(freetext.closest('.pagetree-facets__freetext').hidden).toBe(true);
-    expect(tokenField.hidden).toBe(false);
+    expect(phraseEditor(tokenField).hidden).toBe(false);
     expect(textSwitch.getAttribute('aria-pressed')).toBe('true');
     expect(element.classList.contains('is-text')).toBe(true);
 
     setTextMode(false);
     expect(freetext.closest('.pagetree-facets__freetext').hidden).toBe(false);
-    expect(tokenField.hidden).toBe(true);
+    expect(phraseEditor(tokenField).hidden).toBe(true);
     expect(textSwitch.getAttribute('aria-pressed')).toBe('false');
     expect(element.classList.contains('is-text')).toBe(false);
   });
@@ -137,10 +150,12 @@ describe('buildCriteriaRow', () => {
     };
     const scope = document.createElement('div');
     scope.className = 'pagetree-facets__scope';
-    const row = buildCriteriaRow({ scope, ...handlers, ...options });
+    const helpLink = document.createElement('button');
+    helpLink.setAttribute('aria-controls', 'the-help');
+    const row = buildCriteriaRow({ scope, helpLink, ...handlers, ...options });
     document.body.replaceChildren(row.element);
 
-    return { row, scope, ...handlers };
+    return { row, scope, helpLink, ...handlers };
   };
   const chip = (label) => ({ prefix: 'Page type', value: label, label: `Page type: ${label}` });
   const criteria = (row) => row.element.querySelector('.pagetree-facets__criteria');
@@ -154,6 +169,82 @@ describe('buildCriteriaRow', () => {
 
     return event;
   };
+
+  it('replaces the chips, the empty state and the actions by the short reference in text mode', () => {
+    const { row } = mount();
+    row.update({ criteria: [chip('Standard')], savable: true });
+    const reference = row.element.querySelector('.pagetree-facets__reference');
+    expect(reference.hidden).toBe(true);
+
+    row.setTextMode(true);
+
+    expect(reference.hidden).toBe(false);
+    expect([...reference.querySelectorAll('.pagetree-facets__reference-item')].map((item) => item.textContent)).toEqual([
+      'key:value one criterion',
+      'space all must match',
+      '1,3 any of these',
+      'Text without key searches title and UID',
+    ]);
+    expect(reference.querySelectorAll('.pagetree-facets__reference-item code')).toHaveLength(3);
+    expect(criteria(row).classList.contains('is-text')).toBe(true);
+    expect(row.element.querySelector('.pagetree-facets__chips').hidden).toBe(true);
+    expect(row.element.querySelector('.pagetree-facets__criteria-empty').hidden).toBe(true);
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
+    // A rebuild in text mode keeps the actions out, however savable the state.
+    row.update({ criteria: [chip('Standard')], savable: true });
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(true);
+
+    row.setTextMode(false);
+
+    expect(reference.hidden).toBe(true);
+    expect(criteria(row).classList.contains('is-text')).toBe(false);
+    expect(row.element.querySelector('.pagetree-facets__chips').hidden).toBe(false);
+    expect(row.element.querySelector('.pagetree-facets__criteria-actions').hidden).toBe(false);
+  });
+
+  it('closes an open menu when text mode takes the actions away', () => {
+    const { row } = mount();
+    row.update({ criteria: [chip('Standard')], savable: true });
+    more(row).click();
+    expect(menu(row).hidden).toBe(false);
+
+    row.setTextMode(true);
+
+    expect(menu(row).hidden).toBe(true);
+  });
+
+  it('never shows the dashed empty state in text mode, where the phrase is the criteria', () => {
+    const { row } = mount();
+    const empty = row.element.querySelector('.pagetree-facets__criteria-empty');
+
+    row.setTextMode(true);
+    expect(empty.hidden).toBe(true);
+    expect(criteria(row).classList.contains('is-empty')).toBe(false);
+
+    // A rebuild while in text mode keeps it that way.
+    row.update({ criteria: [], savable: false });
+    expect(empty.hidden).toBe(true);
+    expect(criteria(row).classList.contains('is-empty')).toBe(false);
+
+    row.setTextMode(false);
+    expect(empty.hidden).toBe(false);
+    expect(criteria(row).classList.contains('is-empty')).toBe(true);
+  });
+
+  it('links the reference to the help, which the navigation link opens', () => {
+    const { row, helpLink } = mount();
+    const opened = vi.fn();
+    helpLink.addEventListener('click', opened);
+    const link = row.element.querySelector('.pagetree-facets__reference-link');
+
+    expect(link.textContent).toBe('All keys: How filtering works');
+    expect(link.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(link.getAttribute('aria-controls')).toBe('the-help');
+
+    link.click();
+
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
 
   it('starts empty: dashed row with the fixed text, no Clear all, no menu', () => {
     const { row, scope } = mount();
@@ -169,7 +260,13 @@ describe('buildCriteriaRow', () => {
 
   it('renders without a scope element', () => {
     const row = buildCriteriaRow({
-      scope: null, onRemove: vi.fn(), onClearAll: vi.fn(), onSaveFavorite: vi.fn(), onCopyLink: vi.fn(), focusFallback: vi.fn(),
+      scope: null,
+      helpLink: document.createElement('button'),
+      onRemove: vi.fn(),
+      onClearAll: vi.fn(),
+      onSaveFavorite: vi.fn(),
+      onCopyLink: vi.fn(),
+      focusFallback: vi.fn(),
     });
 
     expect(row.element.querySelector('.pagetree-facets__chips')).not.toBeNull();
